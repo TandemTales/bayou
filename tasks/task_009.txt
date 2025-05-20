@@ -1,0 +1,63 @@
+# Task ID: 9
+# Title: Implement Card Play Mechanics
+# Status: pending
+# Dependencies: 6, 8
+# Priority: high
+# Description: Create the system for playing cards from hand, spending steam resources, and adding new pieces to the board.
+# Details:
+1. Implement card selection and validation
+2. Create steam cost payment system
+3. Implement piece placement from cards
+4. Create valid placement detection
+5. Implement card effect resolution
+
+Pseudo-code for card play system:
+```cpp
+class CardPlaySystem {
+public:
+    static bool canPlayCard(const GameState& gameState, PlayerSide player, size_t handIndex);
+    static bool playCard(GameState& gameState, PlayerSide player, size_t handIndex, Position targetPos);
+    static std::vector<Position> getValidPlacementPositions(const GameState& gameState, PlayerSide player, const Card* card);
+};
+
+bool CardPlaySystem::playCard(GameState& gameState, PlayerSide player, size_t handIndex, Position targetPos) {
+    if (!canPlayCard(gameState, player, handIndex)) {
+        return false;
+    }
+    
+    const Card* card = gameState.getPlayerHand(player).getCard(handIndex);
+    int steamCost = card->getSteamCost();
+    
+    // Check if player has enough steam
+    if (gameState.getResourceSystem().getSteam(player) < steamCost) {
+        return false;
+    }
+    
+    // Check if target position is valid for this card
+    auto validPositions = getValidPlacementPositions(gameState, player, card);
+    if (std::find(validPositions.begin(), validPositions.end(), targetPos) == validPositions.end()) {
+        return false;
+    }
+    
+    // Spend steam
+    gameState.getResourceSystem().spendSteam(player, steamCost);
+    
+    // Play the card
+    std::unique_ptr<Card> playedCard = gameState.getPlayerHand(player).playCard(handIndex);
+    playedCard->play(gameState, player);
+    
+    // Draw a new card if possible
+    if (!gameState.getPlayerDeck(player).isEmpty()) {
+        gameState.getPlayerHand(player).addCard(gameState.getPlayerDeck(player).drawCard());
+    }
+    
+    return true;
+}
+```
+
+# Test Strategy:
+1. Unit tests for card play validation
+2. Verify steam cost payment
+3. Test piece placement from cards
+4. Validate card effect resolution
+5. Ensure proper hand/deck updates after card play

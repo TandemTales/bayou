@@ -1,0 +1,51 @@
+# Task ID: 5
+# Title: Implement Influence and Control System
+# Status: pending
+# Dependencies: 3
+# Priority: high
+# Description: Create the system for calculating piece influence on adjacent squares and determining square control.
+# Details:
+1. Implement influence calculation for each piece type
+2. Create system to propagate influence to adjacent squares
+3. Implement control determination based on influence values
+4. Update control values when pieces move or are removed
+5. Optimize influence calculation for performance
+
+Pseudo-code for influence system:
+```cpp
+class InfluenceSystem {
+public:
+    static void calculateBoardInfluence(GameBoard& board);
+    static void calculatePieceInfluence(GameBoard& board, Position piecePos);
+    static void determineSquareControl(GameBoard& board);
+    static PlayerSide getControllingPlayer(const Square& square);
+};
+
+void InfluenceSystem::calculateBoardInfluence(GameBoard& board) {
+    // Reset all influence values
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            board.getSquare(x, y).setControlValue(PlayerSide::PLAYER_1, 0);
+            board.getSquare(x, y).setControlValue(PlayerSide::PLAYER_2, 0);
+        }
+    }
+    
+    // Calculate influence for each piece
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            if (!board.getSquare(x, y).isEmpty()) {
+                calculatePieceInfluence(board, Position{x, y});
+            }
+        }
+    }
+    
+    determineSquareControl(board);
+}
+```
+
+# Test Strategy:
+1. Unit tests for influence calculation
+2. Verify control determination logic
+3. Test influence propagation
+4. Benchmark performance for large board states
+5. Validate control changes after piece movement

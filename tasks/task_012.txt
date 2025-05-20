@@ -1,0 +1,73 @@
+# Task ID: 12
+# Title: Implement User Interface for Game State and Resources
+# Status: pending
+# Dependencies: 6, 10, 11
+# Priority: medium
+# Description: Create the UI elements for displaying game state, player resources, and turn information.
+# Details:
+1. Implement steam resource display
+2. Create turn and phase indicators
+3. Implement player information display
+4. Create game state notifications
+5. Implement UI layout and styling
+
+Pseudo-code for UI implementation:
+```cpp
+class GameUI {
+private:
+    sf::RenderWindow& window;
+    sf::Font font;
+    
+    sf::Text player1Info;
+    sf::Text player2Info;
+    sf::Text phaseInfo;
+    sf::Text steamInfo;
+    sf::Text notificationText;
+    
+public:
+    GameUI(sf::RenderWindow& window);
+    
+    void loadAssets();
+    void updateUI(const GameState& gameState);
+    void drawUI();
+    
+    void showNotification(const std::string& message, float duration = 3.0f);
+};
+
+void GameUI::updateUI(const GameState& gameState) {
+    // Update player info
+    player1Info.setString("Player 1");
+    player2Info.setString("Player 2");
+    
+    // Update phase info
+    std::string phaseStr;
+    switch (gameState.getCurrentPhase()) {
+        case GamePhase::DRAW: phaseStr = "Draw Phase"; break;
+        case GamePhase::PLAY: phaseStr = "Play Phase"; break;
+        case GamePhase::MOVE: phaseStr = "Move Phase"; break;
+    }
+    phaseInfo.setString(phaseStr);
+    
+    // Update steam info
+    int player1Steam = gameState.getResourceSystem().getSteam(PlayerSide::PLAYER_1);
+    int player2Steam = gameState.getResourceSystem().getSteam(PlayerSide::PLAYER_2);
+    steamInfo.setString("Steam - P1: " + std::to_string(player1Steam) + 
+                        " | P2: " + std::to_string(player2Steam));
+    
+    // Highlight current player
+    if (gameState.getCurrentPlayer() == PlayerSide::PLAYER_1) {
+        player1Info.setFillColor(sf::Color::Yellow);
+        player2Info.setFillColor(sf::Color::White);
+    } else {
+        player1Info.setFillColor(sf::Color::White);
+        player2Info.setFillColor(sf::Color::Yellow);
+    }
+}
+```
+
+# Test Strategy:
+1. Visual verification of UI elements
+2. Test resource display accuracy
+3. Verify turn and phase indicators
+4. Test notification system
+5. Validate UI updates on game state changes

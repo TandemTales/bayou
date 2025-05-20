@@ -1,0 +1,83 @@
+# Task ID: 10
+# Title: Implement Game State Management and Turn System
+# Status: pending
+# Dependencies: 4, 6, 9
+# Priority: high
+# Description: Create the system for managing game state, turn progression, and win conditions.
+# Details:
+1. Implement game state class with all game components
+2. Create turn system with phases (draw, play, move)
+3. Implement win condition detection (king death)
+4. Create game initialization and reset
+5. Implement game state serialization for save/load
+
+Pseudo-code for game state management:
+```cpp
+class GameState {
+private:
+    GameBoard board;
+    ResourceSystem resourceSystem;
+    std::array<Hand, 2> playerHands;
+    std::array<Deck, 2> playerDecks;
+    PlayerSide currentPlayer;
+    GamePhase currentPhase;
+    bool gameOver;
+    PlayerSide winner;
+    
+public:
+    GameState();
+    
+    void initializeGame();
+    void startTurn();
+    void endTurn();
+    void nextPhase();
+    
+    bool isGameOver() const;
+    PlayerSide getWinner() const;
+    void checkWinConditions();
+    
+    GameBoard& getBoard();
+    ResourceSystem& getResourceSystem();
+    Hand& getPlayerHand(PlayerSide player);
+    Deck& getPlayerDeck(PlayerSide player);
+    PlayerSide getCurrentPlayer() const;
+    GamePhase getCurrentPhase() const;
+};
+
+void GameState::checkWinConditions() {
+    bool player1KingAlive = false;
+    bool player2KingAlive = false;
+    
+    // Check if kings are alive
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            const Square& square = board.getSquare(x, y);
+            if (!square.isEmpty()) {
+                Piece* piece = square.getPiece();
+                if (dynamic_cast<King*>(piece)) {
+                    if (piece->getOwner() == PlayerSide::PLAYER_1) {
+                        player1KingAlive = true;
+                    } else {
+                        player2KingAlive = true;
+                    }
+                }
+            }
+        }
+    }
+    
+    if (!player1KingAlive) {
+        gameOver = true;
+        winner = PlayerSide::PLAYER_2;
+    } else if (!player2KingAlive) {
+        gameOver = true;
+        winner = PlayerSide::PLAYER_1;
+    }
+}
+```
+
+# Test Strategy:
+1. Unit tests for turn progression
+2. Verify win condition detection
+3. Test game initialization
+4. Validate phase transitions
+5. Ensure proper game state serialization

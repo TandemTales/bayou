@@ -1,0 +1,40 @@
+# Task ID: 4
+# Title: Implement Combat System
+# Status: pending
+# Dependencies: 3
+# Priority: high
+# Description: Create the combat system for pieces to attack and damage each other, including health tracking and piece removal.
+# Details:
+1. Implement attack mechanics between pieces
+2. Create damage calculation system
+3. Implement health tracking and piece death
+4. Handle piece removal from board
+5. Implement combat resolution logic
+
+Pseudo-code for combat system:
+```cpp
+class CombatSystem {
+public:
+    static void resolveCombat(GameBoard& board, Position attacker, Position defender);
+    static void applyDamage(Piece* attacker, Piece* defender);
+    static void checkAndRemoveDeadPieces(GameBoard& board);
+};
+
+void CombatSystem::resolveCombat(GameBoard& board, Position attacker, Position defender) {
+    Piece* attackingPiece = board.getSquare(attacker.x, attacker.y).getPiece();
+    Piece* defendingPiece = board.getSquare(defender.x, defender.y).getPiece();
+    
+    if (attackingPiece && defendingPiece && 
+        attackingPiece->getOwner() != defendingPiece->getOwner()) {
+        applyDamage(attackingPiece, defendingPiece);
+        checkAndRemoveDeadPieces(board);
+    }
+}
+```
+
+# Test Strategy:
+1. Unit tests for damage calculation
+2. Verify piece death and removal
+3. Test various combat scenarios
+4. Validate king death detection
+5. Ensure proper combat resolution order

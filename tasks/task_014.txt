@@ -1,0 +1,68 @@
+# Task ID: 14
+# Title: Implement Input Handling and Game Controls
+# Status: pending
+# Dependencies: 11, 12, 13
+# Priority: high
+# Description: Create the input handling system for player interactions with the game board, pieces, and cards.
+# Details:
+1. Implement mouse input handling
+2. Create piece selection and movement
+3. Implement card selection and play
+4. Create turn and phase control buttons
+5. Implement keyboard shortcuts
+
+Pseudo-code for input handling:
+```cpp
+class InputHandler {
+private:
+    sf::RenderWindow& window;
+    GameState& gameState;
+    BoardView& boardView;
+    HandView& handView;
+    
+    bool pieceSelected;
+    Position selectedPiecePos;
+    std::vector<Position> validMoves;
+    
+public:
+    InputHandler(sf::RenderWindow& window, GameState& gameState, BoardView& boardView, HandView& handView);
+    
+    void handleEvents();
+    void handleMouseClick(sf::Vector2f mousePos);
+    void handlePieceSelection(Position boardPos);
+    void handlePieceMovement(Position boardPos);
+    void handleCardPlay(size_t cardIndex, Position boardPos);
+    void handleEndTurnButton();
+};
+
+void InputHandler::handleMouseClick(sf::Vector2f mousePos) {
+    // Check if clicked on the board
+    Position boardPos = boardView.screenToBoard(mousePos);
+    if (boardPos.x >= 0 && boardPos.x < 8 && boardPos.y >= 0 && boardPos.y < 8) {
+        if (pieceSelected) {
+            handlePieceMovement(boardPos);
+        } else {
+            handlePieceSelection(boardPos);
+        }
+        return;
+    }
+    
+    // Check if clicked on a card in hand
+    size_t cardIndex = handView.getCardIndexAtPosition(mousePos);
+    if (cardIndex < gameState.getPlayerHand(gameState.getCurrentPlayer()).size()) {
+        // Start card drag operation
+        handView.handleMouseDown(mousePos);
+        return;
+    }
+    
+    // Check if clicked on end turn button
+    // ...
+}
+```
+
+# Test Strategy:
+1. Test mouse input handling
+2. Verify piece selection and movement
+3. Test card selection and play
+4. Validate turn and phase controls
+5. Ensure proper input validation and error handling

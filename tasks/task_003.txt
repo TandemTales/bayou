@@ -1,0 +1,52 @@
+# Task ID: 3
+# Title: Implement Piece Class Hierarchy and Movement System
+# Status: pending
+# Dependencies: 2
+# Priority: high
+# Description: Design and implement the piece class hierarchy with attributes for health, attack, and movement patterns.
+# Details:
+1. Create a base Piece class with common attributes (health, attack, owner)
+2. Implement derived classes for different piece types (King, etc.)
+3. Define movement patterns for each piece type
+4. Implement methods to calculate valid moves
+5. Create system for executing moves and updating board state
+
+Pseudo-code for piece hierarchy:
+```cpp
+class Piece {
+protected:
+    PlayerSide owner;
+    int health;
+    int attack;
+    std::string name;
+    
+public:
+    Piece(PlayerSide owner, int health, int attack, std::string name);
+    virtual ~Piece() = default;
+    
+    PlayerSide getOwner() const;
+    int getHealth() const;
+    int getAttack() const;
+    std::string getName() const;
+    
+    void takeDamage(int amount);
+    bool isAlive() const;
+    
+    virtual std::vector<Position> getValidMoves(const GameBoard& board, Position currentPos) = 0;
+    virtual void executeMove(GameBoard& board, Position from, Position to) = 0;
+};
+
+class King : public Piece {
+public:
+    King(PlayerSide owner);
+    std::vector<Position> getValidMoves(const GameBoard& board, Position currentPos) override;
+    void executeMove(GameBoard& board, Position from, Position to) override;
+};
+```
+
+# Test Strategy:
+1. Unit tests for each piece type's movement patterns
+2. Verify health and attack mechanics
+3. Test boundary conditions for movement
+4. Validate piece interactions
+5. Ensure proper owner assignment and identification

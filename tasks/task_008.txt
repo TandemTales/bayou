@@ -1,0 +1,52 @@
+# Task ID: 8
+# Title: Implement Hand and Deck Management
+# Status: pending
+# Dependencies: 7
+# Priority: medium
+# Description: Create the system for managing player hands (4 cards) and decks (20 cards with max 2 copies of each card).
+# Details:
+1. Implement deck class with shuffling and drawing
+2. Create hand management with 4-card limit
+3. Implement deck building constraints (20 cards, max 2 copies)
+4. Create card drawing and discarding mechanics
+5. Implement deck validation
+
+Pseudo-code for deck and hand management:
+```cpp
+class Deck {
+private:
+    std::vector<std::unique_ptr<Card>> cards;
+    
+public:
+    Deck();
+    
+    void addCard(std::unique_ptr<Card> card);
+    std::unique_ptr<Card> drawCard();
+    void shuffle();
+    size_t size() const;
+    bool isEmpty() const;
+    bool isValid() const; // Checks 20 card limit and max 2 copies rule
+};
+
+class Hand {
+private:
+    std::vector<std::unique_ptr<Card>> cards;
+    static const size_t MAX_HAND_SIZE = 4;
+    
+public:
+    Hand();
+    
+    bool addCard(std::unique_ptr<Card> card);
+    std::unique_ptr<Card> playCard(size_t index);
+    size_t size() const;
+    bool isFull() const;
+    const Card* getCard(size_t index) const;
+};
+```
+
+# Test Strategy:
+1. Unit tests for deck shuffling and drawing
+2. Verify hand management constraints
+3. Test deck building rules
+4. Validate card play from hand
+5. Ensure proper deck validation

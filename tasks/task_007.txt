@@ -1,0 +1,57 @@
+# Task ID: 7
+# Title: Implement Card System and Data Models
+# Status: pending
+# Dependencies: 2
+# Priority: high
+# Description: Design and implement the card system with data models for different card types, costs, and effects.
+# Details:
+1. Create Card base class and derived card types
+2. Implement card attributes (cost, effects, piece creation)
+3. Design card data storage format
+4. Create card factory for generating cards
+5. Implement card collection management
+
+Pseudo-code for card system:
+```cpp
+class Card {
+protected:
+    std::string name;
+    int steamCost;
+    std::string description;
+    
+public:
+    Card(std::string name, int steamCost, std::string description);
+    virtual ~Card() = default;
+    
+    std::string getName() const;
+    int getSteamCost() const;
+    std::string getDescription() const;
+    
+    virtual bool canPlay(const GameState& gameState, PlayerSide player) const = 0;
+    virtual void play(GameState& gameState, PlayerSide player) = 0;
+};
+
+class PieceCard : public Card {
+private:
+    PieceType pieceType;
+    
+public:
+    PieceCard(std::string name, int steamCost, std::string description, PieceType pieceType);
+    
+    bool canPlay(const GameState& gameState, PlayerSide player) const override;
+    void play(GameState& gameState, PlayerSide player) override;
+};
+
+class CardFactory {
+public:
+    static std::unique_ptr<Card> createCard(CardType type);
+    static std::vector<std::unique_ptr<Card>> createStarterDeck();
+};
+```
+
+# Test Strategy:
+1. Unit tests for card creation and attributes
+2. Verify card play conditions
+3. Test card effects on game state
+4. Validate card collection management
+5. Ensure proper card type identification and serialization

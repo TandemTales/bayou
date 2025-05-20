@@ -1,0 +1,49 @@
+# Task ID: 2
+# Title: Implement Core Game Engine and Board Representation
+# Status: pending
+# Dependencies: 1
+# Priority: high
+# Description: Create the foundational game engine with chess-like board representation and basic game state management.
+# Details:
+1. Define the game board as an 8x8 grid
+2. Implement board representation using a 2D array or vector
+3. Create enums for piece types, player sides, and square states
+4. Implement basic game state class to track board state, active player, and game phase
+5. Create methods for board initialization and reset
+
+Pseudo-code for board representation:
+```cpp
+class GameBoard {
+private:
+    std::array<std::array<Square, 8>, 8> board;
+    
+public:
+    GameBoard();
+    Square& getSquare(int x, int y);
+    bool isValidPosition(int x, int y) const;
+    void resetBoard();
+    // Additional methods for board manipulation
+};
+
+class Square {
+private:
+    Piece* piece; // nullptr if empty
+    int controlValuePlayer1;
+    int controlValuePlayer2;
+    
+public:
+    Square();
+    bool isEmpty() const;
+    Piece* getPiece() const;
+    void setPiece(Piece* piece);
+    int getControlValue(PlayerSide side) const;
+    void setControlValue(PlayerSide side, int value);
+};
+```
+
+# Test Strategy:
+1. Unit tests for board initialization and reset
+2. Verify correct dimensions and indexing of the board
+3. Test boundary conditions for board access
+4. Validate game state transitions
+5. Ensure proper tracking of board state

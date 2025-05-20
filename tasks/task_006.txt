@@ -1,0 +1,59 @@
+# Task ID: 6
+# Title: Implement Steam Resource Generation System
+# Status: pending
+# Dependencies: 5
+# Priority: medium
+# Description: Create the system for generating and managing the 'Steam' resource based on controlled squares.
+# Details:
+1. Implement steam resource tracking for each player
+2. Create system to calculate steam generation based on controlled squares
+3. Implement steam accumulation per turn
+4. Create methods for spending steam
+5. Implement UI indicators for steam resources
+
+Pseudo-code for steam resource system:
+```cpp
+class ResourceSystem {
+private:
+    int player1Steam;
+    int player2Steam;
+    
+public:
+    ResourceSystem();
+    
+    int getSteam(PlayerSide player) const;
+    void setSteam(PlayerSide player, int amount);
+    void addSteam(PlayerSide player, int amount);
+    bool spendSteam(PlayerSide player, int amount);
+    
+    void calculateSteamGeneration(const GameBoard& board);
+    void processTurnStart(PlayerSide activePlayer, const GameBoard& board);
+};
+
+void ResourceSystem::calculateSteamGeneration(const GameBoard& board) {
+    int player1Generation = 0;
+    int player2Generation = 0;
+    
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            const Square& square = board.getSquare(x, y);
+            PlayerSide controller = InfluenceSystem::getControllingPlayer(square);
+            
+            if (controller == PlayerSide::PLAYER_1) {
+                player1Generation++;
+            } else if (controller == PlayerSide::PLAYER_2) {
+                player2Generation++;
+            }
+        }
+    }
+    
+    // Store generation values for use in processTurnStart
+}
+```
+
+# Test Strategy:
+1. Unit tests for steam calculation
+2. Verify steam accumulation per turn
+3. Test steam spending mechanics
+4. Validate resource updates based on board control changes
+5. Ensure proper resource limits and constraints

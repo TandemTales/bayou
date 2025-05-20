@@ -1,0 +1,207 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Setup C++20 Project with CMake and SFML",
+      "description": "Initialize the project repository with C++20, CMake build system, and SFML integration for graphics and input handling.",
+      "details": "1. Create a new C++ project with CMake\n2. Configure CMake to use C++20 standard\n3. Integrate SFML library for graphics and input handling\n4. Setup basic project structure with directories for source, headers, assets, and tests\n5. Create a simple window application to verify SFML integration\n6. Setup Git repository with appropriate .gitignore\n\nCMakeLists.txt example:\n```cmake\ncmake_minimum_required(VERSION 3.16)\nproject(BayouBonanza VERSION 0.1.0)\n\n# C++20 standard\nset(CMAKE_CXX_STANDARD 20)\nset(CMAKE_CXX_STANDARD_REQUIRED ON)\n\n# Find SFML packages\nfind_package(SFML 2.5 COMPONENTS graphics window system REQUIRED)\n\n# Include directories\ninclude_directories(include)\n\n# Add executable\nadd_executable(BayouBonanza src/main.cpp)\n\n# Link libraries\ntarget_link_libraries(BayouBonanza sfml-graphics sfml-window sfml-system)\n```",
+      "testStrategy": "1. Verify that the project builds successfully with CMake\n2. Ensure SFML window opens and displays correctly\n3. Confirm that input events are properly captured\n4. Test on Windows platform to ensure compatibility",
+      "priority": "high",
+      "dependencies": [],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 2,
+      "title": "Implement Core Game Engine and Board Representation",
+      "description": "Create the foundational game engine with chess-like board representation and basic game state management.",
+      "details": "1. Define the game board as an 8x8 grid\n2. Implement board representation using a 2D array or vector\n3. Create enums for piece types, player sides, and square states\n4. Implement basic game state class to track board state, active player, and game phase\n5. Create methods for board initialization and reset\n\nPseudo-code for board representation:\n```cpp\nclass GameBoard {\nprivate:\n    std::array<std::array<Square, 8>, 8> board;\n    \npublic:\n    GameBoard();\n    Square& getSquare(int x, int y);\n    bool isValidPosition(int x, int y) const;\n    void resetBoard();\n    // Additional methods for board manipulation\n};\n\nclass Square {\nprivate:\n    Piece* piece; // nullptr if empty\n    int controlValuePlayer1;\n    int controlValuePlayer2;\n    \npublic:\n    Square();\n    bool isEmpty() const;\n    Piece* getPiece() const;\n    void setPiece(Piece* piece);\n    int getControlValue(PlayerSide side) const;\n    void setControlValue(PlayerSide side, int value);\n};\n```",
+      "testStrategy": "1. Unit tests for board initialization and reset\n2. Verify correct dimensions and indexing of the board\n3. Test boundary conditions for board access\n4. Validate game state transitions\n5. Ensure proper tracking of board state",
+      "priority": "high",
+      "dependencies": [
+        1
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 3,
+      "title": "Implement Piece Class Hierarchy and Movement System",
+      "description": "Design and implement the piece class hierarchy with attributes for health, attack, and movement patterns.",
+      "details": "1. Create a base Piece class with common attributes (health, attack, owner)\n2. Implement derived classes for different piece types (King, etc.)\n3. Define movement patterns for each piece type\n4. Implement methods to calculate valid moves\n5. Create system for executing moves and updating board state\n\nPseudo-code for piece hierarchy:\n```cpp\nclass Piece {\nprotected:\n    PlayerSide owner;\n    int health;\n    int attack;\n    std::string name;\n    \npublic:\n    Piece(PlayerSide owner, int health, int attack, std::string name);\n    virtual ~Piece() = default;\n    \n    PlayerSide getOwner() const;\n    int getHealth() const;\n    int getAttack() const;\n    std::string getName() const;\n    \n    void takeDamage(int amount);\n    bool isAlive() const;\n    \n    virtual std::vector<Position> getValidMoves(const GameBoard& board, Position currentPos) = 0;\n    virtual void executeMove(GameBoard& board, Position from, Position to) = 0;\n};\n\nclass King : public Piece {\npublic:\n    King(PlayerSide owner);\n    std::vector<Position> getValidMoves(const GameBoard& board, Position currentPos) override;\n    void executeMove(GameBoard& board, Position from, Position to) override;\n};\n```",
+      "testStrategy": "1. Unit tests for each piece type's movement patterns\n2. Verify health and attack mechanics\n3. Test boundary conditions for movement\n4. Validate piece interactions\n5. Ensure proper owner assignment and identification",
+      "priority": "high",
+      "dependencies": [
+        2
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 4,
+      "title": "Implement Combat System",
+      "description": "Create the combat system for pieces to attack and damage each other, including health tracking and piece removal.",
+      "details": "1. Implement attack mechanics between pieces\n2. Create damage calculation system\n3. Implement health tracking and piece death\n4. Handle piece removal from board\n5. Implement combat resolution logic\n\nPseudo-code for combat system:\n```cpp\nclass CombatSystem {\npublic:\n    static void resolveCombat(GameBoard& board, Position attacker, Position defender);\n    static void applyDamage(Piece* attacker, Piece* defender);\n    static void checkAndRemoveDeadPieces(GameBoard& board);\n};\n\nvoid CombatSystem::resolveCombat(GameBoard& board, Position attacker, Position defender) {\n    Piece* attackingPiece = board.getSquare(attacker.x, attacker.y).getPiece();\n    Piece* defendingPiece = board.getSquare(defender.x, defender.y).getPiece();\n    \n    if (attackingPiece && defendingPiece && \n        attackingPiece->getOwner() != defendingPiece->getOwner()) {\n        applyDamage(attackingPiece, defendingPiece);\n        checkAndRemoveDeadPieces(board);\n    }\n}\n```",
+      "testStrategy": "1. Unit tests for damage calculation\n2. Verify piece death and removal\n3. Test various combat scenarios\n4. Validate king death detection\n5. Ensure proper combat resolution order",
+      "priority": "high",
+      "dependencies": [
+        3
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 5,
+      "title": "Implement Influence and Control System",
+      "description": "Create the system for calculating piece influence on adjacent squares and determining square control.",
+      "details": "1. Implement influence calculation for each piece type\n2. Create system to propagate influence to adjacent squares\n3. Implement control determination based on influence values\n4. Update control values when pieces move or are removed\n5. Optimize influence calculation for performance\n\nPseudo-code for influence system:\n```cpp\nclass InfluenceSystem {\npublic:\n    static void calculateBoardInfluence(GameBoard& board);\n    static void calculatePieceInfluence(GameBoard& board, Position piecePos);\n    static void determineSquareControl(GameBoard& board);\n    static PlayerSide getControllingPlayer(const Square& square);\n};\n\nvoid InfluenceSystem::calculateBoardInfluence(GameBoard& board) {\n    // Reset all influence values\n    for (int y = 0; y < 8; y++) {\n        for (int x = 0; x < 8; x++) {\n            board.getSquare(x, y).setControlValue(PlayerSide::PLAYER_1, 0);\n            board.getSquare(x, y).setControlValue(PlayerSide::PLAYER_2, 0);\n        }\n    }\n    \n    // Calculate influence for each piece\n    for (int y = 0; y < 8; y++) {\n        for (int x = 0; x < 8; x++) {\n            if (!board.getSquare(x, y).isEmpty()) {\n                calculatePieceInfluence(board, Position{x, y});\n            }\n        }\n    }\n    \n    determineSquareControl(board);\n}\n```",
+      "testStrategy": "1. Unit tests for influence calculation\n2. Verify control determination logic\n3. Test influence propagation\n4. Benchmark performance for large board states\n5. Validate control changes after piece movement",
+      "priority": "high",
+      "dependencies": [
+        3
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 6,
+      "title": "Implement Steam Resource Generation System",
+      "description": "Create the system for generating and managing the 'Steam' resource based on controlled squares.",
+      "details": "1. Implement steam resource tracking for each player\n2. Create system to calculate steam generation based on controlled squares\n3. Implement steam accumulation per turn\n4. Create methods for spending steam\n5. Implement UI indicators for steam resources\n\nPseudo-code for steam resource system:\n```cpp\nclass ResourceSystem {\nprivate:\n    int player1Steam;\n    int player2Steam;\n    \npublic:\n    ResourceSystem();\n    \n    int getSteam(PlayerSide player) const;\n    void setSteam(PlayerSide player, int amount);\n    void addSteam(PlayerSide player, int amount);\n    bool spendSteam(PlayerSide player, int amount);\n    \n    void calculateSteamGeneration(const GameBoard& board);\n    void processTurnStart(PlayerSide activePlayer, const GameBoard& board);\n};\n\nvoid ResourceSystem::calculateSteamGeneration(const GameBoard& board) {\n    int player1Generation = 0;\n    int player2Generation = 0;\n    \n    for (int y = 0; y < 8; y++) {\n        for (int x = 0; x < 8; x++) {\n            const Square& square = board.getSquare(x, y);\n            PlayerSide controller = InfluenceSystem::getControllingPlayer(square);\n            \n            if (controller == PlayerSide::PLAYER_1) {\n                player1Generation++;\n            } else if (controller == PlayerSide::PLAYER_2) {\n                player2Generation++;\n            }\n        }\n    }\n    \n    // Store generation values for use in processTurnStart\n}\n```",
+      "testStrategy": "1. Unit tests for steam calculation\n2. Verify steam accumulation per turn\n3. Test steam spending mechanics\n4. Validate resource updates based on board control changes\n5. Ensure proper resource limits and constraints",
+      "priority": "medium",
+      "dependencies": [
+        5
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 7,
+      "title": "Implement Card System and Data Models",
+      "description": "Design and implement the card system with data models for different card types, costs, and effects.",
+      "details": "1. Create Card base class and derived card types\n2. Implement card attributes (cost, effects, piece creation)\n3. Design card data storage format\n4. Create card factory for generating cards\n5. Implement card collection management\n\nPseudo-code for card system:\n```cpp\nclass Card {\nprotected:\n    std::string name;\n    int steamCost;\n    std::string description;\n    \npublic:\n    Card(std::string name, int steamCost, std::string description);\n    virtual ~Card() = default;\n    \n    std::string getName() const;\n    int getSteamCost() const;\n    std::string getDescription() const;\n    \n    virtual bool canPlay(const GameState& gameState, PlayerSide player) const = 0;\n    virtual void play(GameState& gameState, PlayerSide player) = 0;\n};\n\nclass PieceCard : public Card {\nprivate:\n    PieceType pieceType;\n    \npublic:\n    PieceCard(std::string name, int steamCost, std::string description, PieceType pieceType);\n    \n    bool canPlay(const GameState& gameState, PlayerSide player) const override;\n    void play(GameState& gameState, PlayerSide player) override;\n};\n\nclass CardFactory {\npublic:\n    static std::unique_ptr<Card> createCard(CardType type);\n    static std::vector<std::unique_ptr<Card>> createStarterDeck();\n};\n```",
+      "testStrategy": "1. Unit tests for card creation and attributes\n2. Verify card play conditions\n3. Test card effects on game state\n4. Validate card collection management\n5. Ensure proper card type identification and serialization",
+      "priority": "high",
+      "dependencies": [
+        2
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 8,
+      "title": "Implement Hand and Deck Management",
+      "description": "Create the system for managing player hands (4 cards) and decks (20 cards with max 2 copies of each card).",
+      "details": "1. Implement deck class with shuffling and drawing\n2. Create hand management with 4-card limit\n3. Implement deck building constraints (20 cards, max 2 copies)\n4. Create card drawing and discarding mechanics\n5. Implement deck validation\n\nPseudo-code for deck and hand management:\n```cpp\nclass Deck {\nprivate:\n    std::vector<std::unique_ptr<Card>> cards;\n    \npublic:\n    Deck();\n    \n    void addCard(std::unique_ptr<Card> card);\n    std::unique_ptr<Card> drawCard();\n    void shuffle();\n    size_t size() const;\n    bool isEmpty() const;\n    bool isValid() const; // Checks 20 card limit and max 2 copies rule\n};\n\nclass Hand {\nprivate:\n    std::vector<std::unique_ptr<Card>> cards;\n    static const size_t MAX_HAND_SIZE = 4;\n    \npublic:\n    Hand();\n    \n    bool addCard(std::unique_ptr<Card> card);\n    std::unique_ptr<Card> playCard(size_t index);\n    size_t size() const;\n    bool isFull() const;\n    const Card* getCard(size_t index) const;\n};\n```",
+      "testStrategy": "1. Unit tests for deck shuffling and drawing\n2. Verify hand management constraints\n3. Test deck building rules\n4. Validate card play from hand\n5. Ensure proper deck validation",
+      "priority": "medium",
+      "dependencies": [
+        7
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 9,
+      "title": "Implement Card Play Mechanics",
+      "description": "Create the system for playing cards from hand, spending steam resources, and adding new pieces to the board.",
+      "details": "1. Implement card selection and validation\n2. Create steam cost payment system\n3. Implement piece placement from cards\n4. Create valid placement detection\n5. Implement card effect resolution\n\nPseudo-code for card play system:\n```cpp\nclass CardPlaySystem {\npublic:\n    static bool canPlayCard(const GameState& gameState, PlayerSide player, size_t handIndex);\n    static bool playCard(GameState& gameState, PlayerSide player, size_t handIndex, Position targetPos);\n    static std::vector<Position> getValidPlacementPositions(const GameState& gameState, PlayerSide player, const Card* card);\n};\n\nbool CardPlaySystem::playCard(GameState& gameState, PlayerSide player, size_t handIndex, Position targetPos) {\n    if (!canPlayCard(gameState, player, handIndex)) {\n        return false;\n    }\n    \n    const Card* card = gameState.getPlayerHand(player).getCard(handIndex);\n    int steamCost = card->getSteamCost();\n    \n    // Check if player has enough steam\n    if (gameState.getResourceSystem().getSteam(player) < steamCost) {\n        return false;\n    }\n    \n    // Check if target position is valid for this card\n    auto validPositions = getValidPlacementPositions(gameState, player, card);\n    if (std::find(validPositions.begin(), validPositions.end(), targetPos) == validPositions.end()) {\n        return false;\n    }\n    \n    // Spend steam\n    gameState.getResourceSystem().spendSteam(player, steamCost);\n    \n    // Play the card\n    std::unique_ptr<Card> playedCard = gameState.getPlayerHand(player).playCard(handIndex);\n    playedCard->play(gameState, player);\n    \n    // Draw a new card if possible\n    if (!gameState.getPlayerDeck(player).isEmpty()) {\n        gameState.getPlayerHand(player).addCard(gameState.getPlayerDeck(player).drawCard());\n    }\n    \n    return true;\n}\n```",
+      "testStrategy": "1. Unit tests for card play validation\n2. Verify steam cost payment\n3. Test piece placement from cards\n4. Validate card effect resolution\n5. Ensure proper hand/deck updates after card play",
+      "priority": "high",
+      "dependencies": [
+        6,
+        8
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 10,
+      "title": "Implement Game State Management and Turn System",
+      "description": "Create the system for managing game state, turn progression, and win conditions.",
+      "details": "1. Implement game state class with all game components\n2. Create turn system with phases (draw, play, move)\n3. Implement win condition detection (king death)\n4. Create game initialization and reset\n5. Implement game state serialization for save/load\n\nPseudo-code for game state management:\n```cpp\nclass GameState {\nprivate:\n    GameBoard board;\n    ResourceSystem resourceSystem;\n    std::array<Hand, 2> playerHands;\n    std::array<Deck, 2> playerDecks;\n    PlayerSide currentPlayer;\n    GamePhase currentPhase;\n    bool gameOver;\n    PlayerSide winner;\n    \npublic:\n    GameState();\n    \n    void initializeGame();\n    void startTurn();\n    void endTurn();\n    void nextPhase();\n    \n    bool isGameOver() const;\n    PlayerSide getWinner() const;\n    void checkWinConditions();\n    \n    GameBoard& getBoard();\n    ResourceSystem& getResourceSystem();\n    Hand& getPlayerHand(PlayerSide player);\n    Deck& getPlayerDeck(PlayerSide player);\n    PlayerSide getCurrentPlayer() const;\n    GamePhase getCurrentPhase() const;\n};\n\nvoid GameState::checkWinConditions() {\n    bool player1KingAlive = false;\n    bool player2KingAlive = false;\n    \n    // Check if kings are alive\n    for (int y = 0; y < 8; y++) {\n        for (int x = 0; x < 8; x++) {\n            const Square& square = board.getSquare(x, y);\n            if (!square.isEmpty()) {\n                Piece* piece = square.getPiece();\n                if (dynamic_cast<King*>(piece)) {\n                    if (piece->getOwner() == PlayerSide::PLAYER_1) {\n                        player1KingAlive = true;\n                    } else {\n                        player2KingAlive = true;\n                    }\n                }\n            }\n        }\n    }\n    \n    if (!player1KingAlive) {\n        gameOver = true;\n        winner = PlayerSide::PLAYER_2;\n    } else if (!player2KingAlive) {\n        gameOver = true;\n        winner = PlayerSide::PLAYER_1;\n    }\n}\n```",
+      "testStrategy": "1. Unit tests for turn progression\n2. Verify win condition detection\n3. Test game initialization\n4. Validate phase transitions\n5. Ensure proper game state serialization",
+      "priority": "high",
+      "dependencies": [
+        4,
+        6,
+        9
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 11,
+      "title": "Implement Game Board Visualization with SFML",
+      "description": "Create the visual representation of the game board, pieces, and control indicators using SFML.",
+      "details": "1. Create board grid visualization\n2. Implement piece sprites and rendering\n3. Create visual indicators for square control\n4. Implement highlighting for valid moves\n5. Create animations for piece movement and combat\n\nPseudo-code for board visualization:\n```cpp\nclass BoardView {\nprivate:\n    sf::RenderWindow& window;\n    sf::Texture boardTexture;\n    sf::Sprite boardSprite;\n    std::map<PieceType, sf::Texture> pieceTextures;\n    std::vector<sf::Sprite> pieceSprites;\n    \n    float squareSize;\n    sf::Vector2f boardPosition;\n    \npublic:\n    BoardView(sf::RenderWindow& window);\n    \n    void loadAssets();\n    void updateView(const GameBoard& board);\n    void drawBoard();\n    void drawPieces(const GameBoard& board);\n    void drawControlIndicators(const GameBoard& board);\n    void drawValidMoves(const std::vector<Position>& validMoves);\n    \n    Position screenToBoard(sf::Vector2f screenPos) const;\n    sf::Vector2f boardToScreen(Position boardPos) const;\n};\n\nvoid BoardView::drawControlIndicators(const GameBoard& board) {\n    for (int y = 0; y < 8; y++) {\n        for (int x = 0; x < 8; x++) {\n            const Square& square = board.getSquare(x, y);\n            PlayerSide controller = InfluenceSystem::getControllingPlayer(square);\n            \n            if (controller != PlayerSide::NONE) {\n                sf::RectangleShape indicator(sf::Vector2f(squareSize, squareSize));\n                indicator.setPosition(boardToScreen(Position{x, y}));\n                \n                if (controller == PlayerSide::PLAYER_1) {\n                    indicator.setFillColor(sf::Color(0, 0, 255, 64)); // Blue with transparency\n                } else {\n                    indicator.setFillColor(sf::Color(255, 0, 0, 64)); // Red with transparency\n                }\n                \n                window.draw(indicator);\n            }\n        }\n    }\n}\n```",
+      "testStrategy": "1. Visual verification of board rendering\n2. Test piece sprite rendering\n3. Verify control indicators\n4. Test move highlighting\n5. Validate animations and transitions",
+      "priority": "medium",
+      "dependencies": [
+        1,
+        2,
+        5
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 12,
+      "title": "Implement User Interface for Game State and Resources",
+      "description": "Create the UI elements for displaying game state, player resources, and turn information.",
+      "details": "1. Implement steam resource display\n2. Create turn and phase indicators\n3. Implement player information display\n4. Create game state notifications\n5. Implement UI layout and styling\n\nPseudo-code for UI implementation:\n```cpp\nclass GameUI {\nprivate:\n    sf::RenderWindow& window;\n    sf::Font font;\n    \n    sf::Text player1Info;\n    sf::Text player2Info;\n    sf::Text phaseInfo;\n    sf::Text steamInfo;\n    sf::Text notificationText;\n    \npublic:\n    GameUI(sf::RenderWindow& window);\n    \n    void loadAssets();\n    void updateUI(const GameState& gameState);\n    void drawUI();\n    \n    void showNotification(const std::string& message, float duration = 3.0f);\n};\n\nvoid GameUI::updateUI(const GameState& gameState) {\n    // Update player info\n    player1Info.setString(\"Player 1\");\n    player2Info.setString(\"Player 2\");\n    \n    // Update phase info\n    std::string phaseStr;\n    switch (gameState.getCurrentPhase()) {\n        case GamePhase::DRAW: phaseStr = \"Draw Phase\"; break;\n        case GamePhase::PLAY: phaseStr = \"Play Phase\"; break;\n        case GamePhase::MOVE: phaseStr = \"Move Phase\"; break;\n    }\n    phaseInfo.setString(phaseStr);\n    \n    // Update steam info\n    int player1Steam = gameState.getResourceSystem().getSteam(PlayerSide::PLAYER_1);\n    int player2Steam = gameState.getResourceSystem().getSteam(PlayerSide::PLAYER_2);\n    steamInfo.setString(\"Steam - P1: \" + std::to_string(player1Steam) + \n                        \" | P2: \" + std::to_string(player2Steam));\n    \n    // Highlight current player\n    if (gameState.getCurrentPlayer() == PlayerSide::PLAYER_1) {\n        player1Info.setFillColor(sf::Color::Yellow);\n        player2Info.setFillColor(sf::Color::White);\n    } else {\n        player1Info.setFillColor(sf::Color::White);\n        player2Info.setFillColor(sf::Color::Yellow);\n    }\n}\n```",
+      "testStrategy": "1. Visual verification of UI elements\n2. Test resource display accuracy\n3. Verify turn and phase indicators\n4. Test notification system\n5. Validate UI updates on game state changes",
+      "priority": "medium",
+      "dependencies": [
+        6,
+        10,
+        11
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 13,
+      "title": "Implement Hand and Card Visualization",
+      "description": "Create the visual representation of player hands and cards with interactive elements.",
+      "details": "1. Implement card visual design\n2. Create hand layout and positioning\n3. Implement card selection and highlighting\n4. Create card detail view\n5. Implement drag-and-drop for card play\n\nPseudo-code for hand visualization:\n```cpp\nclass HandView {\nprivate:\n    sf::RenderWindow& window;\n    sf::Font font;\n    std::vector<sf::RectangleShape> cardShapes;\n    std::vector<sf::Text> cardTexts;\n    \n    sf::Vector2f handPosition;\n    float cardWidth;\n    float cardHeight;\n    float cardSpacing;\n    \n    size_t selectedCardIndex;\n    bool isDragging;\n    sf::Vector2f dragOffset;\n    \npublic:\n    HandView(sf::RenderWindow& window);\n    \n    void loadAssets();\n    void updateView(const Hand& hand);\n    void drawHand();\n    \n    size_t getCardIndexAtPosition(sf::Vector2f position) const;\n    bool handleMouseDown(sf::Vector2f position);\n    bool handleMouseMove(sf::Vector2f position);\n    bool handleMouseUp(sf::Vector2f position, GameState& gameState);\n};\n\nvoid HandView::updateView(const Hand& hand) {\n    cardShapes.clear();\n    cardTexts.clear();\n    \n    for (size_t i = 0; i < hand.size(); i++) {\n        const Card* card = hand.getCard(i);\n        \n        sf::RectangleShape cardShape(sf::Vector2f(cardWidth, cardHeight));\n        cardShape.setPosition(handPosition.x + i * (cardWidth + cardSpacing), handPosition.y);\n        cardShape.setFillColor(sf::Color::White);\n        cardShape.setOutlineThickness(2.0f);\n        cardShape.setOutlineColor(i == selectedCardIndex ? sf::Color::Yellow : sf::Color::Black);\n        \n        sf::Text nameText(card->getName(), font, 12);\n        nameText.setPosition(cardShape.getPosition() + sf::Vector2f(5, 5));\n        \n        sf::Text costText(\"Cost: \" + std::to_string(card->getSteamCost()), font, 10);\n        costText.setPosition(cardShape.getPosition() + sf::Vector2f(5, 25));\n        \n        sf::Text descText(card->getDescription(), font, 8);\n        descText.setPosition(cardShape.getPosition() + sf::Vector2f(5, 45));\n        \n        cardShapes.push_back(cardShape);\n        cardTexts.push_back(nameText);\n        cardTexts.push_back(costText);\n        cardTexts.push_back(descText);\n    }\n}\n```",
+      "testStrategy": "1. Visual verification of card rendering\n2. Test card selection and highlighting\n3. Verify drag-and-drop functionality\n4. Test card detail view\n5. Validate hand updates when cards are played or drawn",
+      "priority": "medium",
+      "dependencies": [
+        8,
+        11
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 14,
+      "title": "Implement Input Handling and Game Controls",
+      "description": "Create the input handling system for player interactions with the game board, pieces, and cards.",
+      "details": "1. Implement mouse input handling\n2. Create piece selection and movement\n3. Implement card selection and play\n4. Create turn and phase control buttons\n5. Implement keyboard shortcuts\n\nPseudo-code for input handling:\n```cpp\nclass InputHandler {\nprivate:\n    sf::RenderWindow& window;\n    GameState& gameState;\n    BoardView& boardView;\n    HandView& handView;\n    \n    bool pieceSelected;\n    Position selectedPiecePos;\n    std::vector<Position> validMoves;\n    \npublic:\n    InputHandler(sf::RenderWindow& window, GameState& gameState, BoardView& boardView, HandView& handView);\n    \n    void handleEvents();\n    void handleMouseClick(sf::Vector2f mousePos);\n    void handlePieceSelection(Position boardPos);\n    void handlePieceMovement(Position boardPos);\n    void handleCardPlay(size_t cardIndex, Position boardPos);\n    void handleEndTurnButton();\n};\n\nvoid InputHandler::handleMouseClick(sf::Vector2f mousePos) {\n    // Check if clicked on the board\n    Position boardPos = boardView.screenToBoard(mousePos);\n    if (boardPos.x >= 0 && boardPos.x < 8 && boardPos.y >= 0 && boardPos.y < 8) {\n        if (pieceSelected) {\n            handlePieceMovement(boardPos);\n        } else {\n            handlePieceSelection(boardPos);\n        }\n        return;\n    }\n    \n    // Check if clicked on a card in hand\n    size_t cardIndex = handView.getCardIndexAtPosition(mousePos);\n    if (cardIndex < gameState.getPlayerHand(gameState.getCurrentPlayer()).size()) {\n        // Start card drag operation\n        handView.handleMouseDown(mousePos);\n        return;\n    }\n    \n    // Check if clicked on end turn button\n    // ...\n}\n```",
+      "testStrategy": "1. Test mouse input handling\n2. Verify piece selection and movement\n3. Test card selection and play\n4. Validate turn and phase controls\n5. Ensure proper input validation and error handling",
+      "priority": "high",
+      "dependencies": [
+        11,
+        12,
+        13
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 15,
+      "title": "Implement Simple AI Opponent",
+      "description": "Create a basic AI opponent for single-player testing with decision-making for piece movement and card play.",
+      "details": "1. Implement AI decision-making framework\n2. Create simple evaluation function for board state\n3. Implement basic move selection algorithm\n4. Create card play decision logic\n5. Implement difficulty levels\n\nPseudo-code for AI implementation:\n```cpp\nclass AIPlayer {\nprivate:\n    GameState& gameState;\n    PlayerSide side;\n    int difficultyLevel;\n    \n    struct Move {\n        Position from;\n        Position to;\n        float score;\n    };\n    \n    struct CardPlay {\n        size_t cardIndex;\n        Position targetPos;\n        float score;\n    };\n    \npublic:\n    AIPlayer(GameState& gameState, PlayerSide side, int difficultyLevel = 1);\n    \n    void takeTurn();\n    \nprivate:\n    float evaluateBoard();\n    std::vector<Move> generatePossibleMoves();\n    std::vector<CardPlay> generatePossibleCardPlays();\n    Move selectBestMove();\n    CardPlay selectBestCardPlay();\n};\n\nvoid AIPlayer::takeTurn() {\n    // Draw phase happens automatically\n    \n    // Play phase - try to play a card if possible\n    CardPlay bestCardPlay = selectBestCardPlay();\n    if (bestCardPlay.score > 0) {\n        const Card* card = gameState.getPlayerHand(side).getCard(bestCardPlay.cardIndex);\n        if (gameState.getResourceSystem().getSteam(side) >= card->getSteamCost()) {\n            CardPlaySystem::playCard(gameState, side, bestCardPlay.cardIndex, bestCardPlay.targetPos);\n        }\n    }\n    \n    // Move phase - move a piece\n    Move bestMove = selectBestMove();\n    if (bestMove.score > 0) {\n        Piece* piece = gameState.getBoard().getSquare(bestMove.from.x, bestMove.from.y).getPiece();\n        piece->executeMove(gameState.getBoard(), bestMove.from, bestMove.to);\n    }\n    \n    // End turn\n    gameState.endTurn();\n}\n```",
+      "testStrategy": "1. Test AI decision-making\n2. Verify move selection logic\n3. Test card play decisions\n4. Validate different difficulty levels\n5. Benchmark AI performance and response time",
+      "priority": "low",
+      "dependencies": [
+        10
+      ],
+      "status": "pending",
+      "subtasks": []
+    }
+  ]
+}

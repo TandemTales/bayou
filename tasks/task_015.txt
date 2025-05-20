@@ -1,0 +1,76 @@
+# Task ID: 15
+# Title: Implement Simple AI Opponent
+# Status: pending
+# Dependencies: 10
+# Priority: low
+# Description: Create a basic AI opponent for single-player testing with decision-making for piece movement and card play.
+# Details:
+1. Implement AI decision-making framework
+2. Create simple evaluation function for board state
+3. Implement basic move selection algorithm
+4. Create card play decision logic
+5. Implement difficulty levels
+
+Pseudo-code for AI implementation:
+```cpp
+class AIPlayer {
+private:
+    GameState& gameState;
+    PlayerSide side;
+    int difficultyLevel;
+    
+    struct Move {
+        Position from;
+        Position to;
+        float score;
+    };
+    
+    struct CardPlay {
+        size_t cardIndex;
+        Position targetPos;
+        float score;
+    };
+    
+public:
+    AIPlayer(GameState& gameState, PlayerSide side, int difficultyLevel = 1);
+    
+    void takeTurn();
+    
+private:
+    float evaluateBoard();
+    std::vector<Move> generatePossibleMoves();
+    std::vector<CardPlay> generatePossibleCardPlays();
+    Move selectBestMove();
+    CardPlay selectBestCardPlay();
+};
+
+void AIPlayer::takeTurn() {
+    // Draw phase happens automatically
+    
+    // Play phase - try to play a card if possible
+    CardPlay bestCardPlay = selectBestCardPlay();
+    if (bestCardPlay.score > 0) {
+        const Card* card = gameState.getPlayerHand(side).getCard(bestCardPlay.cardIndex);
+        if (gameState.getResourceSystem().getSteam(side) >= card->getSteamCost()) {
+            CardPlaySystem::playCard(gameState, side, bestCardPlay.cardIndex, bestCardPlay.targetPos);
+        }
+    }
+    
+    // Move phase - move a piece
+    Move bestMove = selectBestMove();
+    if (bestMove.score > 0) {
+        Piece* piece = gameState.getBoard().getSquare(bestMove.from.x, bestMove.from.y).getPiece();
+        piece->executeMove(gameState.getBoard(), bestMove.from, bestMove.to);
+    }
+    
+    // End turn
+    gameState.endTurn();
+}
+```
+
+# Test Strategy:
+1. Test AI decision-making
+2. Verify move selection logic
+3. Test card play decisions
+4. Validate different difficulty levels
+5. Benchmark AI performance and response time

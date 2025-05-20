@@ -1,0 +1,80 @@
+# Task ID: 13
+# Title: Implement Hand and Card Visualization
+# Status: pending
+# Dependencies: 8, 11
+# Priority: medium
+# Description: Create the visual representation of player hands and cards with interactive elements.
+# Details:
+1. Implement card visual design
+2. Create hand layout and positioning
+3. Implement card selection and highlighting
+4. Create card detail view
+5. Implement drag-and-drop for card play
+
+Pseudo-code for hand visualization:
+```cpp
+class HandView {
+private:
+    sf::RenderWindow& window;
+    sf::Font font;
+    std::vector<sf::RectangleShape> cardShapes;
+    std::vector<sf::Text> cardTexts;
+    
+    sf::Vector2f handPosition;
+    float cardWidth;
+    float cardHeight;
+    float cardSpacing;
+    
+    size_t selectedCardIndex;
+    bool isDragging;
+    sf::Vector2f dragOffset;
+    
+public:
+    HandView(sf::RenderWindow& window);
+    
+    void loadAssets();
+    void updateView(const Hand& hand);
+    void drawHand();
+    
+    size_t getCardIndexAtPosition(sf::Vector2f position) const;
+    bool handleMouseDown(sf::Vector2f position);
+    bool handleMouseMove(sf::Vector2f position);
+    bool handleMouseUp(sf::Vector2f position, GameState& gameState);
+};
+
+void HandView::updateView(const Hand& hand) {
+    cardShapes.clear();
+    cardTexts.clear();
+    
+    for (size_t i = 0; i < hand.size(); i++) {
+        const Card* card = hand.getCard(i);
+        
+        sf::RectangleShape cardShape(sf::Vector2f(cardWidth, cardHeight));
+        cardShape.setPosition(handPosition.x + i * (cardWidth + cardSpacing), handPosition.y);
+        cardShape.setFillColor(sf::Color::White);
+        cardShape.setOutlineThickness(2.0f);
+        cardShape.setOutlineColor(i == selectedCardIndex ? sf::Color::Yellow : sf::Color::Black);
+        
+        sf::Text nameText(card->getName(), font, 12);
+        nameText.setPosition(cardShape.getPosition() + sf::Vector2f(5, 5));
+        
+        sf::Text costText("Cost: " + std::to_string(card->getSteamCost()), font, 10);
+        costText.setPosition(cardShape.getPosition() + sf::Vector2f(5, 25));
+        
+        sf::Text descText(card->getDescription(), font, 8);
+        descText.setPosition(cardShape.getPosition() + sf::Vector2f(5, 45));
+        
+        cardShapes.push_back(cardShape);
+        cardTexts.push_back(nameText);
+        cardTexts.push_back(costText);
+        cardTexts.push_back(descText);
+    }
+}
+```
+
+# Test Strategy:
+1. Visual verification of card rendering
+2. Test card selection and highlighting
+3. Verify drag-and-drop functionality
+4. Test card detail view
+5. Validate hand updates when cards are played or drawn

@@ -1,0 +1,69 @@
+# Task ID: 11
+# Title: Implement Game Board Visualization with SFML
+# Status: pending
+# Dependencies: 1, 2, 5
+# Priority: medium
+# Description: Create the visual representation of the game board, pieces, and control indicators using SFML.
+# Details:
+1. Create board grid visualization
+2. Implement piece sprites and rendering
+3. Create visual indicators for square control
+4. Implement highlighting for valid moves
+5. Create animations for piece movement and combat
+
+Pseudo-code for board visualization:
+```cpp
+class BoardView {
+private:
+    sf::RenderWindow& window;
+    sf::Texture boardTexture;
+    sf::Sprite boardSprite;
+    std::map<PieceType, sf::Texture> pieceTextures;
+    std::vector<sf::Sprite> pieceSprites;
+    
+    float squareSize;
+    sf::Vector2f boardPosition;
+    
+public:
+    BoardView(sf::RenderWindow& window);
+    
+    void loadAssets();
+    void updateView(const GameBoard& board);
+    void drawBoard();
+    void drawPieces(const GameBoard& board);
+    void drawControlIndicators(const GameBoard& board);
+    void drawValidMoves(const std::vector<Position>& validMoves);
+    
+    Position screenToBoard(sf::Vector2f screenPos) const;
+    sf::Vector2f boardToScreen(Position boardPos) const;
+};
+
+void BoardView::drawControlIndicators(const GameBoard& board) {
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            const Square& square = board.getSquare(x, y);
+            PlayerSide controller = InfluenceSystem::getControllingPlayer(square);
+            
+            if (controller != PlayerSide::NONE) {
+                sf::RectangleShape indicator(sf::Vector2f(squareSize, squareSize));
+                indicator.setPosition(boardToScreen(Position{x, y}));
+                
+                if (controller == PlayerSide::PLAYER_1) {
+                    indicator.setFillColor(sf::Color(0, 0, 255, 64)); // Blue with transparency
+                } else {
+                    indicator.setFillColor(sf::Color(255, 0, 0, 64)); // Red with transparency
+                }
+                
+                window.draw(indicator);
+            }
+        }
+    }
+}
+```
+
+# Test Strategy:
+1. Visual verification of board rendering
+2. Test piece sprite rendering
+3. Verify control indicators
+4. Test move highlighting
+5. Validate animations and transitions
