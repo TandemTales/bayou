@@ -1,0 +1,131 @@
+{
+  "meta": {
+    "generatedAt": "2025-05-20T23:26:04.938Z",
+    "tasksAnalyzed": 15,
+    "thresholdScore": 5,
+    "projectName": "Taskmaster",
+    "usedResearch": true
+  },
+  "complexityAnalysis": [
+    {
+      "taskId": 1,
+      "taskTitle": "Setup C++20 Project with CMake and SFML",
+      "complexityScore": 4,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Break down the setup process for a C++20 project with CMake and SFML into detailed steps, including environment configuration, dependency management, and initial code structure.",
+      "reasoning": "This task involves setting up the project environment, which is foundational but not overly complex for experienced developers. It requires familiarity with C++20, CMake, and SFML, but the steps are well-defined."
+    },
+    {
+      "taskId": 2,
+      "taskTitle": "Implement Core Game Engine and Board Representation",
+      "complexityScore": 7,
+      "recommendedSubtasks": 8,
+      "expansionPrompt": "Detail the implementation of the core game engine, including board representation, game state management, and basic game logic. Break down each component into specific classes and methods.",
+      "reasoning": "This task is central to the game's functionality and requires careful design. It involves creating complex data structures and algorithms for board representation and game state management, which are critical for the game's performance and extensibility."
+    },
+    {
+      "taskId": 3,
+      "taskTitle": "Implement Piece Class Hierarchy and Movement System",
+      "complexityScore": 8,
+      "recommendedSubtasks": 10,
+      "expansionPrompt": "Expand on the piece class hierarchy, detailing the attributes and methods for each piece type. Include the implementation of movement patterns and validation for each piece.",
+      "reasoning": "This task involves designing a complex class hierarchy with multiple derived classes, each with unique movement patterns. It requires careful consideration of object-oriented design principles and game rule implementation."
+    },
+    {
+      "taskId": 4,
+      "taskTitle": "Implement Combat System",
+      "complexityScore": 6,
+      "recommendedSubtasks": 7,
+      "expansionPrompt": "Break down the combat system implementation into specific components, including damage calculation, health tracking, and piece removal logic. Consider edge cases and interaction with other game systems.",
+      "reasoning": "The combat system is a core gameplay mechanic but is less complex than the piece movement system. It requires integration with existing systems and careful consideration of game balance."
+    },
+    {
+      "taskId": 5,
+      "taskTitle": "Implement Influence and Control System",
+      "complexityScore": 9,
+      "recommendedSubtasks": 12,
+      "expansionPrompt": "Detail the implementation of the influence and control system, including algorithms for calculating piece influence, propagating influence to adjacent squares, and determining square control. Consider optimization strategies for performance.",
+      "reasoning": "This system involves complex algorithms for influence calculation and propagation across the board. It requires careful optimization to ensure good performance, especially for larger board states."
+    },
+    {
+      "taskId": 6,
+      "taskTitle": "Implement Steam Resource Generation System",
+      "complexityScore": 5,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Expand on the steam resource generation system, detailing the calculation methods, storage, and integration with the game state. Include considerations for balancing and scaling.",
+      "reasoning": "While important for gameplay, this system is relatively straightforward to implement. It mainly involves resource tracking and simple calculations based on board state."
+    },
+    {
+      "taskId": 7,
+      "taskTitle": "Implement Card System and Data Models",
+      "complexityScore": 7,
+      "recommendedSubtasks": 9,
+      "expansionPrompt": "Detail the implementation of the card system, including the class hierarchy for different card types, card effects, and integration with the game state. Consider extensibility for future card additions.",
+      "reasoning": "This task involves designing a flexible system for card representation and effects. It requires careful consideration of how cards interact with other game systems and how to make the system extensible for future additions."
+    },
+    {
+      "taskId": 8,
+      "taskTitle": "Implement Hand and Deck Management",
+      "complexityScore": 5,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Break down the implementation of hand and deck management, including shuffling algorithms, draw mechanics, and enforcement of deck-building rules. Consider edge cases and error handling.",
+      "reasoning": "This task is relatively straightforward but requires attention to detail in implementing game rules and handling edge cases. It's less complex than the card system itself but still important for gameplay."
+    },
+    {
+      "taskId": 9,
+      "taskTitle": "Implement Card Play Mechanics",
+      "complexityScore": 8,
+      "recommendedSubtasks": 10,
+      "expansionPrompt": "Detail the implementation of card play mechanics, including validation of play conditions, resolution of card effects, and integration with the game state. Consider how different card types interact with the board and pieces.",
+      "reasoning": "This task involves complex logic for validating card plays, resolving effects, and updating the game state. It requires careful integration with multiple game systems and consideration of various edge cases."
+    },
+    {
+      "taskId": 10,
+      "taskTitle": "Implement Game State Management and Turn System",
+      "complexityScore": 7,
+      "recommendedSubtasks": 8,
+      "expansionPrompt": "Expand on the game state management system, detailing the components of the game state, turn progression logic, and win condition checks. Include considerations for game saving/loading and state transitions.",
+      "reasoning": "This task ties together many other systems and requires careful design to manage the overall game flow. It's complex due to the need to coordinate multiple game aspects but builds on previously implemented components."
+    },
+    {
+      "taskId": 11,
+      "taskTitle": "Implement Game Board Visualization with SFML",
+      "complexityScore": 6,
+      "recommendedSubtasks": 7,
+      "expansionPrompt": "Break down the implementation of the game board visualization, including rendering of the grid, pieces, and control indicators. Consider performance optimizations and visual polish.",
+      "reasoning": "While SFML simplifies graphics programming, this task still requires significant effort to create a polished and performant visualization. It's less complex than core game logic but crucial for user experience."
+    },
+    {
+      "taskId": 12,
+      "taskTitle": "Implement User Interface for Game State and Resources",
+      "complexityScore": 5,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Detail the implementation of UI elements for displaying game state and resources. Include layout design, update mechanisms, and integration with the game state.",
+      "reasoning": "This task is primarily about creating and managing UI elements, which is straightforward with SFML. The complexity comes from ensuring the UI accurately reflects the game state and is user-friendly."
+    },
+    {
+      "taskId": 13,
+      "taskTitle": "Implement Hand and Card Visualization",
+      "complexityScore": 6,
+      "recommendedSubtasks": 7,
+      "expansionPrompt": "Expand on the implementation of hand and card visualization, including card design, layout algorithms, and interactive elements. Consider animations and visual feedback for card interactions.",
+      "reasoning": "This task involves both visual design and interaction handling, making it more complex than basic UI implementation. It requires careful consideration of user experience and integration with the card play system."
+    },
+    {
+      "taskId": 14,
+      "taskTitle": "Implement Input Handling and Game Controls",
+      "complexityScore": 7,
+      "recommendedSubtasks": 8,
+      "expansionPrompt": "Detail the implementation of input handling for all game interactions, including mouse and keyboard input. Consider different interaction modes and how they integrate with the game state.",
+      "reasoning": "This task is crucial for gameplay and requires handling various input types and game states. It's complex due to the need to coordinate between user actions and game logic across multiple systems."
+    },
+    {
+      "taskId": 15,
+      "taskTitle": "Implement Simple AI Opponent",
+      "complexityScore": 8,
+      "recommendedSubtasks": 10,
+      "expansionPrompt": "Break down the implementation of a simple AI opponent, including decision-making algorithms, evaluation functions, and difficulty levels. Consider performance optimizations and potential for future improvements.",
+      "reasoning": "Implementing even a simple AI requires complex decision-making algorithms and integration with various game systems. It's challenging to create an AI that makes sensible decisions and provides an engaging opponent."
+    }
+  ]
+}

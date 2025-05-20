@@ -1,0 +1,105 @@
+<context>
+# Overview  
+Bayou Bonanza is a two player game that mixes chess with collectible cards. Players take turns moving pieces or playing cards to add new pieces to the board. The objective is to kill the opponent's king while protecting your own.
+
+# Core Features  
+- **User Account System**: Players can create accounts, log in, and log out with usernames, cards owned, and in-game currency saved in a server database.
+- **Store**: Random card packs purchasable through an in-game store.
+- **Deck Builder**: Players can create decks with exactly 20 cards, with a maximum of 2 copies of each card type.
+- **Game Board**: Chess-like board where pieces move, attack, and control territory.
+- **Card Play System**: Players can play cards from their hand to add new pieces to the board.
+- **Resource Management**: "Steam" resource accumulates based on controlled squares and is used to play cards.
+
+# User Experience  
+- **Target Users**: PC gamers who enjoy both chess and collectible card games
+- **Key User Flows**:
+  - Account creation and login
+  - Purchasing card packs
+  - Building decks
+  - Playing matches against opponents
+- **UI/UX Considerations**:
+  - Drag-and-drop interface for moving pieces and playing cards
+  - Visual indicators for square control and influence
+  - Clear display of resources and game state
+</context>
+<PRD>
+# Technical Architecture  
+- **System Components**:
+  - C++20 core game engine
+  - SFML for graphics and input handling
+  - User account and database system
+  - Networking for multiplayer functionality
+  - Steam integration for Windows platform
+- **Data Models**:
+  - User accounts (username, owned cards, currency)
+  - Cards (type, stats, abilities, cost)
+  - Game state (board position, piece health/attack, control points)
+  - Decks (collections of 20 cards)
+- **Infrastructure Requirements**:
+  - Server for user accounts and matchmaking
+  - Database for persistent storage
+  - Steam platform integration
+
+# Development Roadmap  
+- **MVP Requirements**:
+  - Basic game board with piece movement and combat
+  - Core game mechanics (influence, steam generation)
+  - Simple AI opponent for single-player testing
+  - Basic set of cards and pieces
+  - Local play functionality
+- **Future Enhancements**:
+  - User account system and database
+  - Online multiplayer
+  - Store and card pack system
+  - Expanded card collection
+  - Advanced animations and visual effects
+  - Matchmaking and ranking system
+
+# Logical Dependency Chain
+- **Foundation**:
+  - Core game engine and board representation
+  - Basic piece movement and combat system
+  - Influence calculation and square control
+  - Steam resource generation
+- **Visible Front End**:
+  - Game board visualization
+  - Piece sprites and animations
+  - Card display and interaction
+  - UI elements for resources and game state
+- **Feature Development Progression**:
+  - Single-player game with basic pieces
+  - Card playing mechanics
+  - Deck building interface
+  - User accounts and persistence
+  - Store and card acquisition
+  - Multiplayer functionality
+
+# Risks and Mitigations  
+- **Technical Challenges**:
+  - Complex game rule implementation: Mitigate with thorough unit testing
+  - Performance optimization for influence calculation: Implement efficient algorithms
+  - Networking for real-time gameplay: Consider using established networking libraries
+- **MVP Scope**:
+  - Focus on core gameplay first before adding account/store features
+  - Ensure the base game is fun and balanced before expanding
+- **Resource Constraints**:
+  - Use existing libraries (SFML) to accelerate development
+  - Prioritize gameplay over visual polish initially
+  - Implement features incrementally with regular testing
+
+# Appendix  
+- **Technical Specifications**:
+  - C++20 using CMake for build system
+  - SFML for graphics and input
+  - MIT or equivalent licensed libraries only
+  - Steam as the distribution platform
+  - Windows as the target OS
+- **Game Rules Details**:
+  - Each player starts with a king
+  - Pieces have attack and health attributes
+  - Pieces exert influence on adjacent squares
+  - Players gain steam based on controlled squares
+  - Cards cost steam to play
+  - Players hold 4 cards at a time
+  - Maximum 2 copies of each card type in a 20-card deck
+</PRD>
