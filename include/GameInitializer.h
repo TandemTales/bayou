@@ -3,6 +3,7 @@
 #include "GameState.h"
 #include "PlayerSide.h"
 #include "Piece.h"
+#include "PieceFactory.h"
 
 namespace BayouBonanza {
 
@@ -37,15 +38,16 @@ public:
 
 private:
     /**
-     * @brief Create a king piece and place it on the board
+     * @brief Create a piece and place it on the board
      * 
      * @param gameState Game state to modify
+     * @param pieceType Type of piece to create ("King", "Queen", etc.)
      * @param side Player side
      * @param x X-coordinate
      * @param y Y-coordinate
-     * @return Shared pointer to the placed king
+     * @return Shared pointer to the placed piece
      */
-    std::shared_ptr<Piece> createAndPlaceKing(GameState& gameState, PlayerSide side, int x, int y);
+    std::shared_ptr<Piece> createAndPlacePiece(GameState& gameState, const std::string& pieceType, PlayerSide side, int x, int y);
     
     /**
      * @brief Reset the game state to default values

@@ -1,7 +1,6 @@
 #include "GameInitializer.h"
 #include "GameBoard.h"
 #include "Square.h"
-#include "King.h"
 
 namespace BayouBonanza {
 
@@ -20,29 +19,58 @@ void GameInitializer::setupBoard(GameState& gameState) {
     // Clear the board
     gameState.getBoard().resetBoard();
     
-    // Place kings for both players
-    // Player 1's king at the bottom center of the board
-    createAndPlaceKing(gameState, PlayerSide::PLAYER_ONE, 4, 7);
+    // Set up Player One pieces (bottom of board)
+    PlayerSide playerOne = PlayerSide::PLAYER_ONE;
+    // Back row
+    createAndPlacePiece(gameState, "Rook", playerOne, 0, 7);
+    createAndPlacePiece(gameState, "Knight", playerOne, 1, 7);
+    createAndPlacePiece(gameState, "Bishop", playerOne, 2, 7);
+    createAndPlacePiece(gameState, "Queen", playerOne, 3, 7);
+    createAndPlacePiece(gameState, "King", playerOne, 4, 7);
+    createAndPlacePiece(gameState, "Bishop", playerOne, 5, 7);
+    createAndPlacePiece(gameState, "Knight", playerOne, 6, 7);
+    createAndPlacePiece(gameState, "Rook", playerOne, 7, 7);
     
-    // Player 2's king at the top center of the board
-    createAndPlaceKing(gameState, PlayerSide::PLAYER_TWO, 4, 0);
+    // Pawn row
+    for (int x = 0; x < GameBoard::BOARD_SIZE; x++) {
+        createAndPlacePiece(gameState, "Pawn", playerOne, x, 6);
+    }
     
-    // TODO: In future tasks, add more initial pieces as needed
+    // Set up Player Two pieces (top of board)
+    PlayerSide playerTwo = PlayerSide::PLAYER_TWO;
+    // Back row
+    createAndPlacePiece(gameState, "Rook", playerTwo, 0, 0);
+    createAndPlacePiece(gameState, "Knight", playerTwo, 1, 0);
+    createAndPlacePiece(gameState, "Bishop", playerTwo, 2, 0);
+    createAndPlacePiece(gameState, "Queen", playerTwo, 3, 0);
+    createAndPlacePiece(gameState, "King", playerTwo, 4, 0);
+    createAndPlacePiece(gameState, "Bishop", playerTwo, 5, 0);
+    createAndPlacePiece(gameState, "Knight", playerTwo, 6, 0);
+    createAndPlacePiece(gameState, "Rook", playerTwo, 7, 0);
+    
+    // Pawn row
+    for (int x = 0; x < GameBoard::BOARD_SIZE; x++) {
+        createAndPlacePiece(gameState, "Pawn", playerTwo, x, 1);
+    }
 }
 
-std::shared_ptr<Piece> GameInitializer::createAndPlaceKing(GameState& gameState, PlayerSide side, int x, int y) {
-    // Create a new king
-    std::shared_ptr<King> king = std::make_shared<King>(side);
+std::shared_ptr<Piece> GameInitializer::createAndPlacePiece(GameState& gameState, const std::string& pieceType, PlayerSide side, int x, int y) {
+    // Create the piece using the factory
+    std::shared_ptr<Piece> piece = PieceFactory::createPieceByType(pieceType, side);
     
-    // Set the king's position
+    if (!piece) {
+        return nullptr; // Invalid piece type
+    }
+    
+    // Set the piece's position
     Position pos(x, y);
-    king->setPosition(pos);
+    piece->setPosition(pos);
     
-    // Place the king on the board
+    // Place the piece on the board
     Square& square = gameState.getBoard().getSquare(x, y);
-    square.setPiece(king);
+    square.setPiece(piece);
     
-    return king;
+    return piece;
 }
 
 void GameInitializer::resetGameState(GameState& gameState) {

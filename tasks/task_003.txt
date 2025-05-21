@@ -1,6 +1,6 @@
 # Task ID: 3
 # Title: Implement Piece Class Hierarchy and Movement System
-# Status: pending
+# Status: done
 # Dependencies: 2
 # Priority: high
 # Description: Design and implement the piece class hierarchy with attributes for health, attack, and movement patterns.
@@ -50,3 +50,35 @@ public:
 3. Test boundary conditions for movement
 4. Validate piece interactions
 5. Ensure proper owner assignment and identification
+
+# Subtasks:
+## 1. Design the Piece base class [done]
+### Dependencies: None
+### Description: Create the abstract Piece base class with common properties and virtual methods
+### Details:
+Implement the Piece base class with: color property (white/black), position property (coordinates), isAlive flag, abstract move validation method, abstract movement pattern generation method, capture logic, and first-move tracking for relevant pieces. Include a virtual method for getting all possible moves and a method to check if a move is valid.
+
+## 2. Implement concrete piece classes [done]
+### Dependencies: 3.1
+### Description: Create derived classes for each chess piece type with specific movement patterns
+### Details:
+Implement classes for Pawn, Rook, Knight, Bishop, Queen, and King. Each class should override the movement validation methods with piece-specific logic. Include special rules like castling for King, en passant for Pawn, and diagonal/straight line movement for Bishop/Rook. Ensure each piece correctly calculates its possible moves based on the current board state.
+
+## 3. Develop movement pattern algorithms [done]
+### Dependencies: 3.1, 3.2
+### Description: Create algorithms to calculate valid moves for each piece type
+### Details:
+Implement algorithms for: straight line movement (Rook, Queen), diagonal movement (Bishop, Queen), L-shaped movement (Knight), single square movement plus castling (King), and forward movement plus diagonal capture (Pawn). Include obstacle detection to prevent pieces from moving through other pieces and boundary checking to keep pieces on the board.
+
+## 4. Integrate with game board [done]
+### Dependencies: 3.2, 3.3
+### Description: Connect piece movement system with the game board representation
+### Details:
+Create methods to: update the board when pieces move, handle piece capture, validate moves against the current board state, and check for special conditions like check and checkmate. Implement a system to query the board for piece positions to use in movement validation. Ensure pieces can access board state to determine valid moves.
+
+## 5. Implement move execution and validation system [done]
+### Dependencies: 3.3, 3.4
+### Description: Create a system to execute moves and validate their legality
+### Details:
+Develop a move execution system that: validates moves before execution, handles the actual movement of pieces on the board, manages piece capture, implements special moves (castling, en passant, promotion), and ensures a player cannot make moves that leave their king in check. Include a method to generate all legal moves for a given player.
+

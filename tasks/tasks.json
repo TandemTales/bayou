@@ -181,8 +181,60 @@
       "dependencies": [
         2
       ],
-      "status": "pending",
-      "subtasks": []
+      "status": "done",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Design the Piece base class",
+          "description": "Create the abstract Piece base class with common properties and virtual methods",
+          "dependencies": [],
+          "details": "Implement the Piece base class with: color property (white/black), position property (coordinates), isAlive flag, abstract move validation method, abstract movement pattern generation method, capture logic, and first-move tracking for relevant pieces. Include a virtual method for getting all possible moves and a method to check if a move is valid.",
+          "status": "done"
+        },
+        {
+          "id": 2,
+          "title": "Implement concrete piece classes",
+          "description": "Create derived classes for each chess piece type with specific movement patterns",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement classes for Pawn, Rook, Knight, Bishop, Queen, and King. Each class should override the movement validation methods with piece-specific logic. Include special rules like castling for King, en passant for Pawn, and diagonal/straight line movement for Bishop/Rook. Ensure each piece correctly calculates its possible moves based on the current board state.",
+          "status": "done"
+        },
+        {
+          "id": 3,
+          "title": "Develop movement pattern algorithms",
+          "description": "Create algorithms to calculate valid moves for each piece type",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Implement algorithms for: straight line movement (Rook, Queen), diagonal movement (Bishop, Queen), L-shaped movement (Knight), single square movement plus castling (King), and forward movement plus diagonal capture (Pawn). Include obstacle detection to prevent pieces from moving through other pieces and boundary checking to keep pieces on the board.",
+          "status": "done"
+        },
+        {
+          "id": 4,
+          "title": "Integrate with game board",
+          "description": "Connect piece movement system with the game board representation",
+          "dependencies": [
+            2,
+            3
+          ],
+          "details": "Create methods to: update the board when pieces move, handle piece capture, validate moves against the current board state, and check for special conditions like check and checkmate. Implement a system to query the board for piece positions to use in movement validation. Ensure pieces can access board state to determine valid moves.",
+          "status": "done"
+        },
+        {
+          "id": 5,
+          "title": "Implement move execution and validation system",
+          "description": "Create a system to execute moves and validate their legality",
+          "dependencies": [
+            3,
+            4
+          ],
+          "details": "Develop a move execution system that: validates moves before execution, handles the actual movement of pieces on the board, manages piece capture, implements special moves (castling, en passant, promotion), and ensures a player cannot make moves that leave their king in check. Include a method to generate all legal moves for a given player.",
+          "status": "done"
+        }
+      ]
     },
     {
       "id": 4,

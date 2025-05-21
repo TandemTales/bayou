@@ -42,6 +42,12 @@ set(SOURCES
     src/Square.cpp
     src/Piece.cpp
     src/King.cpp
+    src/Queen.cpp
+    src/Rook.cpp
+    src/Bishop.cpp
+    src/Knight.cpp
+    src/Pawn.cpp
+    src/PieceFactory.cpp
     src/GameState.cpp
     src/Move.cpp
     src/MoveExecutor.cpp
@@ -53,6 +59,9 @@ set(SOURCES
 
 # Add executable
 add_executable(BayouBonanza ${SOURCES})
+
+# Add tests subdirectory
+add_subdirectory(tests)
 
 # Link libraries
 if(SFML_FOUND OR DOWNLOAD_SFML)
