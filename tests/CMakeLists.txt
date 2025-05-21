@@ -21,6 +21,7 @@ add_executable(BayouBonanzaTests
   KnightTests.cpp
   PawnTests.cpp
   PieceFactoryTests.cpp
+  CombatSystemTests.cpp
 )
 
 # Include directories
@@ -64,4 +65,5 @@ target_sources(BayouBonanzaTests PRIVATE
   ${CMAKE_SOURCE_DIR}/src/PieceFactory.cpp
   ${CMAKE_SOURCE_DIR}/src/GameBoard.cpp
   ${CMAKE_SOURCE_DIR}/src/Square.cpp
+  ${CMAKE_SOURCE_DIR}/src/CombatSystem.cpp
 )

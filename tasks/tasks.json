@@ -246,8 +246,60 @@
       "dependencies": [
         3
       ],
-      "status": "pending",
-      "subtasks": []
+      "status": "done",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Design combat data structures",
+          "description": "Create the necessary data structures to track combat-related information such as piece health, attack values, and combat status.",
+          "dependencies": [],
+          "details": "Define classes or interfaces for combat attributes (health, attack power, defense). Implement health tracking for each piece on the board. Create a system to track combat history for potential undo/replay features. Ensure these structures integrate with the existing piece representation.",
+          "status": "done"
+        },
+        {
+          "id": 2,
+          "title": "Implement damage calculation logic",
+          "description": "Create the core algorithm for calculating damage during combat encounters between pieces.",
+          "dependencies": [
+            1
+          ],
+          "details": "Develop formulas for attack and defense calculations. Implement modifiers based on piece types or special abilities. Create random elements if needed (critical hits, miss chance). Include logic for environmental or positional bonuses/penalties. Add methods to apply calculated damage to pieces.",
+          "status": "done"
+        },
+        {
+          "id": 3,
+          "title": "Develop health tracking system",
+          "description": "Build a system to monitor and update the health status of pieces during and after combat.",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Implement methods to reduce health based on damage taken. Create visual indicators for current health status. Add logic to detect when health reaches zero or critical levels. Implement any healing or regeneration mechanics if applicable. Ensure health changes trigger appropriate UI updates.",
+          "status": "done"
+        },
+        {
+          "id": 4,
+          "title": "Create piece removal logic",
+          "description": "Implement the system for removing pieces from the board when they are defeated in combat.",
+          "dependencies": [
+            3
+          ],
+          "details": "Develop logic to detect when a piece should be removed (health <= 0). Create methods to safely remove pieces from the game board. Implement any death effects or consequences. Handle cleanup of references to removed pieces. Add animations or visual feedback for piece removal.",
+          "status": "done"
+        },
+        {
+          "id": 5,
+          "title": "Integrate combat system with game board state",
+          "description": "Connect the combat system with the overall game state to ensure proper interaction with other game systems.",
+          "dependencies": [
+            2,
+            3,
+            4
+          ],
+          "details": "Implement combat initiation based on game rules (adjacent pieces, attack commands). Create event system for combat-related events (attack, damage, defeat). Update game state after combat resolution. Ensure combat results affect turn progression appropriately. Add combat logs or history tracking for player information.",
+          "status": "done"
+        }
+      ]
     },
     {
       "id": 5,
