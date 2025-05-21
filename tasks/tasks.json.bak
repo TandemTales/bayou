@@ -8,8 +8,68 @@
       "testStrategy": "1. Verify that the project builds successfully with CMake\n2. Ensure SFML window opens and displays correctly\n3. Confirm that input events are properly captured\n4. Test on Windows platform to ensure compatibility",
       "priority": "high",
       "dependencies": [],
-      "status": "pending",
-      "subtasks": []
+      "status": "done",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Install necessary tools",
+          "description": "Install C++20 compatible compiler, CMake, and SFML library",
+          "dependencies": [],
+          "details": "1. Install a C++20 compatible compiler (e.g., GCC 10+ or Clang 10+)\n2. Install CMake (version 3.16 or higher)\n3. Download and install SFML library (version 2.5.1 or higher)",
+          "status": "done"
+        },
+        {
+          "id": 2,
+          "title": "Set up project directory structure",
+          "description": "Create the basic directory structure for the C++20 project",
+          "dependencies": [
+            1
+          ],
+          "details": "1. Create a root project directory\n2. Create subdirectories: 'src' for source files, 'include' for header files, 'lib' for libraries, and 'build' for CMake output",
+          "status": "done"
+        },
+        {
+          "id": 3,
+          "title": "Configure CMakeLists.txt",
+          "description": "Create and configure the main CMakeLists.txt file for the project",
+          "dependencies": [
+            2
+          ],
+          "details": "1. Set minimum CMake version\n2. Define project name and language\n3. Set C++ standard to C++20\n4. Add SFML dependency\n5. Set include directories\n6. Add executable and link libraries",
+          "status": "done"
+        },
+        {
+          "id": 4,
+          "title": "Create initial C++ source files",
+          "description": "Set up basic C++ source files for the project",
+          "dependencies": [
+            2
+          ],
+          "details": "1. Create a main.cpp file in the 'src' directory\n2. Implement a basic SFML window creation in main.cpp\n3. Create additional header files in 'include' directory if needed",
+          "status": "done"
+        },
+        {
+          "id": 5,
+          "title": "Generate build files",
+          "description": "Use CMake to generate build files for the project",
+          "dependencies": [
+            3,
+            4
+          ],
+          "details": "1. Navigate to the 'build' directory\n2. Run CMake command to generate build files\n3. Verify that build files are created successfully",
+          "status": "done"
+        },
+        {
+          "id": 6,
+          "title": "Build and run the project",
+          "description": "Compile the project and run the executable",
+          "dependencies": [
+            5
+          ],
+          "details": "1. Use generated build files to compile the project\n2. Locate the compiled executable\n3. Run the executable and verify SFML window appears\n4. Test for any runtime errors or issues",
+          "status": "done"
+        }
+      ]
     },
     {
       "id": 2,

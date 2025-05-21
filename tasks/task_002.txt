@@ -1,6 +1,6 @@
 # Task ID: 2
 # Title: Implement Core Game Engine and Board Representation
-# Status: pending
+# Status: done
 # Dependencies: 1
 # Priority: high
 # Description: Create the foundational game engine with chess-like board representation and basic game state management.
@@ -47,3 +47,53 @@ public:
 3. Test boundary conditions for board access
 4. Validate game state transitions
 5. Ensure proper tracking of board state
+
+# Subtasks:
+## 1. Design Board Representation [done]
+### Dependencies: None
+### Description: Create a data structure to represent the game board
+### Details:
+Implement a 2D array or matrix to represent the game board. Define methods for accessing and modifying board cells.
+
+## 2. Implement Game State Class [done]
+### Dependencies: 2.1
+### Description: Create a class to manage the overall game state
+### Details:
+Design a GameState class that includes the board, current player, score, and other relevant game information. Implement methods for updating and querying the game state.
+
+## 3. Develop Move Validation Logic [done]
+### Dependencies: 2.1, 2.2
+### Description: Implement logic to validate player moves
+### Details:
+Create methods to check if a move is legal based on the current game state and board configuration. Include checks for piece placement, capture rules, and any special move conditions.
+
+## 4. Implement Move Execution [done]
+### Dependencies: 2.2, 2.3
+### Description: Create methods to execute valid moves and update the game state
+### Details:
+Develop functions to apply a validated move to the game state, updating the board, player turns, and any other affected game elements.
+
+## 5. Design Game Rules Engine [done]
+### Dependencies: 2.2, 2.3, 2.4
+### Description: Implement the core game rules and logic
+### Details:
+Create a Rules class that encapsulates the game's rules, including win conditions, draw conditions, and any special game mechanics.
+
+## 6. Implement Turn Management [done]
+### Dependencies: 2.2, 2.4, 2.5
+### Description: Create a system to manage player turns and game flow
+### Details:
+Develop methods to handle turn transitions, including any special actions that occur at the beginning or end of a turn.
+
+## 7. Create Game Initialization Logic [done]
+### Dependencies: 2.1, 2.2
+### Description: Implement methods to set up a new game
+### Details:
+Develop functions to initialize the game board, set up initial piece positions, and establish the starting game state.
+
+## 8. Implement Game Over Detection [done]
+### Dependencies: 2.2, 2.5
+### Description: Create logic to detect when the game has ended
+### Details:
+Develop methods to check for win conditions, draw conditions, or any other game-ending scenarios after each move or turn.
+

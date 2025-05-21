@@ -35,8 +35,24 @@ endif()
 # Include directories
 include_directories(include)
 
+# Collect source files
+set(SOURCES
+    src/main.cpp
+    src/GameBoard.cpp
+    src/Square.cpp
+    src/Piece.cpp
+    src/King.cpp
+    src/GameState.cpp
+    src/Move.cpp
+    src/MoveExecutor.cpp
+    src/GameRules.cpp
+    src/TurnManager.cpp
+    src/GameInitializer.cpp
+    src/GameOverDetector.cpp
+)
+
 # Add executable
-add_executable(BayouBonanza src/main.cpp)
+add_executable(BayouBonanza ${SOURCES})
 
 # Link libraries
 if(SFML_FOUND OR DOWNLOAD_SFML)

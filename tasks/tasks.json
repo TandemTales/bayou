@@ -81,8 +81,95 @@
       "dependencies": [
         1
       ],
-      "status": "pending",
-      "subtasks": []
+      "status": "done",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Design Board Representation",
+          "description": "Create a data structure to represent the game board",
+          "dependencies": [],
+          "details": "Implement a 2D array or matrix to represent the game board. Define methods for accessing and modifying board cells.",
+          "status": "done"
+        },
+        {
+          "id": 2,
+          "title": "Implement Game State Class",
+          "description": "Create a class to manage the overall game state",
+          "dependencies": [
+            1
+          ],
+          "details": "Design a GameState class that includes the board, current player, score, and other relevant game information. Implement methods for updating and querying the game state.",
+          "status": "done"
+        },
+        {
+          "id": 3,
+          "title": "Develop Move Validation Logic",
+          "description": "Implement logic to validate player moves",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Create methods to check if a move is legal based on the current game state and board configuration. Include checks for piece placement, capture rules, and any special move conditions.",
+          "status": "done"
+        },
+        {
+          "id": 4,
+          "title": "Implement Move Execution",
+          "description": "Create methods to execute valid moves and update the game state",
+          "dependencies": [
+            2,
+            3
+          ],
+          "details": "Develop functions to apply a validated move to the game state, updating the board, player turns, and any other affected game elements.",
+          "status": "done"
+        },
+        {
+          "id": 5,
+          "title": "Design Game Rules Engine",
+          "description": "Implement the core game rules and logic",
+          "dependencies": [
+            2,
+            3,
+            4
+          ],
+          "details": "Create a Rules class that encapsulates the game's rules, including win conditions, draw conditions, and any special game mechanics.",
+          "status": "done"
+        },
+        {
+          "id": 6,
+          "title": "Implement Turn Management",
+          "description": "Create a system to manage player turns and game flow",
+          "dependencies": [
+            2,
+            4,
+            5
+          ],
+          "details": "Develop methods to handle turn transitions, including any special actions that occur at the beginning or end of a turn.",
+          "status": "done"
+        },
+        {
+          "id": 7,
+          "title": "Create Game Initialization Logic",
+          "description": "Implement methods to set up a new game",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Develop functions to initialize the game board, set up initial piece positions, and establish the starting game state.",
+          "status": "done"
+        },
+        {
+          "id": 8,
+          "title": "Implement Game Over Detection",
+          "description": "Create logic to detect when the game has ended",
+          "dependencies": [
+            2,
+            5
+          ],
+          "details": "Develop methods to check for win conditions, draw conditions, or any other game-ending scenarios after each move or turn.",
+          "status": "done"
+        }
+      ]
     },
     {
       "id": 3,
