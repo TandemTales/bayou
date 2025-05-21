@@ -85,4 +85,8 @@ std::string Pawn::getTypeName() const {
     return "Pawn";
 }
 
+std::string Pawn::getSymbol() const {
+    return "P";
+}
+
 } // namespace BayouBonanza

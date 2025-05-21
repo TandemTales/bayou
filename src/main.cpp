@@ -1,7 +1,10 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Graphics/Text.hpp>
+#include <SFML/Graphics/Font.hpp>
 #include <iostream>
 #include <string>
 #include <memory>
+#include <cctype> // Required for std::tolower
 
 #include "GameBoard.h"
 #include "GameState.h"
@@ -32,10 +35,11 @@ void printBoardState(const GameState& gameState) {
             char symbol = '.';
             if (!square.isEmpty()) {
                 std::shared_ptr<Piece> piece = square.getPiece();
+                std::string symbol_str = piece->getSymbol();
+                symbol = symbol_str.empty() ? '.' : symbol_str[0];
                 
-                // Use K for kings
-                if (dynamic_cast<King*>(piece.get())) {
-                    symbol = (piece->getSide() == PlayerSide::PLAYER_ONE) ? 'K' : 'k';
+                if (piece->getSide() == PlayerSide::PLAYER_TWO) {
+                    symbol = std::tolower(symbol);
                 }
             }
             
@@ -58,6 +62,13 @@ int main()
     
     // Set the framerate limit
     window.setFramerateLimit(60);
+
+    // Load font
+    sf::Font font;
+    if (!font.loadFromFile("assets/fonts/Roboto-Regular.ttf")) {
+        std::cerr << "Error loading font from assets/fonts/Roboto-Regular.ttf\n"; // Updated error message
+        return -1; // Or handle error appropriately
+    }
     
     // Create game components
     GameState gameState;
@@ -124,25 +135,31 @@ int main()
         // --- End Game Board Rendering ---
 
         // --- Piece Rendering ---
-        float pieceSizeFactor = 0.7f; // Piece is 70% of square size
-        float pieceSize = squareSize * pieceSizeFactor;
-        float pieceOffset = (squareSize - pieceSize) / 2.0f; // To center the piece
-
         for (int y = 0; y < GameBoard::BOARD_SIZE; ++y) {
             for (int x = 0; x < GameBoard::BOARD_SIZE; ++x) {
                 const Square& square = board.getSquare(x, y);
                 if (!square.isEmpty()) {
                     std::shared_ptr<Piece> piece = square.getPiece();
-                    sf::RectangleShape pieceShape(sf::Vector2f(pieceSize, pieceSize));
-                    pieceShape.setPosition(boardStartX + x * squareSize + pieceOffset, 
-                                           boardStartY + y * squareSize + pieceOffset);
+                    std::string symbol = piece->getSymbol();
+
+                    sf::Text pieceText;
+                    pieceText.setFont(font);
+                    pieceText.setString(symbol);
+                    pieceText.setCharacterSize(static_cast<unsigned int>(squareSize * 0.6f)); // Adjust size as needed
 
                     if (piece->getSide() == PlayerSide::PLAYER_ONE) {
-                        pieceShape.setFillColor(sf::Color::Blue);
+                        pieceText.setFillColor(sf::Color::Blue);
                     } else {
-                        pieceShape.setFillColor(sf::Color::Red);
+                        pieceText.setFillColor(sf::Color::Red);
                     }
-                    window.draw(pieceShape);
+
+                    sf::FloatRect textBounds = pieceText.getLocalBounds();
+                    pieceText.setOrigin(textBounds.left + textBounds.width / 2.0f,
+                                        textBounds.top + textBounds.height / 2.0f);
+                    pieceText.setPosition(boardStartX + x * squareSize + squareSize / 2.0f,
+                                          boardStartY + y * squareSize + squareSize / 2.0f);
+
+                    window.draw(pieceText);
                 }
             }
         }

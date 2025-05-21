@@ -60,6 +60,11 @@ set(SOURCES
 # Add executable
 add_executable(BayouBonanza ${SOURCES})
 
+# Copy assets directory to build output directory
+add_custom_command(TARGET BayouBonanza POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+                       ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:BayouBonanza>/assets)
+
 # Add tests subdirectory
 add_subdirectory(tests)
 

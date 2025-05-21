@@ -21,6 +21,10 @@ public:
     std::string getTypeName() const override {
         return "TestPiece";
     }
+
+    std::string getSymbol() const override {
+        return "T"; // Dummy symbol for testing
+    }
 };
 
 TEST_CASE("Piece base class functionality", "[piece]") {

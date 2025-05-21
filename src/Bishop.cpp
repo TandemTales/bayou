@@ -97,4 +97,8 @@ std::string Bishop::getTypeName() const {
     return "Bishop";
 }
 
+std::string Bishop::getSymbol() const {
+    return "B";
+}
+
 } // namespace BayouBonanza

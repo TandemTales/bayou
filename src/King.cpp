@@ -54,4 +54,8 @@ std::string King::getTypeName() const {
     return "King";
 }
 
+std::string King::getSymbol() const {
+    return "K";
+}
+
 } // namespace BayouBonanza

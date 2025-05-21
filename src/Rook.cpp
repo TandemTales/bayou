@@ -98,4 +98,8 @@ std::string Rook::getTypeName() const {
     return "Rook";
 }
 
+std::string Rook::getSymbol() const {
+    return "R";
+}
+
 } // namespace BayouBonanza
