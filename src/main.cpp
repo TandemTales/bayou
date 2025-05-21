@@ -93,34 +93,60 @@ int main()
         // Note: Actual game board rendering will be implemented in a future task
         
         // For now, just draw shapes and basic text instead of text with fancy fonts
-        // Draw background rectangle
-        sf::RectangleShape bgRect(sf::Vector2f(500, 150));
-        bgRect.setPosition(150, 220);
-        bgRect.setFillColor(sf::Color(30, 80, 40));
-        bgRect.setOutlineThickness(4);
-        bgRect.setOutlineColor(sf::Color(100, 170, 100));
-        window.draw(bgRect);
+
+        // --- Game Board Rendering ---
+        const GameBoard& board = gameState.getBoard();
+        float windowWidth = static_cast<float>(window.getSize().x);
+        float windowHeight = static_cast<float>(window.getSize().y);
         
-        // Draw circles to represent the game board
-        for (int y = 0; y < 4; y++) {
-            for (int x = 0; x < 4; x++) {
-                sf::CircleShape circle(10);
-                circle.setPosition(250 + x * 60, 280 + y * 20);
-                circle.setFillColor(sf::Color(150, 200, 150));
-                window.draw(circle);
+        float boardSize = std::min(windowWidth, windowHeight) * 0.8f; // Use 80% of the smaller dimension
+        float squareSize = boardSize / GameBoard::BOARD_SIZE;
+        float boardStartX = (windowWidth - boardSize) / 2.0f;
+        float boardStartY = (windowHeight - boardSize) / 2.0f;
+
+        sf::Color lightSquareColor(170, 210, 130);
+        sf::Color darkSquareColor(100, 150, 80);
+
+        for (int y = 0; y < GameBoard::BOARD_SIZE; ++y) {
+            for (int x = 0; x < GameBoard::BOARD_SIZE; ++x) {
+                sf::RectangleShape squareShape(sf::Vector2f(squareSize, squareSize));
+                squareShape.setPosition(boardStartX + x * squareSize, boardStartY + y * squareSize);
+
+                // Alternate colors for chessboard pattern
+                if ((x + y) % 2 == 0) {
+                    squareShape.setFillColor(lightSquareColor);
+                } else {
+                    squareShape.setFillColor(darkSquareColor);
+                }
+                window.draw(squareShape);
             }
         }
-        
-        // Draw two colored rectangles to represent kings
-        sf::RectangleShape king1(sf::Vector2f(20, 20));
-        king1.setPosition(250, 280);
-        king1.setFillColor(sf::Color::Blue);
-        window.draw(king1);
-        
-        sf::RectangleShape king2(sf::Vector2f(20, 20));
-        king2.setPosition(430, 340);
-        king2.setFillColor(sf::Color::Red);
-        window.draw(king2);
+        // --- End Game Board Rendering ---
+
+        // --- Piece Rendering ---
+        float pieceSizeFactor = 0.7f; // Piece is 70% of square size
+        float pieceSize = squareSize * pieceSizeFactor;
+        float pieceOffset = (squareSize - pieceSize) / 2.0f; // To center the piece
+
+        for (int y = 0; y < GameBoard::BOARD_SIZE; ++y) {
+            for (int x = 0; x < GameBoard::BOARD_SIZE; ++x) {
+                const Square& square = board.getSquare(x, y);
+                if (!square.isEmpty()) {
+                    std::shared_ptr<Piece> piece = square.getPiece();
+                    sf::RectangleShape pieceShape(sf::Vector2f(pieceSize, pieceSize));
+                    pieceShape.setPosition(boardStartX + x * squareSize + pieceOffset, 
+                                           boardStartY + y * squareSize + pieceOffset);
+
+                    if (piece->getSide() == PlayerSide::PLAYER_ONE) {
+                        pieceShape.setFillColor(sf::Color::Blue);
+                    } else {
+                        pieceShape.setFillColor(sf::Color::Red);
+                    }
+                    window.draw(pieceShape);
+                }
+            }
+        }
+        // --- End Piece Rendering ---
         
         // Update the window
         window.display();
