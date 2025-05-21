@@ -99,4 +99,8 @@ std::string Queen::getTypeName() const {
     return "Queen";
 }
 
+std::string Queen::getSymbol() const {
+    return "Q";
+}
+
 } // namespace BayouBonanza

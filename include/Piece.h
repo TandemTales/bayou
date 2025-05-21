@@ -134,6 +134,9 @@ public:
      */
     virtual std::string getTypeName() const = 0;
 
+    // Pure virtual function for getting the piece symbol
+    virtual std::string getSymbol() const = 0;
+
 protected:
     PlayerSide side;
     int attack;

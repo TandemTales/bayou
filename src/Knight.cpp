@@ -57,4 +57,8 @@ std::string Knight::getTypeName() const {
     return "Knight";
 }
 
+std::string Knight::getSymbol() const {
+    return "N";
+}
+
 } // namespace BayouBonanza

@@ -56,6 +56,8 @@ public:
      * @return String representation of the piece type
      */
     std::string getTypeName() const override;
+
+    std::string getSymbol() const override;
 };
 
 } // namespace BayouBonanza
