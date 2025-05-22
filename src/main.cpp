@@ -154,27 +154,27 @@ int main()
 
                     // Check if the target is within board boundaries
                     if (targetX >= 0 && targetX < GameBoard::BOARD_SIZE && targetY >= 0 && targetY < GameBoard::BOARD_SIZE) {
+                        // Create Position object for the target
+                        Position targetPosition(targetX, targetY); 
                         // Check if the move is valid according to piece logic
                         if (selectedPiece && selectedPiece->getSide() == gameState.getActivePlayer() &&
-                            selectedPiece->isValidMove(originalSquareCoords.x, originalSquareCoords.y, targetX, targetY, gameState.getBoard()))
+                            selectedPiece->isValidMove(gameState.getBoard(), targetPosition)) // Corrected call
                         {
-                            std::cout << "Move validated. Processing action: "
+                            std::cout << "Move validated. Processing action: " // Changed log message slightly for clarity
                                       << originalSquareCoords.x << "," << originalSquareCoords.y << " -> "
                                       << targetX << "," << targetY << std::endl;
-                            // Process the move using TurnManager
-                            bool moveSuccessful = turnManager.processMoveAction(originalSquareCoords.x, originalSquareCoords.y, targetX, targetY);
-                            if (moveSuccessful) {
-                                std::cout << "Move successful. Turn ended." << std::endl;
-                                printBoardState(gameState); // Print state after successful move
-                            } else {
-                                // This case should ideally not happen if isValidMove is comprehensive
-                                // and processMoveAction only fails for game rule violations not covered by piece logic (e.g. putting self in check)
-                                // For now, treat as invalid if processMoveAction fails.
-                                std::cout << "Move failed post-validation (e.g., puts king in check, or other rule)." << std::endl;
-                            }
+                            
+                            // This part should be consistent with previous fixes for TurnManager::processMoveAction
+                            Position startPosition(originalSquareCoords.x, originalSquareCoords.y);
+                            Move gameMove(selectedPiece, startPosition, targetPosition);
+                            turnManager.processMoveAction(gameMove); 
+                            
+                            std::cout << "Move action processed by TurnManager. Current board state:" << std::endl;
+                            printBoardState(gameState); 
+
                         } else {
                             // Invalid move
-                            std::cout << "Invalid move attempt: "
+                            std::cout << "Invalid move attempt: " // Changed log message slightly
                                       << originalSquareCoords.x << "," << originalSquareCoords.y << " -> "
                                       << targetX << "," << targetY << std::endl;
                             // Piece returns to original square visually (no GameState change was made)

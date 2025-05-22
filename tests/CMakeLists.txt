@@ -1,17 +1,18 @@
 cmake_minimum_required(VERSION 3.16)
+include(FetchContent) # Ensures FetchContent module is available
+enable_testing()      # Enables CTest for this directory and subdirectories
 
-# Include the FetchContent module
-include(FetchContent)
-
-# Download Catch2
+# --- Catch2 Integration ---
 FetchContent_Declare(
   Catch2
   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG v3.4.0  # Use the latest tag/release
+  GIT_TAG v3.4.0
 )
+# FetchContent_MakeAvailable ensures catch2_SOURCE_DIR is populated
+# and Catch2::Catch2WithMain target is available.
 FetchContent_MakeAvailable(Catch2)
 
-# Create test executable
+# --- Test Executable Definition ---
 add_executable(BayouBonanzaTests
   PieceTests.cpp
   KingTests.cpp
@@ -22,38 +23,13 @@ add_executable(BayouBonanzaTests
   PawnTests.cpp
   PieceFactoryTests.cpp
   CombatSystemTests.cpp
+  TurnManagerTests.cpp
 )
-
-# Include directories
 target_include_directories(BayouBonanzaTests PRIVATE ${CMAKE_SOURCE_DIR}/include)
-
-# Link against the main library and Catch2
-target_link_libraries(BayouBonanzaTests PRIVATE 
-  sfml-graphics 
-  sfml-window 
-  sfml-system
-  Catch2::Catch2WithMain
+target_link_libraries(BayouBonanzaTests PRIVATE
+  sfml-graphics sfml-window sfml-system
+  Catch2::Catch2WithMain # Link against Catch2's main
 )
-
-# Copy the Catch2 DLLs to the output directory when on Windows
-if(WIN32)
-  add_custom_command(TARGET BayouBonanzaTests POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "$<TARGET_FILE:Catch2::Catch2>"
-      "$<TARGET_FILE:Catch2::Catch2WithMain>"
-      $<TARGET_FILE_DIR:BayouBonanzaTests>)
-
-  # Also copy SFML DLLs to test output directory
-  add_custom_command(TARGET BayouBonanzaTests POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "$<TARGET_FILE:sfml-graphics>"
-      "$<TARGET_FILE:sfml-window>"
-      "$<TARGET_FILE:sfml-system>"
-      $<TARGET_FILE_DIR:BayouBonanzaTests>)
-endif()
-
-# Add the piece classes directly to the test target
-# This ensures we can test them without creating a separate library
 target_sources(BayouBonanzaTests PRIVATE
   ${CMAKE_SOURCE_DIR}/src/Piece.cpp
   ${CMAKE_SOURCE_DIR}/src/King.cpp
@@ -63,7 +39,27 @@ target_sources(BayouBonanzaTests PRIVATE
   ${CMAKE_SOURCE_DIR}/src/Knight.cpp
   ${CMAKE_SOURCE_DIR}/src/Pawn.cpp
   ${CMAKE_SOURCE_DIR}/src/PieceFactory.cpp
-  ${CMAKE_SOURCE_DIR}/src/GameBoard.cpp
   ${CMAKE_SOURCE_DIR}/src/Square.cpp
   ${CMAKE_SOURCE_DIR}/src/CombatSystem.cpp
+  ${CMAKE_SOURCE_DIR}/src/GameBoard.cpp
+  ${CMAKE_SOURCE_DIR}/src/GameState.cpp
+  ${CMAKE_SOURCE_DIR}/src/GameRules.cpp
+  ${CMAKE_SOURCE_DIR}/src/TurnManager.cpp
+  ${CMAKE_SOURCE_DIR}/src/GameInitializer.cpp
+  ${CMAKE_SOURCE_DIR}/src/Move.cpp
+  ${CMAKE_SOURCE_DIR}/src/MoveExecutor.cpp
 )
+
+# --- CTest Integration with Catch2 ---
+# Diagnostic message to check if catch2_SOURCE_DIR is set
+if(DEFINED catch2_SOURCE_DIR AND EXISTS "${catch2_SOURCE_DIR}/extras/Catch.cmake")
+  message(STATUS "Catch2 source directory found: ${catch2_SOURCE_DIR}")
+  # include(${catch2_SOURCE_DIR}/extras/Catch.cmake) # Temporarily commented out
+  # Catch2_add_tests(BayouBonanzaTests BayouBonanzaTests) # Temporarily commented out
+  message(WARNING "Catch2_add_tests and include of Catch.cmake are temporarily commented out to allow project compilation.")
+  add_test(NAME BayouBonanzaAllTests_Fallback COMMAND BayouBonanzaTests) # Keep fallback for now
+else()
+  message(WARNING "Catch2 source directory or Catch.cmake not found. catch2_SOURCE_DIR='${catch2_SOURCE_DIR}'. CTest tests may not be discovered.")
+  # Fallback to basic CTest registration if Catch2_add_tests is not available
+  add_test(NAME BayouBonanzaAllTests_Fallback COMMAND BayouBonanzaTests) # Ensure fallback is present here too
+endif()
