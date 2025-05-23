@@ -60,6 +60,17 @@ set(SHARED_SOURCES
 add_subdirectory(server)
 add_subdirectory(client)
 
+# Add executable
+add_executable(BayouBonanza ${SOURCES})
+
+# Set Visual Studio debugger working directory to project root
+set_target_properties(BayouBonanza PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+
+# Copy assets directory to build output directory
+add_custom_command(TARGET BayouBonanza POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+                       ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:BayouBonanza>/assets)
+
 # Add tests subdirectory
 add_subdirectory(tests)
 
