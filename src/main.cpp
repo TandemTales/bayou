@@ -267,7 +267,7 @@ int main()
 
         // Draw the selected piece at the mouse cursor position if it's being dragged
         if (isPieceSelected && selectedPiece) {
-            sf::RectangleShape selectedPieceShape(sf::Vector2f(pieceSize, pieceSize));
+            sf::RectangleShape selectedPieceShape(sf::Vector2f(squareSize, squareSize));
             // Adjust position using mouseOffset so the piece is grabbed correctly
             selectedPieceShape.setPosition(currentMousePosition.x - mouseOffset.x, 
                                          currentMousePosition.y - mouseOffset.y);
