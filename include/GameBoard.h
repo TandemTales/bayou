@@ -2,8 +2,11 @@
 
 #include <array>
 #include <memory>
-#include "Square.h"
+#include "Square.h" // Includes SFML/Network/Packet.hpp indirectly via Square.h's new includes
 #include "PlayerSide.h"
+// SFML/Network/Packet.hpp is included via Square.h if Square.h was modified correctly.
+// Otherwise, it might need to be added here explicitly.
+// For now, assume Square.h handles its SFML Packet include.
 
 namespace BayouBonanza {
 
@@ -65,5 +68,9 @@ public:
 private:
     std::array<std::array<Square, BOARD_SIZE>, BOARD_SIZE> board;
 };
+
+// SFML Packet operators for GameBoard
+sf::Packet& operator<<(sf::Packet& packet, const GameBoard& gb);
+sf::Packet& operator>>(sf::Packet& packet, GameBoard& gb);
 
 } // namespace BayouBonanza

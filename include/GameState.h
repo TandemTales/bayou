@@ -1,8 +1,12 @@
 #pragma once
 
 #include <memory>
-#include "GameBoard.h"
+#include "GameBoard.h" // Includes Square.h, Piece.h, etc.
 #include "PlayerSide.h"
+#include <SFML/Network/Packet.hpp> // For sf::Packet
+
+// GameBoard.h should bring in Square.h, which should bring in Piece.h (for PieceType)
+// and PlayerSide.h.
 
 namespace BayouBonanza {
 
@@ -58,6 +62,12 @@ public:
      * @return The player side whose turn it is
      */
     PlayerSide getActivePlayer() const;
+
+    /**
+     * @brief Set the active player (primarily for deserialization)
+     * @param player The player to set as active
+     */
+    void setActivePlayer(PlayerSide player);
     
     /**
      * @brief Switch to the next player's turn
@@ -105,6 +115,12 @@ public:
      * @return The current turn number (starts at 1)
      */
     int getTurnNumber() const;
+
+    /**
+     * @brief Set the turn number (primarily for deserialization)
+     * @param turn The turn number to set
+     */
+    void setTurnNumber(int turn);
     
     /**
      * @brief Increment the turn number
@@ -144,5 +160,9 @@ private:
     int steamPlayer1;
     int steamPlayer2;
 };
+
+// SFML Packet operators for GameState
+sf::Packet& operator<<(sf::Packet& packet, const GameState& gs);
+sf::Packet& operator>>(sf::Packet& packet, GameState& gs);
 
 } // namespace BayouBonanza

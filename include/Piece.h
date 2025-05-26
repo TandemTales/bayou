@@ -29,6 +29,19 @@ struct Position {
     }
 };
 
+// SFML Packet operators for Position
+inline sf::Packet& operator<<(sf::Packet& packet, const Position& position) {
+    return packet << static_cast<sf::Int32>(position.x) << static_cast<sf::Int32>(position.y);
+}
+
+inline sf::Packet& operator>>(sf::Packet& packet, Position& position) {
+    sf::Int32 x, y;
+    packet >> x >> y;
+    position.x = static_cast<int>(x);
+    position.y = static_cast<int>(y);
+    return packet;
+}
+
 /**
  * @brief Abstract base class for all game pieces
  * 
@@ -142,6 +155,51 @@ protected:
     int attack;
     int health;
     Position position;
+    bool hasMoved; // Added for serialization
+
+public:
+    // Add virtual getPieceType method
+    virtual PieceType getPieceType() const = 0;
+    void setHasMoved(bool moved) { hasMoved = moved; } // Setter for hasMoved
+    bool getHasMoved() const { return hasMoved; }      // Getter for hasMoved
 };
+
+// SFML Packet operators for Piece (common data)
+// Note: When serializing a Piece directly (e.g., from Square), PieceType should be written first.
+// When deserializing, PieceType should be read first, then an appropriate Piece object
+// created (e.g., via PieceFactory), and then this operator called on that object.
+
+// SFML Packet operators for Piece (common data, excluding PieceType and PlayerSide, which are handled by Square/Factory)
+inline sf::Packet& operator<<(sf::Packet& packet, const Piece& piece) {
+    packet << piece.getSymbol(); // Using getSymbol()
+    packet << piece.getPosition();
+    packet << static_cast<sf::Int32>(piece.getHealth());
+    packet << static_cast<sf::Int32>(piece.getAttack());
+    packet << piece.getHasMoved(); // Use getHasMoved()
+    return packet;
+}
+
+inline sf::Packet& operator>>(sf::Packet& packet, Piece& piece) {
+    // Assumes 'piece' is an already-created concrete object of the correct type and side.
+    // PlayerSide and PieceType should have been read by the caller (e.g., Square deserialization)
+    // and used with PieceFactory to create 'piece'.
+    std::string symbol; // Read for verification or if symbols can change dynamically.
+    Position position;
+    sf::Int32 health, attack;
+    bool hasMovedFlag;
+
+    packet >> symbol >> position >> health >> attack >> hasMovedFlag;
+
+    // Verify symbol if necessary, though it's usually fixed by type.
+    // if (symbol != piece.getSymbol()) { /* handle error or warning */ }
+
+    piece.setPosition(position);
+    piece.setHealth(static_cast<int>(health));
+    // piece.setAttack(static_cast<int>(attack)); // Piece class doesn't have setAttack, it's const after construction.
+                                                // This is fine, as attack is set by factory.
+    piece.setHasMoved(hasMovedFlag);
+    
+    return packet;
+}
 
 } // namespace BayouBonanza

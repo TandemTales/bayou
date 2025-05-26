@@ -1,6 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/Graphics/Font.hpp>
+#include <SFML/Network.hpp> // Added for networking
 #include <iostream>
 #include <string>
 #include <memory>
@@ -8,13 +9,29 @@
 
 #include "GameBoard.h"
 #include "GameState.h"
-#include "GameRules.h"
-#include "TurnManager.h"
-#include "GameInitializer.h"
-#include "GameOverDetector.h"
-#include "King.h"
+// #include "GameRules.h" // Removed - Server handles rules
+// #include "TurnManager.h" // Removed - Server manages turns
+// #include "GameInitializer.h" // Removed - Server initializes game
+// #include "GameOverDetector.h" // Removed - Server detects game over
+#include "King.h" // Still needed for piece logic if not fully data-driven
+#include "Move.h"      // For Move and its sf::Packet operators
+#include "GameState.h"   // For GameState and its sf::Packet operators
+#include "NetworkProtocol.h" // For MessageType enum and operators
+#include "PlayerSide.h"  // For PlayerSide enum
+// King.h is still included for piece logic if not fully data-driven client-side for validation
+#include "King.h" 
+
+
+// The actual sf::Packet operators are now defined with their respective classes.
 
 using namespace BayouBonanza;
+
+// Client-specific global variables
+PlayerSide myPlayerSide = PlayerSide::NEUTRAL; // Default, will be assigned by server
+bool gameHasStarted = false;
+std::string uiMessage = "Connecting..."; // For displaying messages like "Waiting for opponent"
+sf::Text uiMessageText;
+sf::Font globalFont; // Loaded once
 
 // Function to print board state to console for debugging
 void printBoardState(const GameState& gameState) {
@@ -63,27 +80,49 @@ int main()
     // Set the framerate limit
     window.setFramerateLimit(60);
 
-    // Load font
-    sf::Font font;
-    if (!font.loadFromFile("assets/fonts/Roboto-Regular.ttf")) {
-        std::cerr << "Error loading font from assets/fonts/Roboto-Regular.ttf\n"; // Updated error message
-        return -1; // Or handle error appropriately
+    // Network Socket
+    sf::TcpSocket socket;
+    const unsigned short PORT = 50000;
+    const std::string SERVER_IP = "127.0.0.1"; // localhost
+
+    std::cout << "Attempting to connect to server " << SERVER_IP << ":" << PORT << std::endl;
+    if (socket.connect(SERVER_IP, PORT, sf::seconds(5)) != sf::Socket::Done) {
+        std::cerr << "Error: Could not connect to the server." << std::endl;
+        uiMessage = "Failed to connect to server.";
+        // No return -1 yet, let the window open to display the message
+    } else {
+        std::cout << "Connected to server!" << std::endl;
+        uiMessage = "Connected! Waiting for assignment...";
     }
+    socket.setBlocking(false); // Use non-blocking mode
+
+    // Load font (use globalFont)
+    if (!globalFont.loadFromFile("assets/fonts/Roboto-Regular.ttf")) {
+        std::cerr << "Error loading font from assets/fonts/Roboto-Regular.ttf\n";
+        return -1; 
+    }
+    uiMessageText.setFont(globalFont);
+    uiMessageText.setCharacterSize(24);
+    uiMessageText.setFillColor(sf::Color::White);
+    uiMessageText.setPosition(10.f, 10.f);
     
     // Create game components
-    GameState gameState;
-    GameRules gameRules;
-    GameInitializer initializer;
-    TurnManager turnManager(gameState, gameRules);
-    GameOverDetector gameOverDetector;
+    GameState gameState; // Client's local copy of the game state, updated by server
+    // GameRules gameRules; // Removed
+    // GameInitializer initializer; // Removed
+    // TurnManager turnManager(gameState, gameRules); // Removed
+    // GameOverDetector gameOverDetector; // Removed
     
-    // Initialize a new game
-    initializer.initializeNewGame(gameState);
+    // Initialize a new game - This will now be handled by server sending initial state
+    // initializer.initializeNewGame(gameState); // Removed
     
-    // Print initial board state
-    std::cout << "Bayou Bonanza - Core Game Engine Demo" << std::endl;
+    // Print initial board state (client will wait for server's first state update)
+    std::cout << "BayouBonanza - Client" << std::endl; // Corrected project name
     std::cout << "----------------------------------------" << std::endl;
-    printBoardState(gameState);
+    // printBoardState(gameState); // Removed - client waits for server's state
+
+    // Placeholder for player's assigned side - to be received from server
+    // PlayerSide myPlayerSide = PlayerSide::PLAYER_ONE; // Default or unassigned
 
     std::shared_ptr<Piece> selectedPiece = nullptr;
     sf::Vector2i originalSquareCoords(-1, -1); // Store board coordinates (x,y)
@@ -166,14 +205,33 @@ int main()
                             
                             // This part should be consistent with previous fixes for TurnManager::processMoveAction
                             Position startPosition(originalSquareCoords.x, originalSquareCoords.y);
-                            Move gameMove(selectedPiece, startPosition, targetPosition);
-                            turnManager.processMoveAction(gameMove); 
+                            Move gameMove(selectedPiece, startPosition, targetPosition); // Ensure Move.h is included
+
+                            if (gameHasStarted && myPlayerSide == gameState.getActivePlayer()) {
+                                // Serialize and send the move to the server
+                                sf::Packet movePacket;
+                                movePacket << MessageType::MoveToServer << gameMove; // Prefix with MessageType
+
+                                if (socket.send(movePacket) == sf::Socket::Done) {
+                                    std::cout << "Move sent to server: " 
+                                              << gameMove.getFrom().x << "," << gameMove.getFrom().y << " -> " 
+                                              << targetX << "," << targetY << std::endl;
+                                } else {
+                                    std::cerr << "Error sending move to server." << std::endl;
+                                    // Potentially handle disconnection or error
+                                }
+                            } else {
+                                std::cout << "Not your turn or game not started. Move not sent." << std::endl;
+                            }
                             
-                            std::cout << "Move action processed by TurnManager. Current board state:" << std::endl;
-                            printBoardState(gameState); 
+                            //gameState.getBoard().movePiece(startPosition, targetPosition); // Client no longer updates its own state directly
+                            //turnManager.processMoveAction(gameMove); // Removed - server handles this
+                            
+                            // std::cout << "Move action processed by TurnManager. Current board state:" << std::endl; // Removed
+                            // printBoardState(gameState); // Removed - state will be updated by server message
 
                         } else {
-                            // Invalid move
+                            // Invalid move (client-side validation before sending)
                             std::cout << "Invalid move attempt: " // Changed log message slightly
                                       << originalSquareCoords.x << "," << originalSquareCoords.y << " -> "
                                       << targetX << "," << targetY << std::endl;
@@ -192,14 +250,89 @@ int main()
                 }
             }
         }
+
+        // --- Network Receive ---
+        sf::Packet receivedPacket;
+        sf::Socket::Status status = socket.receive(receivedPacket);
+        if (status == sf::Socket::Done) {
+            MessageType messageType;
+            if (!(receivedPacket >> messageType)) { // Deserialize the type first
+                if (receivedPacket.getDataSize() > 0) { // Check if there was data to even attempt deserializing type
+                     std::cerr << "Error deserializing message type." << std::endl;
+                }
+                // If getDataSize is 0, it might just be a keep-alive or empty packet, ignore.
+            } else {
+                std::cout << "Received message type: " << static_cast<int>(messageType) << std::endl;
+                switch (messageType) {
+                    case MessageType::PlayerAssignment:
+                        sf::Uint8 side_uint8;
+                        if (receivedPacket >> side_uint8) {
+                            myPlayerSide = static_cast<PlayerSide>(side_uint8);
+                            uiMessage = "Assigned player side: Player ";
+                            uiMessage += (myPlayerSide == PlayerSide::PLAYER_ONE ? "One" : "Two");
+                            std::cout << uiMessage << std::endl;
+                        } else { std::cerr << "Error deserializing PlayerAssignment data." << std::endl; }
+                        break;
+                    case MessageType::WaitingForOpponent:
+                        uiMessage = "Waiting for opponent to connect...";
+                        std::cout << uiMessage << std::endl;
+                        break;
+                    case MessageType::GameStart:
+                        uiMessage = "Game is starting!";
+                        std::cout << uiMessage << std::endl;
+                        if (receivedPacket >> gameState) { // Deserialize the initial GameState
+                            gameHasStarted = true;
+                            printBoardState(gameState);
+                        } else { std::cerr << "Error deserializing GameStart state." << std::endl; }
+                        break;
+                    case MessageType::GameStateUpdate:
+                        if (gameHasStarted) {
+                            if (receivedPacket >> gameState) { // Deserialize the updated GameState
+                                // uiMessage = (myPlayerSide == gameState.getActivePlayer() ? "Your turn" : "Opponent's turn");
+                                std::cout << "GameState updated. Turn: " << gameState.getTurnNumber() << std::endl;
+                                printBoardState(gameState);
+                            } else { std::cerr << "Error deserializing GameStateUpdate." << std::endl; }
+                        }
+                        break;
+                    case MessageType::MoveRejected: // Optional
+                        uiMessage = "Move rejected by server.";
+                        std::cout << uiMessage << std::endl;
+                        break;
+                    case MessageType::Error: // Example, server might send string
+                        // std::string errorMessage;
+                        // if (receivedPacket >> errorMessage) {
+                        //     uiMessage = "Server error: " + errorMessage;
+                        //     std::cerr << uiMessage << std::endl;
+                        // } else { std::cerr << "Error deserializing Error message data." << std::endl; }
+                        break;
+                    default:
+                        std::cout << "Received unhandled/unknown message type: " << static_cast<int>(messageType) << std::endl;
+                }
+            }
+        } else if (status == sf::Socket::NotReady) {
+            // No data received, non-blocking socket, this is normal
+        } else if (status == sf::Socket::Disconnected) {
+            uiMessage = "Connection to server lost.";
+            std::cerr << uiMessage << std::endl;
+            window.close(); // Or handle reconnection
+        } else if (status == sf::Socket::Error) {
+            std::cerr << "Network error receiving data." << std::endl;
+            // Potentially handle disconnection or error
+        }
+        // --- End Network Receive ---
         
         // Clear screen with a dark green background (bayou-like)
         window.clear(sf::Color(10, 50, 20));
         
-        // Draw game elements here
-        // Note: Actual game board rendering will be implemented in a future task
+        // Draw game elements here (based on the local gameState, now updated by server)
         
-        // For now, just draw shapes and basic text instead of text with fancy fonts
+        // Update UI message
+        if (gameHasStarted) {
+            uiMessage = (myPlayerSide == gameState.getActivePlayer() ? "Your turn (Player " : "Opponent's turn (Player ");
+            uiMessage += (gameState.getActivePlayer() == PlayerSide::PLAYER_ONE ? "One)" : "Two)");
+        }
+        uiMessageText.setString(uiMessage);
+        window.draw(uiMessageText);
 
         // --- Game Board Rendering ---
         const GameBoard& board = gameState.getBoard();
@@ -244,7 +377,7 @@ int main()
                     std::string symbol = piece->getSymbol();
 
                     sf::Text pieceText;
-                    pieceText.setFont(font);
+                    pieceText.setFont(globalFont); // Use globalFont
                     pieceText.setString(symbol);
                     pieceText.setCharacterSize(static_cast<unsigned int>(squareSize * 0.6f)); // Adjust size as needed
 

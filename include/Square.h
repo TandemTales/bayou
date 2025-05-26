@@ -1,7 +1,10 @@
 #pragma once
 
 #include <memory>
-#include "PlayerSide.h"
+#include "PlayerSide.h" // PlayerSide enum
+#include "Piece.h"      // PieceType enum, Piece class
+#include "PieceFactory.h" // For PieceFactory
+#include <SFML/Network/Packet.hpp> // For sf::Packet
 
 namespace BayouBonanza {
 
@@ -70,5 +73,9 @@ private:
     int controlValuePlayer1;      // Control value for player 1
     int controlValuePlayer2;      // Control value for player 2
 };
+
+// SFML Packet operators for Square
+sf::Packet& operator<<(sf::Packet& packet, const Square& sq);
+sf::Packet& operator>>(sf::Packet& packet, Square& sq);
 
 } // namespace BayouBonanza

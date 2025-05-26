@@ -58,6 +58,8 @@ public:
     std::string getTypeName() const override;
 
     std::string getSymbol() const override;
+
+    PieceType getPieceType() const override;
 };
 
 } // namespace BayouBonanza

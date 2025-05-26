@@ -1,7 +1,8 @@
 #pragma once
 
 #include <memory>
-#include "Piece.h"
+#include "Piece.h" // Includes Position, PieceType
+#include <SFML/Network/Packet.hpp> // For sf::Packet
 
 namespace BayouBonanza {
 
@@ -18,6 +19,16 @@ public:
      * @param to Target position
      */
     Move(std::shared_ptr<Piece> piece, const Position& from, const Position& to);
+
+    /**
+     * @brief Constructor for promotion moves
+     * 
+     * @param piece The piece being moved (usually a Pawn)
+     * @param from Starting position
+     * @param to Target position (promotion square)
+     * @param promotionType The type of piece to promote to
+     */
+    Move(std::shared_ptr<Piece> piece, const Position& from, const Position& to, PieceType promotionType);
     
     /**
      * @brief Get the piece being moved
@@ -40,10 +51,28 @@ public:
      */
     const Position& getTo() const;
 
+    /**
+     * @brief Check if this move is a promotion
+     * @return true if it's a promotion move
+     */
+    bool isPromotion() const;
+
+    /**
+     * @brief Get the type of piece to promote to (if isPromotion is true)
+     * @return PieceType to promote to
+     */
+    PieceType getPromotionType() const;
+
 private:
-    std::shared_ptr<Piece> piece;
-    Position from;
-    Position to;
+    std::shared_ptr<Piece> piece_; // The actual piece object, not serialized directly by Move's operators
+    Position from_;
+    Position to_;
+    bool isPromotion_;
+    PieceType pieceTypePromotedTo_; // Type to promote to, e.g., QUEEN
 };
+
+// SFML Packet operators for Move
+sf::Packet& operator<<(sf::Packet& packet, const Move& mv);
+sf::Packet& operator>>(sf::Packet& packet, Move& mv);
 
 } // namespace BayouBonanza

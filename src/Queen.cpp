@@ -103,4 +103,8 @@ std::string Queen::getSymbol() const {
     return "Q";
 }
 
+PieceType Queen::getPieceType() const {
+    return PieceType::QUEEN;
+}
+
 } // namespace BayouBonanza

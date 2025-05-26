@@ -61,4 +61,8 @@ std::string Knight::getSymbol() const {
     return "N";
 }
 
+PieceType Knight::getPieceType() const {
+    return PieceType::KNIGHT;
+}
+
 } // namespace BayouBonanza

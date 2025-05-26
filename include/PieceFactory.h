@@ -70,6 +70,15 @@ public:
      * @return Shared pointer to the created piece, or nullptr if type is invalid
      */
     static std::shared_ptr<Piece> createPieceByType(const std::string& typeName, PlayerSide side);
+
+    /**
+     * @brief Create a piece by PieceType enum
+     * 
+     * @param type The enum type of the piece
+     * @param side The player side that owns the piece
+     * @return Shared pointer to the created piece, or nullptr if type is invalid
+     */
+    static std::shared_ptr<Piece> createPieceByPieceType(PieceType type, PlayerSide side);
 };
 
 } // namespace BayouBonanza

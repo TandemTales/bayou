@@ -58,4 +58,8 @@ std::string King::getSymbol() const {
     return "K";
 }
 
+PieceType King::getPieceType() const {
+    return PieceType::KING;
+}
+
 } // namespace BayouBonanza

@@ -1,4 +1,11 @@
 #include "GameState.h"
+#include "GameBoard.h" // For GameBoard serialization
+#include "PlayerSide.h" // For PlayerSide serialization
+#include <SFML/Network/Packet.hpp> // For sf::Packet
+
+// GameState.h should have already included these.
+// GameBoard.h includes Square.h, etc.
+// PlayerSide.h includes its own packet operators.
 
 namespace BayouBonanza {
 

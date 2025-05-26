@@ -51,4 +51,24 @@ std::shared_ptr<Piece> PieceFactory::createPieceByType(const std::string& typeNa
     return nullptr;
 }
 
+std::shared_ptr<Piece> PieceFactory::createPieceByPieceType(PieceType type, PlayerSide side) {
+    switch (type) {
+        case PieceType::KING:
+            return createKing(side);
+        case PieceType::QUEEN:
+            return createQueen(side);
+        case PieceType::ROOK:
+            return createRook(side);
+        case PieceType::BISHOP:
+            return createBishop(side);
+        case PieceType::KNIGHT:
+            return createKnight(side);
+        case PieceType::PAWN:
+            return createPawn(side);
+        default:
+            // Unknown piece type or unhandled enum value
+            return nullptr;
+    }
+}
+
 } // namespace BayouBonanza

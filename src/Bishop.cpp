@@ -101,4 +101,8 @@ std::string Bishop::getSymbol() const {
     return "B";
 }
 
+PieceType Bishop::getPieceType() const {
+    return PieceType::BISHOP;
+}
+
 } // namespace BayouBonanza

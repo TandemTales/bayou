@@ -102,4 +102,8 @@ std::string Rook::getSymbol() const {
     return "R";
 }
 
+PieceType Rook::getPieceType() const {
+    return PieceType::ROOK;
+}
+
 } // namespace BayouBonanza

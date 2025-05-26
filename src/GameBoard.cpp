@@ -1,4 +1,9 @@
 #include "GameBoard.h"
+#include "Square.h" // Ensure Square and its packet operators are included
+#include <SFML/Network/Packet.hpp> // For sf::Packet
+
+// GameBoard.h should already include Square.h
+// Square.h should already include SFML/Network/Packet.hpp
 
 namespace BayouBonanza {
 
@@ -48,6 +53,26 @@ void GameBoard::recalculateControlValues() {
             }
         }
     }
+}
+
+// SFML Packet operators for GameBoard
+sf::Packet& operator<<(sf::Packet& packet, const GameBoard& gb) {
+    for (int y = 0; y < GameBoard::BOARD_SIZE; ++y) {
+        for (int x = 0; x < GameBoard::BOARD_SIZE; ++x) {
+            packet << gb.getSquare(x, y);
+        }
+    }
+    return packet;
+}
+
+sf::Packet& operator>>(sf::Packet& packet, GameBoard& gb) {
+    for (int y = 0; y < GameBoard::BOARD_SIZE; ++y) {
+        for (int x = 0; x < GameBoard::BOARD_SIZE; ++x) {
+            // GameBoard::getSquare(x,y) returns a Square&, so we can deserialize directly into it.
+            packet >> gb.getSquare(x, y);
+        }
+    }
+    return packet;
 }
 
 } // namespace BayouBonanza
