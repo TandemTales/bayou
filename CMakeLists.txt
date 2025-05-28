@@ -71,8 +71,11 @@ if(SFML_FOUND OR DOWNLOAD_SFML)
 endif()
 
 # Source files for executables
-set(CLIENT_SOURCES src/main.cpp)
-set(SERVER_SOURCES src/server_main.cpp) # Assuming this file will be created
+set(CLIENT_SOURCES 
+    src/main.cpp
+    src/InputManager.cpp
+)
+set(SERVER_SOURCES src/server_main.cpp)
 
 # Add executables
 add_executable(BayouBonanzaClient ${CLIENT_SOURCES})

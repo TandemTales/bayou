@@ -9,17 +9,11 @@
 
 #include "GameBoard.h"
 #include "GameState.h"
-// #include "GameRules.h" // Removed - Server handles rules
-// #include "TurnManager.h" // Removed - Server manages turns
-// #include "GameInitializer.h" // Removed - Server initializes game
-// #include "GameOverDetector.h" // Removed - Server detects game over
 #include "King.h" // Still needed for piece logic if not fully data-driven
 #include "Move.h"      // For Move and its sf::Packet operators
-#include "GameState.h"   // For GameState and its sf::Packet operators
 #include "NetworkProtocol.h" // For MessageType enum and operators
 #include "PlayerSide.h"  // For PlayerSide enum
-// King.h is still included for piece logic if not fully data-driven client-side for validation
-#include "King.h" 
+#include "InputManager.h" // New input manager
 
 
 // The actual sf::Packet operators are now defined with their respective classes.
@@ -124,11 +118,8 @@ int main()
     // Placeholder for player's assigned side - to be received from server
     // PlayerSide myPlayerSide = PlayerSide::PLAYER_ONE; // Default or unassigned
 
-    std::shared_ptr<Piece> selectedPiece = nullptr;
-    sf::Vector2i originalSquareCoords(-1, -1); // Store board coordinates (x,y)
-    sf::Vector2f mouseOffset; // Offset from piece top-left to mouse click position
-    bool isPieceSelected = false;
-    sf::Vector2f currentMousePosition; // For drawing the piece while dragging
+    // Create input manager
+    InputManager inputManager(window, socket, gameState, gameHasStarted, myPlayerSide);
     
     // Main game loop
     while (window.isOpen())
@@ -138,116 +129,15 @@ int main()
         while (window.pollEvent(event))
         {
             // Close window if requested
-            if (event.type == sf::Event::Closed)
+            if (event.type == sf::Event::Closed) {
                 window.close();
-
-            // --- Mouse Event Handling ---
-            float windowWidth = static_cast<float>(window.getSize().x);
-            float windowHeight = static_cast<float>(window.getSize().y);
-            float boardSize = std::min(windowWidth, windowHeight) * 0.8f;
-            float squareSize = boardSize / GameBoard::BOARD_SIZE;
-            float boardStartX = (windowWidth - boardSize) / 2.0f;
-            float boardStartY = (windowHeight - boardSize) / 2.0f;
-
-            if (event.type == sf::Event::MouseButtonPressed)
-            {
-                if (event.mouseButton.button == sf::Mouse::Left)
-                {
-                    sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-                    // Convert window coordinates to board coordinates
-                    int boardX = static_cast<int>((mousePos.x - boardStartX) / squareSize);
-                    int boardY = static_cast<int>((mousePos.y - boardStartY) / squareSize);
-
-                    if (boardX >= 0 && boardX < GameBoard::BOARD_SIZE && boardY >= 0 && boardY < GameBoard::BOARD_SIZE)
-                    {
-                        const Square& square = gameState.getBoard().getSquare(boardX, boardY);
-                        if (!square.isEmpty() && square.getPiece()->getSide() == gameState.getActivePlayer())
-                        {
-                            selectedPiece = square.getPiece();
-                            originalSquareCoords = sf::Vector2i(boardX, boardY);
-                            isPieceSelected = true;
-                            // Calculate offset: mouse_pos - piece_top_left_pos
-                            float pieceScreenX = boardStartX + boardX * squareSize;
-                            float pieceScreenY = boardStartY + boardY * squareSize;
-                            mouseOffset = sf::Vector2f(mousePos.x - pieceScreenX, mousePos.y - pieceScreenY);
-                            currentMousePosition = sf::Vector2f(mousePos.x, mousePos.y); // Initialize position
-                        }
-                    }
-                }
+                continue;
             }
-            else if (event.type == sf::Event::MouseMoved)
-            {
-                if (isPieceSelected)
-                {
-                    currentMousePosition = sf::Vector2f(sf::Mouse::getPosition(window).x, sf::Mouse::getPosition(window).y);
-                }
-            }
-            else if (event.type == sf::Event::MouseButtonReleased)
-            {
-                if (event.mouseButton.button == sf::Mouse::Left && isPieceSelected)
-                {
-                    // Convert release position to board coordinates
-                    sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-                    int targetX = static_cast<int>((mousePos.x - boardStartX) / squareSize);
-                    int targetY = static_cast<int>((mousePos.y - boardStartY) / squareSize);
 
-                    // Check if the target is within board boundaries
-                    if (targetX >= 0 && targetX < GameBoard::BOARD_SIZE && targetY >= 0 && targetY < GameBoard::BOARD_SIZE) {
-                        // Create Position object for the target
-                        Position targetPosition(targetX, targetY); 
-                        // Check if the move is valid according to piece logic
-                        if (selectedPiece && selectedPiece->getSide() == gameState.getActivePlayer() &&
-                            selectedPiece->isValidMove(gameState.getBoard(), targetPosition)) // Corrected call
-                        {
-                            std::cout << "Move validated. Processing action: " // Changed log message slightly for clarity
-                                      << originalSquareCoords.x << "," << originalSquareCoords.y << " -> "
-                                      << targetX << "," << targetY << std::endl;
-                            
-                            // This part should be consistent with previous fixes for TurnManager::processMoveAction
-                            Position startPosition(originalSquareCoords.x, originalSquareCoords.y);
-                            Move gameMove(selectedPiece, startPosition, targetPosition); // Ensure Move.h is included
-
-                            if (gameHasStarted && myPlayerSide == gameState.getActivePlayer()) {
-                                // Serialize and send the move to the server
-                                sf::Packet movePacket;
-                                movePacket << MessageType::MoveToServer << gameMove; // Prefix with MessageType
-
-                                if (socket.send(movePacket) == sf::Socket::Done) {
-                                    std::cout << "Move sent to server: " 
-                                              << gameMove.getFrom().x << "," << gameMove.getFrom().y << " -> " 
-                                              << targetX << "," << targetY << std::endl;
-                                } else {
-                                    std::cerr << "Error sending move to server." << std::endl;
-                                    // Potentially handle disconnection or error
-                                }
-                            } else {
-                                std::cout << "Not your turn or game not started. Move not sent." << std::endl;
-                            }
-                            
-                            //gameState.getBoard().movePiece(startPosition, targetPosition); // Client no longer updates its own state directly
-                            //turnManager.processMoveAction(gameMove); // Removed - server handles this
-                            
-                            // std::cout << "Move action processed by TurnManager. Current board state:" << std::endl; // Removed
-                            // printBoardState(gameState); // Removed - state will be updated by server message
-
-                        } else {
-                            // Invalid move (client-side validation before sending)
-                            std::cout << "Invalid move attempt: " // Changed log message slightly
-                                      << originalSquareCoords.x << "," << originalSquareCoords.y << " -> "
-                                      << targetX << "," << targetY << std::endl;
-                            // Piece returns to original square visually (no GameState change was made)
-                        }
-                    } else {
-                        // Target square is off-board
-                        std::cout << "Invalid move: Target square is off-board." << std::endl;
-                        // Piece returns to original square visually
-                    }
-                    
-                    // Deselect piece regardless of move outcome
-                    selectedPiece = nullptr;
-                    isPieceSelected = false;
-                    originalSquareCoords = sf::Vector2i(-1, -1); 
-                }
+            // Let the input manager handle input events
+            if (!inputManager.handleEvent(event)) {
+                // Event was not handled by input manager
+                // Handle other events here if needed
             }
         }
 
@@ -298,10 +188,8 @@ int main()
                         uiMessage = "Move rejected by server.";
                         std::cout << uiMessage << std::endl;
                         
-                        // Reset any visual state that might be inconsistent
-                        selectedPiece = nullptr;
-                        isPieceSelected = false;
-                        originalSquareCoords = sf::Vector2i(-1, -1);
+                        // Reset input manager state
+                        inputManager.resetInputState();
                         break;
                     case MessageType::Error: // Example, server might send string
                         // std::string errorMessage;
@@ -372,7 +260,9 @@ int main()
         for (int y = 0; y < GameBoard::BOARD_SIZE; ++y) {
             for (int x = 0; x < GameBoard::BOARD_SIZE; ++x) {
                 // Skip drawing the selected piece here if it's being dragged
-                if (isPieceSelected && x == originalSquareCoords.x && y == originalSquareCoords.y) {
+                if (inputManager.isPieceSelected() && 
+                    x == inputManager.getOriginalSquareCoords().x && 
+                    y == inputManager.getOriginalSquareCoords().y) {
                     continue; 
                 }
 
@@ -404,13 +294,15 @@ int main()
         }
 
         // Draw the selected piece at the mouse cursor position if it's being dragged
-        if (isPieceSelected && selectedPiece) {
+        if (inputManager.isPieceSelected() && inputManager.getSelectedPiece()) {
             sf::RectangleShape selectedPieceShape(sf::Vector2f(squareSize, squareSize));
             // Adjust position using mouseOffset so the piece is grabbed correctly
+            sf::Vector2f mouseOffset = inputManager.getMouseOffset();
+            sf::Vector2f currentMousePosition = inputManager.getCurrentMousePosition();
             selectedPieceShape.setPosition(currentMousePosition.x - mouseOffset.x, 
                                          currentMousePosition.y - mouseOffset.y);
             
-            if (selectedPiece->getSide() == PlayerSide::PLAYER_ONE) {
+            if (inputManager.getSelectedPiece()->getSide() == PlayerSide::PLAYER_ONE) {
                 selectedPieceShape.setFillColor(sf::Color(0, 0, 255, 180)); // Blue with some transparency
             } else {
                 selectedPieceShape.setFillColor(sf::Color(255, 0, 0, 180)); // Red with some transparency
