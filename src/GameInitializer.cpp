@@ -1,8 +1,20 @@
 #include "GameInitializer.h"
 #include "GameBoard.h"
 #include "Square.h"
+#include <iostream> // For std::cerr
 
 namespace BayouBonanza {
+
+// Constructor
+GameInitializer::GameInitializer() {
+    if (!pieceDefManager.loadDefinitions("assets/data/pieces.json")) {
+        // Handle error: Log and maybe throw or exit
+        std::cerr << "FATAL: Could not load piece definitions from assets/data/pieces.json" << std::endl;
+        // Consider throwing an exception or setting an error state that can be checked.
+        // For now, proceeding will likely lead to issues if pieceFactory is used without definitions.
+    }
+    pieceFactory = std::make_unique<BayouBonanza::PieceFactory>(pieceDefManager);
+}
 
 void GameInitializer::initializeNewGame(GameState& gameState) {
     // Reset the game state to default values
@@ -54,23 +66,27 @@ void GameInitializer::setupBoard(GameState& gameState) {
     }
 }
 
-std::shared_ptr<Piece> GameInitializer::createAndPlacePiece(GameState& gameState, const std::string& pieceType, PlayerSide side, int x, int y) {
+Piece* GameInitializer::createAndPlacePiece(GameState& gameState, const std::string& pieceType, PlayerSide side, int x, int y) {
     // Create the piece using the factory
-    std::shared_ptr<Piece> piece = PieceFactory::createPieceByType(pieceType, side);
+    std::unique_ptr<Piece> piece = pieceFactory->createPiece(pieceType, side);
     
     if (!piece) {
-        return nullptr; // Invalid piece type
+        std::cerr << "Failed to create piece: " << pieceType << std::endl;
+        return nullptr; // Invalid piece type or factory error
     }
     
     // Set the piece's position
     Position pos(x, y);
     piece->setPosition(pos);
     
+    // Get raw pointer before moving ownership to the square
+    Piece* rawPiecePtr = piece.get(); 
+    
     // Place the piece on the board
     Square& square = gameState.getBoard().getSquare(x, y);
-    square.setPiece(piece);
+    square.setPiece(std::move(piece)); // Square now owns the piece
     
-    return piece;
+    return rawPiecePtr;
 }
 
 void GameInitializer::resetGameState(GameState& gameState) {
@@ -113,7 +129,11 @@ void GameInitializer::calculateInitialControl(GameState& gameState) {
             Square& square = board.getSquare(x, y);
             
             if (!square.isEmpty()) {
-                std::shared_ptr<Piece> piece = square.getPiece();
+                // Square::getPiece() should return a non-owning pointer or reference if needed here,
+                // or GameBoard/Square needs to provide a way to access piece info without transferring ownership.
+                // Assuming Square::getPiece() returns a raw pointer or a shared_ptr that allows observation.
+                // For this example, let's assume getPiece() returns a raw pointer for observation.
+                Piece* piece = square.getPiece(); // If Square stores unique_ptr, this should be a non-owning ptr
                 PlayerSide side = piece->getSide();
                 
                 // A piece always controls its own square

@@ -59,17 +59,19 @@ void GameBoard::recalculateControlValues() {
 sf::Packet& operator<<(sf::Packet& packet, const GameBoard& gb) {
     for (int y = 0; y < GameBoard::BOARD_SIZE; ++y) {
         for (int x = 0; x < GameBoard::BOARD_SIZE; ++x) {
-            packet << gb.getSquare(x, y);
+            packet << gb.getSquare(x, y); // Square::operator<< does not need factory
         }
     }
     return packet;
 }
 
-sf::Packet& operator>>(sf::Packet& packet, GameBoard& gb) {
+// Updated to pass PieceFactory to Square's deserialization operator
+sf::Packet& operator>>(sf::Packet& packet, GameBoard& gb, PieceFactory& factory) {
     for (int y = 0; y < GameBoard::BOARD_SIZE; ++y) {
         for (int x = 0; x < GameBoard::BOARD_SIZE; ++x) {
-            // GameBoard::getSquare(x,y) returns a Square&, so we can deserialize directly into it.
-            packet >> gb.getSquare(x, y);
+            // GameBoard::getSquare(x,y) returns a Square&.
+            // Pass the factory to Square's operator>>.
+            packet >> gb.getSquare(x, y), factory;
         }
     }
     return packet;

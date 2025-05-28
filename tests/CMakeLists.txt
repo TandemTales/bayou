@@ -15,12 +15,12 @@ FetchContent_MakeAvailable(Catch2)
 # --- Test Executable Definition ---
 add_executable(BayouBonanzaTests
   PieceTests.cpp
-  KingTests.cpp
-  QueenTests.cpp
-  RookTests.cpp
-  BishopTests.cpp
-  KnightTests.cpp
-  PawnTests.cpp
+  # KingTests.cpp # Removed
+  # QueenTests.cpp # Removed
+  # RookTests.cpp # Removed
+  # BishopTests.cpp # Removed
+  # KnightTests.cpp # Removed
+  # PawnTests.cpp # Removed
   PieceFactoryTests.cpp
   CombatSystemTests.cpp
   TurnManagerTests.cpp

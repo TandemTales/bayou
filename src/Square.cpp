@@ -1,10 +1,11 @@
 #include "Square.h"
 #include "PlayerSide.h"   // Explicitly include for packet operators
-#include "Piece.h"        // For std::shared_ptr<Piece>, PieceType, PlayerSide
+#include "Piece.h"        // For std::unique_ptr<Piece>, PlayerSide
 #include "PieceFactory.h" // For PieceFactory
 #include <SFML/Network/Packet.hpp> // For sf::Packet
+#include <iostream> // For std::cerr
 
-// Note: Piece.h should already include PlayerSide.h and define PieceType.
+// Note: Piece.h should already include PlayerSide.h.
 // Square.h should already include Piece.h and PieceFactory.h for the declarations.
 
 namespace BayouBonanza {
@@ -19,12 +20,12 @@ bool Square::isEmpty() const {
     return piece == nullptr;
 }
 
-std::shared_ptr<Piece> Square::getPiece() const {
-    return piece;
+Piece* Square::getPiece() const { // Changed return type
+    return piece.get();
 }
 
-void Square::setPiece(std::shared_ptr<Piece> piece) {
-    this->piece = piece;
+void Square::setPiece(std::unique_ptr<Piece> p) { // Changed parameter type
+    this->piece = std::move(p);
 }
 
 int Square::getControlValue(PlayerSide side) const {
@@ -61,12 +62,13 @@ sf::Packet& operator<<(sf::Packet& packet, const Square& sq) {
     packet << hasPiece;
 
     if (hasPiece) {
-        const std::shared_ptr<Piece>& piece = sq.getPiece();
-        // It's crucial that PlayerSide and PieceType enums are already handled for sf::Packet
-        // and that Piece::operator<< only handles common data (excluding side and type).
-        packet << piece->getSide();           // Serialize PlayerSide enum
-        packet << piece->getPieceType();      // Serialize PieceType enum
-        packet << (*piece);                   // Serialize common Piece data
+        // const std::unique_ptr<Piece>& currentPiece = sq.getPiece(); // This would be problematic due to unique_ptr move semantics
+        const Piece* currentPiece = sq.getPiece(); // Use the raw pointer getter
+        // It's crucial that PlayerSide is already handled for sf::Packet
+        // and that Piece::operator<< only handles common data (excluding side and typeName).
+        packet << currentPiece->getSide();           // Serialize PlayerSide enum
+        packet << currentPiece->getTypeName();     // Serialize typeName string
+        packet << (*currentPiece);                 // Serialize common Piece data
     }
 
     packet << static_cast<sf::Int32>(sq.getControlValue(PlayerSide::PLAYER_ONE));
@@ -74,32 +76,29 @@ sf::Packet& operator<<(sf::Packet& packet, const Square& sq) {
     return packet;
 }
 
-sf::Packet& operator>>(sf::Packet& packet, Square& sq) {
+// Updated operator>> to include PieceFactory reference
+sf::Packet& operator>>(sf::Packet& packet, Square& sq, PieceFactory& factory) {
     bool hasPiece;
     packet >> hasPiece;
 
     if (hasPiece) {
         PlayerSide side;
-        PieceType type;
-        packet >> side; // Deserialize PlayerSide enum
-        packet >> type; // Deserialize PieceType enum
+        std::string typeName; 
+        packet >> side;      // Deserialize PlayerSide enum
+        packet >> typeName;  // Deserialize typeName string
 
-        std::shared_ptr<Piece> piece = PieceFactory::createPieceByPieceType(type, side);
+        std::unique_ptr<Piece> piece = factory.createPiece(typeName, side);
         if (piece) {
             packet >> (*piece); // Deserialize common Piece data into the created piece
-            sq.setPiece(piece);
+            sq.setPiece(std::move(piece));
         } else {
-            // Failed to create piece (e.g., unknown type), or type was invalid.
-            // This case should ideally not happen if data is consistent.
-            // We read the piece's data block from the packet anyway to keep stream state consistent,
-            // even if we can't use it. This is tricky.
-            // A better approach if piece creation fails: log error and potentially stop deserialization.
-            // For now, assume if piece is null, the corresponding data block for the piece in the packet
-            // was minimal or handled. Or, more robustly, if piece creation fails,
-            // one might need to read and discard a "dummy" piece's worth of data.
-            // However, Piece::operator>> expects a valid object.
-            // Simplest for now: if factory fails, set to null, packet stream might be misaligned if not careful.
-            // Let's assume factory always succeeds for valid types from packet.
+            std::cerr << "Error: Failed to create piece of type '" << typeName << "' during Square deserialization." << std::endl;
+            // If piece creation fails, we can't deserialize the rest of its specific data.
+            // This could lead to packet stream misalignment if not handled carefully.
+            // For now, we set the piece to nullptr and hope the packet stream can recover
+            // for subsequent Square data (control values). This is risky.
+            // A more robust error handling strategy would be needed in a real application,
+            // potentially by reading a "dummy" piece of expected size or failing the stream.
             sq.setPiece(nullptr); 
         }
     } else {

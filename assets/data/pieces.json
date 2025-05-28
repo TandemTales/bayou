@@ -1,0 +1,199 @@
+[
+  {
+    "typeName": "King",
+    "symbol": "K",
+    "attack": 3,
+    "health": 10,
+    "movementRules": [
+      {
+        "relativeMoves": [
+          {"x": -1, "y": -1}, {"x": 0, "y": -1}, {"x": 1, "y": -1},
+          {"x": -1, "y": 0},                    {"x": 1, "y": 0},
+          {"x": -1, "y": 1}, {"x": 0, "y": 1}, {"x": 1, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 1
+      }
+    ],
+    "influenceRules": [
+      {
+        "relativeMoves": [
+          {"x": -1, "y": -1}, {"x": 0, "y": -1}, {"x": 1, "y": -1},
+          {"x": -1, "y": 0},                    {"x": 1, "y": 0},
+          {"x": -1, "y": 1}, {"x": 0, "y": 1}, {"x": 1, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 1
+      }
+    ],
+    "pieceType": 0
+  },
+  {
+    "typeName": "Queen",
+    "symbol": "Q",
+    "attack": 9,
+    "health": 9,
+    "movementRules": [
+      {
+        "relativeMoves": [
+          {"x": -1, "y": -1}, {"x": 0, "y": -1}, {"x": 1, "y": -1},
+          {"x": -1, "y": 0},                    {"x": 1, "y": 0},
+          {"x": -1, "y": 1}, {"x": 0, "y": 1}, {"x": 1, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 7
+      }
+    ],
+    "influenceRules": [
+      {
+        "relativeMoves": [
+          {"x": -1, "y": -1}, {"x": 0, "y": -1}, {"x": 1, "y": -1},
+          {"x": -1, "y": 0},                    {"x": 1, "y": 0},
+          {"x": -1, "y": 1}, {"x": 0, "y": 1}, {"x": 1, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 7
+      }
+    ],
+    "pieceType": 1
+  },
+  {
+    "typeName": "Rook",
+    "symbol": "R",
+    "attack": 5,
+    "health": 5,
+    "movementRules": [
+      {
+        "relativeMoves": [
+                            {"x": 0, "y": -1},
+          {"x": -1, "y": 0},                    {"x": 1, "y": 0},
+                            {"x": 0, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 7
+      }
+    ],
+    "influenceRules": [
+      {
+        "relativeMoves": [
+                            {"x": 0, "y": -1},
+          {"x": -1, "y": 0},                    {"x": 1, "y": 0},
+                            {"x": 0, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 7
+      }
+    ],
+    "pieceType": 2
+  },
+  {
+    "typeName": "Bishop",
+    "symbol": "B",
+    "attack": 3,
+    "health": 3,
+    "movementRules": [
+      {
+        "relativeMoves": [
+          {"x": -1, "y": -1}, {"x": 1, "y": -1},
+          {"x": -1, "y": 1}, {"x": 1, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 7
+      }
+    ],
+    "influenceRules": [
+      {
+        "relativeMoves": [
+          {"x": -1, "y": -1}, {"x": 1, "y": -1},
+          {"x": -1, "y": 1}, {"x": 1, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 7
+      }
+    ],
+    "pieceType": 3
+  },
+  {
+    "typeName": "Knight",
+    "symbol": "N",
+    "attack": 3,
+    "health": 3,
+    "movementRules": [
+      {
+        "relativeMoves": [
+          {"x": -2, "y": -1}, {"x": -2, "y": 1},
+          {"x": -1, "y": -2}, {"x": -1, "y": 2},
+          {"x": 1, "y": -2}, {"x": 1, "y": 2},
+          {"x": 2, "y": -1}, {"x": 2, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": true,
+        "maxRange": 1
+      }
+    ],
+    "influenceRules": [
+      {
+        "relativeMoves": [
+          {"x": -2, "y": -1}, {"x": -2, "y": 1},
+          {"x": -1, "y": -2}, {"x": -1, "y": 2},
+          {"x": 1, "y": -2}, {"x": 1, "y": 2},
+          {"x": 2, "y": -1}, {"x": 2, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": true,
+        "maxRange": 1
+      }
+    ],
+    "pieceType": 4
+  },
+  {
+    "typeName": "Pawn",
+    "symbol": "P",
+    "attack": 1,
+    "health": 1,
+    "movementRules": [
+      {
+        "relativeMoves": [{"x": 0, "y": -1}],
+        "isPawnForward": true,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 1
+      },
+      {
+        "relativeMoves": [{"x": -1, "y": -1}, {"x": 1, "y": -1}],
+        "isPawnForward": false,
+        "isPawnCapture": true,
+        "canJump": false,
+        "maxRange": 1
+      }
+    ],
+    "influenceRules": [
+      {
+        "relativeMoves": [{"x": -1, "y": -1}, {"x": 1, "y": -1}],
+        "isPawnForward": false,
+        "isPawnCapture": true,
+        "canJump": false,
+        "maxRange": 1
+      }
+    ],
+    "pieceType": 5
+  }
+]

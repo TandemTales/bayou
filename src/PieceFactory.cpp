@@ -1,74 +1,28 @@
 #include "PieceFactory.h"
-#include "King.h"
-#include "Queen.h"
-#include "Rook.h"
-#include "Bishop.h"
-#include "Knight.h"
-#include "Pawn.h"
+#include "PieceDefinitionManager.h" // Include the manager's header
+#include "Piece.h"                  // For Piece implementation
+#include <iostream>                 // For error messages
 
 namespace BayouBonanza {
 
-std::shared_ptr<Piece> PieceFactory::createKing(PlayerSide side) {
-    return std::make_shared<King>(side);
-}
+PieceFactory::PieceFactory(const PieceDefinitionManager& manager) : definitionManager(manager) {}
 
-std::shared_ptr<Piece> PieceFactory::createQueen(PlayerSide side) {
-    return std::make_shared<Queen>(side);
-}
+std::unique_ptr<Piece> PieceFactory::createPiece(const std::string& typeName, PlayerSide side) {
+    const PieceStats* stats = definitionManager.getPieceStats(typeName);
 
-std::shared_ptr<Piece> PieceFactory::createRook(PlayerSide side) {
-    return std::make_shared<Rook>(side);
-}
-
-std::shared_ptr<Piece> PieceFactory::createBishop(PlayerSide side) {
-    return std::make_shared<Bishop>(side);
-}
-
-std::shared_ptr<Piece> PieceFactory::createKnight(PlayerSide side) {
-    return std::make_shared<Knight>(side);
-}
-
-std::shared_ptr<Piece> PieceFactory::createPawn(PlayerSide side) {
-    return std::make_shared<Pawn>(side);
-}
-
-std::shared_ptr<Piece> PieceFactory::createPieceByType(const std::string& typeName, PlayerSide side) {
-    if (typeName == "King") {
-        return createKing(side);
-    } else if (typeName == "Queen") {
-        return createQueen(side);
-    } else if (typeName == "Rook") {
-        return createRook(side);
-    } else if (typeName == "Bishop") {
-        return createBishop(side);
-    } else if (typeName == "Knight") {
-        return createKnight(side);
-    } else if (typeName == "Pawn") {
-        return createPawn(side);
+    if (!stats) {
+        std::cerr << "Error: PieceFactory could not create piece of type '" << typeName << "'. Stats not found." << std::endl;
+        return nullptr; // Or throw an exception
     }
+
+    // Create a new generic Piece using the stats
+    // The Piece constructor now takes PieceStats: Piece(PlayerSide side, const PieceStats& stats)
+    std::unique_ptr<Piece> newPiece = std::make_unique<Piece>(side, *stats);
     
-    // Unknown piece type
-    return nullptr;
-}
+    // newPiece->setPosition(...) will likely be set by GameBoard or GameInitializer after creation.
+    // newPiece->setHasMoved(false); // This is handled by Piece constructor default
 
-std::shared_ptr<Piece> PieceFactory::createPieceByPieceType(PieceType type, PlayerSide side) {
-    switch (type) {
-        case PieceType::KING:
-            return createKing(side);
-        case PieceType::QUEEN:
-            return createQueen(side);
-        case PieceType::ROOK:
-            return createRook(side);
-        case PieceType::BISHOP:
-            return createBishop(side);
-        case PieceType::KNIGHT:
-            return createKnight(side);
-        case PieceType::PAWN:
-            return createPawn(side);
-        default:
-            // Unknown piece type or unhandled enum value
-            return nullptr;
-    }
+    return newPiece;
 }
 
 } // namespace BayouBonanza

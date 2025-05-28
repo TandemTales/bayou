@@ -34,18 +34,19 @@ endif()
 
 # Include directories
 include_directories(include)
+include_directories(vendor) # Added vendor directory
 
 # Collect source files for GameLogic library
 set(GAMELOGIC_SOURCES
     src/GameBoard.cpp
     src/Square.cpp
     src/Piece.cpp
-    src/King.cpp
-    src/Queen.cpp
-    src/Rook.cpp
-    src/Bishop.cpp
-    src/Knight.cpp
-    src/Pawn.cpp
+    # src/King.cpp # Removed
+    # src/Queen.cpp # Removed
+    # src/Rook.cpp # Removed
+    # src/Bishop.cpp # Removed
+    # src/Knight.cpp # Removed
+    # src/Pawn.cpp # Removed
     src/PieceFactory.cpp
     src/GameState.cpp
     src/Move.cpp
@@ -59,6 +60,7 @@ set(GAMELOGIC_SOURCES
     src/CombatSystem.cpp
     src/HealthTracker.cpp
     src/PieceRemovalHandler.cpp
+    src/PieceDefinitionManager.cpp # Added PieceDefinitionManager.cpp
 )
 
 # Add static library for game logic

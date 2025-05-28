@@ -36,14 +36,14 @@ public:
      * 
      * @return Pointer to the piece, or nullptr if empty
      */
-    std::shared_ptr<Piece> getPiece() const;
+    Piece* getPiece() const; // Return raw pointer for observation
     
     /**
      * @brief Set a piece on this square
      * 
-     * @param piece Pointer to the piece to place
+     * @param piece Unique pointer to the piece to place (Square takes ownership)
      */
-    void setPiece(std::shared_ptr<Piece> piece);
+    void setPiece(std::unique_ptr<Piece> piece);
     
     /**
      * @brief Get the control value for a specific player
@@ -68,14 +68,24 @@ public:
      */
     PlayerSide getControlledBy() const;
 
+    // PieceFactory needs to be accessible for deserialization.
+    // This is a design challenge. For now, we assume it can be accessed.
+    // One common way is to pass it to the deserialization operator,
+    // e.g., operator>>(sf::Packet& packet, Square& sq, PieceFactory& factory);
+    // Or, GameState could hold the factory.
+
 private:
-    std::shared_ptr<Piece> piece; // nullptr if empty
+    std::unique_ptr<Piece> piece; // nullptr if empty, Square owns the piece
     int controlValuePlayer1;      // Control value for player 1
     int controlValuePlayer2;      // Control value for player 2
 };
 
 // SFML Packet operators for Square
+// If PieceFactory needs to be passed, the signature of operator>> would change.
+// For now, we'll modify its implementation assuming factory is accessible.
 sf::Packet& operator<<(sf::Packet& packet, const Square& sq);
-sf::Packet& operator>>(sf::Packet& packet, Square& sq);
+// The operator>> now needs a PieceFactory reference.
+sf::Packet& operator>>(sf::Packet& packet, Square& sq, PieceFactory& factory);
+
 
 } // namespace BayouBonanza

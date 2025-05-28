@@ -6,6 +6,7 @@
 #include "PlayerSide.h"
 #include <SFML/Config.hpp> // For sf::Uint8
 #include <SFML/Network/Packet.hpp> // For sf::Packet
+#include "PieceData.h" // Added PieceData.h
 
 namespace BayouBonanza {
 
@@ -45,15 +46,18 @@ struct Position {
     int y;
     
     Position(int x = 0, int y = 0) : x(x), y(y) {}
-    
+
     bool operator==(const Position& other) const {
         return x == other.x && y == other.y;
     }
-    
+
     bool operator!=(const Position& other) const {
         return !(*this == other);
     }
 };
+
+// Position struct is now also in PieceData.h, ensure consistency or remove one.
+// For now, assuming they are compatible or one will be removed later.
 
 // SFML Packet operators for Position
 inline sf::Packet& operator<<(sf::Packet& packet, const Position& position) {
@@ -79,10 +83,9 @@ public:
      * @brief Constructor
      * 
      * @param side The player that owns this piece
-     * @param attack The attack value of the piece
-     * @param health The health value of the piece
+     * @param stats The statistical data for this piece type
      */
-    Piece(PlayerSide side, int attack, int health);
+    Piece(PlayerSide side, const PieceStats& stats);
     
     /**
      * @brief Virtual destructor
@@ -139,55 +142,26 @@ public:
      */
     void setPosition(const Position& pos);
     
-    /**
-     * @brief Check if a move to the target position is valid
-     * 
-     * @param board The game board
-     * @param target The target position
-     * @return true if the move is valid
-     */
-    virtual bool isValidMove(const GameBoard& board, const Position& target) const = 0;
-    
-    /**
-     * @brief Get all valid moves for this piece
-     * 
-     * @param board The game board
-     * @return Vector of valid positions this piece can move to
-     */
-    virtual std::vector<Position> getValidMoves(const GameBoard& board) const = 0;
-    
-    /**
-     * @brief Get the area of influence for this piece
-     * 
-     * This returns all squares that this piece exerts control over.
-     * 
-     * @param board The game board
-     * @return Vector of positions that this piece influences
-     */
-    virtual std::vector<Position> getInfluenceArea(const GameBoard& board) const;
-    
-    /**
-     * @brief Get the type name of the piece
-     * 
-     * @return String representation of the piece type
-     */
-    virtual std::string getTypeName() const = 0;
-
-    // Pure virtual function for getting the piece symbol
-    virtual std::string getSymbol() const = 0;
+    // Modified function declarations (no longer pure virtual)
+    virtual bool isValidMove(const GameBoard& board, const Position& target) const;
+    virtual std::vector<Position> getValidMoves(const GameBoard& board) const;
+    virtual std::vector<Position> getInfluenceArea(const GameBoard& board) const; // Kept virtual, implementation will be in .cpp
+    virtual std::string getTypeName() const;
+    virtual std::string getSymbol() const;
+    virtual PieceType getPieceType() const; // Added this from previous pure virtual
 
 protected:
     PlayerSide side;
-    int attack;
-    int health;
+    int attack; // Will be initialized from stats
+    int health; // Will be initialized from stats
     Position position;
-    bool hasMoved; // Added for serialization
+    bool hasMoved;
+    const PieceStats& stats; // Added PieceStats member
 
 public:
-    // Add virtual getPieceType method
-    virtual PieceType getPieceType() const = 0;
-    void setHasMoved(bool moved) { hasMoved = moved; } // Setter for hasMoved
-    bool getHasMoved() const { return hasMoved; }      // Getter for hasMoved
+    // virtual PieceType getPieceType() const = 0; // This was already listed above, removed from here
+    void setHasMoved(bool moved) { hasMoved = moved; }
+    bool getHasMoved() const { return hasMoved; }
 };
 
 // SFML Packet operators for Piece (common data)
@@ -208,16 +182,16 @@ inline sf::Packet& operator<<(sf::Packet& packet, const Piece& piece) {
 inline sf::Packet& operator>>(sf::Packet& packet, Piece& piece) {
     // Assumes 'piece' is an already-created concrete object of the correct type and side.
     // PlayerSide and PieceType should have been read by the caller (e.g., Square deserialization)
-    // and used with PieceFactory to create 'piece'.
-    std::string symbol; // Read for verification or if symbols can change dynamically.
+    // and used with PieceFactory to create 'piece'. The symbol is now derived from stats.
+    std::string receivedSymbol; // Renamed to avoid conflict if symbol is a member or for clarity
     Position position;
     sf::Int32 health, attack;
     bool hasMovedFlag;
 
-    packet >> symbol >> position >> health >> attack >> hasMovedFlag;
+    packet >> receivedSymbol >> position >> health >> attack >> hasMovedFlag;
 
     // Verify symbol if necessary, though it's usually fixed by type.
-    // if (symbol != piece.getSymbol()) { /* handle error or warning */ }
+    // if (receivedSymbol != piece.getSymbol()) { /* handle error or warning */ }
 
     piece.setPosition(position);
     piece.setHealth(static_cast<int>(health));
