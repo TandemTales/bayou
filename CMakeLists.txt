@@ -78,6 +78,10 @@ set(SERVER_SOURCES src/server_main.cpp) # Assuming this file will be created
 add_executable(BayouBonanzaClient ${CLIENT_SOURCES})
 add_executable(BayouBonanzaServer ${SERVER_SOURCES})
 
+# Add gameplay test executable
+add_executable(GameplayTest test_gameplay.cpp)
+target_link_libraries(GameplayTest GameLogic)
+
 # Set Visual Studio debugger working directory to project root for client
 set_target_properties(BayouBonanzaClient PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 

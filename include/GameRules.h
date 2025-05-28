@@ -79,6 +79,18 @@ private:
     MoveExecutor moveExecutor;
     
     /**
+     * @brief Place a piece of specified type on the board
+     * 
+     * @tparam PieceType The type of piece to place
+     * @param gameState Game state to update
+     * @param side Player side
+     * @param x X-coordinate
+     * @param y Y-coordinate
+     */
+    template<typename PieceType>
+    void placePiece(GameState& gameState, PlayerSide side, int x, int y);
+    
+    /**
      * @brief Place a king on the board
      * 
      * @param gameState Game state to update

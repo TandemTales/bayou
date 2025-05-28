@@ -11,8 +11,8 @@
 #include "NetworkProtocol.h"  // For MessageType enum and operators
 #include "GameInitializer.h"  // For initializing the game state
 #include "PlayerSide.h"       // For PlayerSide enum (used in PlayerAssignment)
-// #include "GameRules.h"   // Example for future game logic
-// #include "TurnManager.h" // Example for future game logic
+#include "GameRules.h"        // For game logic
+#include "TurnManager.h"      // For turn management
 
 using namespace BayouBonanza;
 
@@ -29,28 +29,72 @@ struct ClientConnection {
 std::vector<std::shared_ptr<ClientConnection>> clients;
 std::mutex clientsMutex; // To protect access to the clients vector
 
-// Placeholder for GameState object
+// Game logic components
 GameState globalGameState; // Properly initialized by GameInitializer once game starts
 GameInitializer gameInitializer; // Instance of GameInitializer
-// GameRules gameRules; // Example for future game logic
-// TurnManager turnManager(globalGameState, gameRules); // Example for future game logic
+GameRules gameRules; // Game rules for move validation and processing
+std::unique_ptr<TurnManager> turnManager; // Turn manager for game flow
 
+// Helper function to find piece at position and reconstruct move
+Move reconstructMoveWithPiece(const Move& clientMove, const GameState& gameState) {
+    const GameBoard& board = gameState.getBoard();
+    const Position& from = clientMove.getFrom();
+    
+    // Get the piece at the from position
+    if (!board.isValidPosition(from.x, from.y)) {
+        return Move(); // Invalid position, return default move
+    }
+    
+    const Square& fromSquare = board.getSquare(from.x, from.y);
+    if (fromSquare.isEmpty()) {
+        return Move(); // No piece at position, return default move
+    }
+    
+    std::shared_ptr<Piece> piece = fromSquare.getPiece();
+    
+    // Create complete move with piece reference
+    if (clientMove.isPromotion()) {
+        return Move(piece, from, clientMove.getTo(), clientMove.getPromotionType());
+    } else {
+        return Move(piece, from, clientMove.getTo());
+    }
+}
+
+// Helper function to broadcast game state to all connected clients
+void broadcastGameState(const GameState& gameState) {
+    sf::Packet updatePacket;
+    updatePacket << MessageType::GameStateUpdate << gameState;
+    
+    std::lock_guard<std::mutex> lock(clientsMutex);
+    for (auto& client : clients) {
+        if (client->connected) {
+            if (client->socket.send(updatePacket) != sf::Socket::Done) {
+                std::cerr << "Error sending game state update to client " 
+                          << client->socket.getRemoteAddress() << std::endl;
+            }
+        }
+    }
+}
+
+// Helper function to send move rejection to specific client
+void sendMoveRejection(std::shared_ptr<ClientConnection> client, const std::string& reason) {
+    sf::Packet rejectPacket;
+    rejectPacket << MessageType::MoveRejected;
+    // Note: Could add reason string if MessageType::MoveRejected supports it
+    
+    if (client->socket.send(rejectPacket) != sf::Socket::Done) {
+        std::cerr << "Error sending move rejection to client " 
+                  << client->socket.getRemoteAddress() << std::endl;
+    }
+    
+    std::cout << "Move rejected for " << client->socket.getRemoteAddress() 
+              << ": " << reason << std::endl;
+}
 
 void handle_client(std::shared_ptr<ClientConnection> client) {
-    std::cout << "Thread started for client: " << client->socket.getRemoteAddress() << ":" << client->socket.getRemotePort() << std::endl;
+    std::cout << "Thread started for client: " << client->socket.getRemoteAddress() 
+              << ":" << client->socket.getRemotePort() << std::endl;
     client->connected = true;
-
-    // Example: Assign player side (needs proper logic)
-    // {
-    //     std::lock_guard<std::mutex> lock(clientsMutex);
-    //     if (clients.size() == 1) client->side = PlayerSide::PLAYER_ONE;
-    //     else client->side = PlayerSide::PLAYER_TWO;
-    //     // Send player assignment to client
-    //     sf::Packet playerAssignmentPacket;
-    //     playerAssignmentPacket << static_cast<sf::Uint8>(client->side); // Example message
-    //     client->socket.send(playerAssignmentPacket);
-    // }
-
 
     sf::Socket::Status status;
     while (client->connected) {
@@ -61,7 +105,8 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
             // Received data from client
             MessageType messageType;
             if (!(packet >> messageType)) {
-                std::cerr << "Error deserializing message type from " << client->socket.getRemoteAddress() << std::endl;
+                std::cerr << "Error deserializing message type from " 
+                          << client->socket.getRemoteAddress() << std::endl;
                 continue; // Try to receive next packet
             }
             std::cout << "Received message type: " << static_cast<int>(messageType) 
@@ -75,24 +120,56 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                               << " -> " 
                               << clientMove.getTo().x << "," << clientMove.getTo().y << std::endl;
 
-                    // TODO: Process move with globalGameState and TurnManager.
-                    // bool moveValid = turnManager.processMoveAction(clientMove, client->playerSide); 
-                    // For now, assume valid and broadcast.
+                    // Reconstruct the move with the actual piece reference
+                    Move completeMove = reconstructMoveWithPiece(clientMove, globalGameState);
                     
-                    sf::Packet updatePacketToAll;
-                    // globalGameState should be updated by TurnManager or similar logic here
-                    updatePacketToAll << MessageType::GameStateUpdate << globalGameState;
-                    
-                    std::lock_guard<std::mutex> lock(clientsMutex);
-                    for (auto& c : clients) {
-                        if (c->connected) {
-                            if (c->socket.send(updatePacketToAll) != sf::Socket::Done) {
-                                std::cerr << "Error sending game state update to client " << c->socket.getRemoteAddress() << std::endl;
-                            }
-                        }
+                    if (!completeMove.getPiece()) {
+                        sendMoveRejection(client, "No piece at source position");
+                        continue;
                     }
+                    
+                    // Verify the move is from the correct player
+                    if (completeMove.getPiece()->getSide() != client->playerSide) {
+                        sendMoveRejection(client, "Cannot move opponent's piece");
+                        continue;
+                    }
+                    
+                    // Verify it's the client's turn
+                    if (client->playerSide != globalGameState.getActivePlayer()) {
+                        sendMoveRejection(client, "Not your turn");
+                        continue;
+                    }
+                    
+                    // Process the move using TurnManager
+                    if (turnManager) {
+                        bool moveProcessed = false;
+                        std::string resultMessage;
+                        
+                        turnManager->processMoveAction(completeMove, [&](const ActionResult& result) {
+                            moveProcessed = true;
+                            resultMessage = result.message;
+                            
+                            if (result.success) {
+                                std::cout << "Move processed successfully: " << result.message << std::endl;
+                                // Broadcast updated game state to all clients
+                                broadcastGameState(globalGameState);
+                            } else {
+                                std::cout << "Move failed: " << result.message << std::endl;
+                                sendMoveRejection(client, result.message);
+                            }
+                        });
+                        
+                        // If no callback was called (shouldn't happen), handle as error
+                        if (!moveProcessed) {
+                            sendMoveRejection(client, "Move processing failed");
+                        }
+                    } else {
+                        sendMoveRejection(client, "Game not properly initialized");
+                    }
+                    
                 } else {
-                    std::cerr << "Error deserializing move data from " << client->socket.getRemoteAddress() << std::endl;
+                    std::cerr << "Error deserializing move data from " 
+                              << client->socket.getRemoteAddress() << std::endl;
                 }
             } else {
                 // Handle other message types or log unexpected ones
@@ -108,7 +185,8 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
             // Handle disconnection: remove client, notify other player, etc.
             break;
         } else if (status == sf::Socket::Error) {
-            std::cerr << "Network error receiving from client: " << client->socket.getRemoteAddress() << std::endl;
+            std::cerr << "Network error receiving from client: " 
+                      << client->socket.getRemoteAddress() << std::endl;
             client->connected = false;
             // Handle error
             break;
@@ -152,13 +230,14 @@ int main() {
                 new_client_conn->playerSide = (clients.empty()) ? PlayerSide::PLAYER_ONE : PlayerSide::PLAYER_TWO;
                 clients.push_back(new_client_conn);
                 
-                std::cout << "Client connected: " << new_client_conn->socket.getRemoteAddress() << ":" << new_client_conn->socket.getRemotePort() 
+                std::cout << "Client connected: " << new_client_conn->socket.getRemoteAddress() 
+                          << ":" << new_client_conn->socket.getRemotePort() 
                           << " as Player " << (new_client_conn->playerSide == PlayerSide::PLAYER_ONE ? "One" : "Two") << std::endl;
                 std::cout << "Current players connected: " << clients.size() << "/" << REQUIRED_PLAYERS << std::endl;
 
                 // Send PlayerAssignment
                 sf::Packet assignmentPacket;
-                assignmentPacket << MessageType::PlayerAssignment << new_client_conn->playerSide; // PlayerSide enum is serializable
+                assignmentPacket << MessageType::PlayerAssignment << new_client_conn->playerSide;
                 new_client_conn->socket.send(assignmentPacket);
 
                 if (clients.size() == 1) {
@@ -170,7 +249,11 @@ int main() {
                 } else if (clients.size() == REQUIRED_PLAYERS) {
                     std::cout << "All players connected. Initializing and starting game..." << std::endl;
                     
-                    gameInitializer.initializeNewGame(globalGameState); // Initialize the game state
+                    // Initialize the game state and create turn manager
+                    gameInitializer.initializeNewGame(globalGameState);
+                    turnManager = std::make_unique<TurnManager>(globalGameState, gameRules);
+                    turnManager->startNewGame();
+                    
                     std::cout << "Game initialized. Broadcasting GameStart and initial state." << std::endl;
 
                     // Send GameStart and initial GameState to both players
@@ -178,7 +261,7 @@ int main() {
                     gameStartPacketP1 << MessageType::GameStart << globalGameState;
                     clients[0]->socket.send(gameStartPacketP1);
 
-                    // Create a new packet for player 2 to avoid issues with packet read position if send fails/retries
+                    // Create a new packet for player 2 to avoid issues with packet read position
                     gameStartPacketP2 << MessageType::GameStart << globalGameState; 
                     clients[1]->socket.send(gameStartPacketP2);
 
@@ -188,32 +271,27 @@ int main() {
                     client_threads.emplace_back(handle_client, clients[1]);
                 } else if (clients.size() == 1) {
                      std::cout << "Waiting for the second player..." << std::endl;
-                     // Optionally, send a "waiting for opponent" message to the first client
                 }
 
             } else {
                 // Max players reached, reject new connection
-                std::cout << "Max players reached. Rejecting new connection from: " << new_client_conn->socket.getRemoteAddress() << std::endl;
+                std::cout << "Max players reached. Rejecting new connection from: " 
+                          << new_client_conn->socket.getRemoteAddress() << std::endl;
                 sf::Packet rejectPacket;
-                std::string message = "Server is full.";
-                rejectPacket << message;
+                rejectPacket << MessageType::Error;
                 new_client_conn->socket.send(rejectPacket);
                 new_client_conn->socket.disconnect();
             }
         }
 
-        // Basic server running indication, can be removed or expanded later
-        // std::cout << "."; // This will print a lot, maybe too much
-        // std::flush(std::cout);
-        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Prevent busy loop
-
-        // Optional: Add logic here to shut down the server gracefully
+        // Add a small sleep to prevent busy-waiting
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
-    // Wait for all client threads to finish (though the current loop is infinite)
-    for (auto& t : client_threads) {
-        if (t.joinable()) {
-            t.join();
+    // Wait for all client threads to finish (this won't be reached in the current design)
+    for (auto& thread : client_threads) {
+        if (thread.joinable()) {
+            thread.join();
         }
     }
 

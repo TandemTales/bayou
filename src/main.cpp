@@ -297,6 +297,11 @@ int main()
                     case MessageType::MoveRejected: // Optional
                         uiMessage = "Move rejected by server.";
                         std::cout << uiMessage << std::endl;
+                        
+                        // Reset any visual state that might be inconsistent
+                        selectedPiece = nullptr;
+                        isPieceSelected = false;
+                        originalSquareCoords = sf::Vector2i(-1, -1);
                         break;
                     case MessageType::Error: // Example, server might send string
                         // std::string errorMessage;
