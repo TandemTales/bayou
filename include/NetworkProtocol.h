@@ -14,7 +14,8 @@ enum class MessageType : sf::Uint8 {
     GameOver,               // Server to Client: Announces game over and result (optional for now)
     Error,                  // Server to Client or Client to Server: Generic error message
     Ping,                   // Client to Server (optional, for keep-alive)
-    Pong                    // Server to Client (optional, for keep-alive)
+    Pong,                   // Server to Client (optional, for keep-alive)
+    UserLogin               // Client to Server: Sends username for login/registration
 };
 
 // Operator to stream MessageType into sf::Packet

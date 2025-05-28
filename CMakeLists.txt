@@ -25,6 +25,8 @@ if(NOT SFML_FOUND AND DOWNLOAD_SFML)
   
   # Disable unneeded components to speed up the build
   set(SFML_BUILD_AUDIO OFF CACHE BOOL "" FORCE)
+  set(SFML_BUILD_GRAPHICS ON CACHE BOOL "" FORCE) # Re-enabled for client
+  set(SFML_BUILD_WINDOW ON CACHE BOOL "" FORCE)   # Re-enabled for client
   set(SFML_BUILD_NETWORK ON CACHE BOOL "" FORCE)
   
   FetchContent_MakeAvailable(SFML)
@@ -81,6 +83,16 @@ set(SERVER_SOURCES src/server_main.cpp)
 add_executable(BayouBonanzaClient ${CLIENT_SOURCES})
 add_executable(BayouBonanzaServer ${SERVER_SOURCES})
 
+# Find SQLite3
+find_package(SQLite3)
+if(SQLite3_FOUND)
+    message(STATUS "SQLite3 found, linking to BayouBonanzaServer.")
+    target_include_directories(BayouBonanzaServer PUBLIC ${SQLite3_INCLUDE_DIRS})
+    target_link_libraries(BayouBonanzaServer PRIVATE ${SQLite3_LIBRARIES}) # Changed from SQLite3::SQLite3
+else()
+    message(WARNING "SQLite3 not found. The server might not compile or run correctly if database features are used.")
+endif()
+
 # Add gameplay test executable
 add_executable(GameplayTest test_gameplay.cpp)
 target_link_libraries(GameplayTest GameLogic)
@@ -99,10 +111,10 @@ add_subdirectory(tests)
 # Link libraries
 if(SFML_FOUND OR DOWNLOAD_SFML)
   # Link client (GameLogic already includes sfml-network and sfml-system)
-  target_link_libraries(BayouBonanzaClient GameLogic sfml-graphics sfml-window)
+  target_link_libraries(BayouBonanzaClient PUBLIC GameLogic sfml-graphics sfml-window) # Added PUBLIC
   
   # Link server (GameLogic already includes sfml-network and sfml-system)
-  target_link_libraries(BayouBonanzaServer GameLogic)
+  target_link_libraries(BayouBonanzaServer PUBLIC GameLogic) # Added PUBLIC
 
   # TODO: Update test linking in tests/CMakeLists.txt to link against GameLogic
 

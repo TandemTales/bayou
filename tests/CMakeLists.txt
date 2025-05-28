@@ -60,3 +60,24 @@ else()
   add_test(NAME BayouBonanzaAllTests_Fallback COMMAND BayouBonanzaTests) # Ensure fallback is present here too
   add_test(NAME BayouBonanzaClientTests_Fallback COMMAND BayouBonanzaClientTests) # Ensure fallback is present here too
 endif()
+
+# --- Database Test Executable ---
+add_executable(DatabaseTests DatabaseTests.cpp)
+# Find SQLite3 package - this should ideally be done at the top-level CMakeLists.txt
+# but for self-contained test addition, we can try to find it here too.
+# If not found, it assumes sqlite3 is available in a way the linker can find it (e.g. system path)
+find_package(SQLite3)
+if(SQLite3_FOUND)
+  target_include_directories(DatabaseTests PRIVATE ${SQLite3_INCLUDE_DIRS}) # Added for consistency
+  target_link_libraries(DatabaseTests PRIVATE ${SQLite3_LIBRARIES}) # Changed from SQLite3::SQLite3
+  message(STATUS "DatabaseTests linked with SQLite3_LIBRARIES")
+else()
+  # Fallback for environments where FindSQLite3.cmake might not create the imported target,
+  # or if SQLite3 was not found by find_package.
+  # This often works if libsqlite3-dev is installed system-wide.
+  target_link_libraries(DatabaseTests PRIVATE sqlite3)
+  message(WARNING "SQLite3_FOUND is false. Attempting to link DatabaseTests with 'sqlite3' directly. Ensure libsqlite3-dev is installed.")
+endif()
+
+# Add DatabaseTests to CTest (simple registration)
+add_test(NAME Database_Tests COMMAND DatabaseTests)
