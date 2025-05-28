@@ -27,16 +27,21 @@ void TurnManager::processMoveAction(const Move& move, ActionCallback callback) {
             case MoveResult::SUCCESS:
                 result.success = true;
                 result.message = "Move successful";
+                // Switch to the next player after a successful move
+                gameRules.endTurn(gameState);
                 break;
                 
             case MoveResult::PIECE_DESTROYED:
                 result.success = true;
                 result.message = "Enemy piece destroyed";
+                // Switch to the next player after a successful move
+                gameRules.endTurn(gameState);
                 break;
                 
             case MoveResult::KING_CAPTURED:
                 result.success = true;
                 result.message = "King captured! Game over.";
+                // Don't switch players when the game is over
                 break;
                 
             case MoveResult::INVALID_MOVE:

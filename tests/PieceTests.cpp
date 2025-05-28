@@ -25,6 +25,10 @@ public:
     std::string getSymbol() const override {
         return "T"; // Dummy symbol for testing
     }
+    
+    PieceType getPieceType() const override {
+        return PieceType::PAWN; // Dummy type for testing
+    }
 };
 
 TEST_CASE("Piece base class functionality", "[piece]") {

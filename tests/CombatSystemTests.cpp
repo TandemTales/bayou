@@ -22,6 +22,14 @@ public:
     std::string getTypeName() const override {
         return "TestPiece";
     }
+    
+    std::string getSymbol() const override {
+        return "T"; // Dummy symbol for testing
+    }
+    
+    PieceType getPieceType() const override {
+        return PieceType::PAWN; // Dummy type for testing
+    }
 };
 
 TEST_CASE("Combat System basic functionality", "[combat]") {

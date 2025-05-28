@@ -27,27 +27,9 @@ add_executable(BayouBonanzaTests
 )
 target_include_directories(BayouBonanzaTests PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(BayouBonanzaTests PRIVATE
-  sfml-graphics sfml-window sfml-system
+  GameLogic  # Link against the GameLogic library instead of individual source files
+  sfml-graphics sfml-window sfml-system sfml-network  # Added sfml-network
   Catch2::Catch2WithMain # Link against Catch2's main
-)
-target_sources(BayouBonanzaTests PRIVATE
-  ${CMAKE_SOURCE_DIR}/src/Piece.cpp
-  ${CMAKE_SOURCE_DIR}/src/King.cpp
-  ${CMAKE_SOURCE_DIR}/src/Queen.cpp
-  ${CMAKE_SOURCE_DIR}/src/Rook.cpp
-  ${CMAKE_SOURCE_DIR}/src/Bishop.cpp
-  ${CMAKE_SOURCE_DIR}/src/Knight.cpp
-  ${CMAKE_SOURCE_DIR}/src/Pawn.cpp
-  ${CMAKE_SOURCE_DIR}/src/PieceFactory.cpp
-  ${CMAKE_SOURCE_DIR}/src/Square.cpp
-  ${CMAKE_SOURCE_DIR}/src/CombatSystem.cpp
-  ${CMAKE_SOURCE_DIR}/src/GameBoard.cpp
-  ${CMAKE_SOURCE_DIR}/src/GameState.cpp
-  ${CMAKE_SOURCE_DIR}/src/GameRules.cpp
-  ${CMAKE_SOURCE_DIR}/src/TurnManager.cpp
-  ${CMAKE_SOURCE_DIR}/src/GameInitializer.cpp
-  ${CMAKE_SOURCE_DIR}/src/Move.cpp
-  ${CMAKE_SOURCE_DIR}/src/MoveExecutor.cpp
 )
 
 # --- CTest Integration with Catch2 ---

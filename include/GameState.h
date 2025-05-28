@@ -19,6 +19,10 @@ enum class GamePhase {
     GAME_OVER   // Game has ended
 };
 
+// SFML Packet operators for GamePhase
+sf::Packet& operator<<(sf::Packet& packet, const GamePhase& phase);
+sf::Packet& operator>>(sf::Packet& packet, GamePhase& phase);
+
 /**
  * @brief Enum representing the result of the game
  */
@@ -28,6 +32,10 @@ enum class GameResult {
     PLAYER_TWO_WIN,  // Player two has won
     DRAW            // Game ended in a draw
 };
+
+// SFML Packet operators for GameResult
+sf::Packet& operator<<(sf::Packet& packet, const GameResult& result);
+sf::Packet& operator>>(sf::Packet& packet, GameResult& result);
 
 /**
  * @brief Manages the state of the game, including board, active player, and game phase

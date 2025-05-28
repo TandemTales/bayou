@@ -50,10 +50,8 @@ void GameRules::endTurn(GameState& gameState) {
     // Switch to the other player
     gameState.switchActivePlayer();
     
-    // If we've switched back to Player 1, increment the turn number
-    if (gameState.getActivePlayer() == PlayerSide::PLAYER_ONE) {
-        gameState.incrementTurnNumber();
-    }
+    // Increment the turn number after each move
+    gameState.incrementTurnNumber();
     
     // Recalculate board control at the end of each turn
     moveExecutor.recalculateBoardControl(gameState);

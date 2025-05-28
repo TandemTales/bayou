@@ -12,6 +12,11 @@ namespace BayouBonanza {
 class Move {
 public:
     /**
+     * @brief Default constructor (for deserialization)
+     */
+    Move();
+
+    /**
      * @brief Constructor
      * 
      * @param piece The piece to move
@@ -62,6 +67,10 @@ public:
      * @return PieceType to promote to
      */
     PieceType getPromotionType() const;
+
+    // Friend functions for SFML packet operators
+    friend sf::Packet& operator<<(sf::Packet& packet, const Move& mv);
+    friend sf::Packet& operator>>(sf::Packet& packet, Move& mv);
 
 private:
     std::shared_ptr<Piece> piece_; // The actual piece object, not serialized directly by Move's operators

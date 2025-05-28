@@ -3,6 +3,15 @@
 
 namespace BayouBonanza {
 
+// Default constructor (for deserialization)
+Move::Move() :
+    piece_(nullptr),
+    from_(Position{0, 0}),
+    to_(Position{0, 0}),
+    isPromotion_(false),
+    pieceTypePromotedTo_(PieceType::PAWN) {
+}
+
 // Standard move constructor
 Move::Move(std::shared_ptr<Piece> piece, const Position& from, const Position& to) :
     piece_(piece),

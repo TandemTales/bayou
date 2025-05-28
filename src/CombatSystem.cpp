@@ -1,8 +1,15 @@
 #include "../include/CombatSystem.h"
 #include "../include/Square.h"
 #include "../include/GameBoard.h"
+#include "../include/King.h"  // For checking king pieces
 
 namespace BayouBonanza {
+
+void CombatSystem::initialize() {
+    // Initialize the combat system
+    // For now, this is a no-op but could be used for setting up
+    // combat parameters, loading configuration, etc.
+}
 
 bool CombatSystem::resolveCombat(GameBoard& board, const Position& attacker, const Position& defender) {
     // Verify positions are valid
@@ -80,6 +87,44 @@ bool CombatSystem::canEngageInCombat(const GameBoard& board, const Position& att
     // can engage in combat regardless of influence area
     // In a real implementation, we would check if the defender is in the attacker's influence area
     return true;
+}
+
+bool CombatSystem::checkForDefeatedKings(const GameBoard& board, PlayerSide& winningSide) {
+    bool player1HasKing = false;
+    bool player2HasKing = false;
+    
+    // Search the entire board for kings
+    for (int y = 0; y < GameBoard::BOARD_SIZE; y++) {
+        for (int x = 0; x < GameBoard::BOARD_SIZE; x++) {
+            const auto& square = board.getSquare(x, y);
+            if (!square.isEmpty()) {
+                auto piece = square.getPiece();
+                if (piece->getPieceType() == PieceType::KING && piece->getHealth() > 0) {
+                    if (piece->getSide() == PlayerSide::PLAYER_ONE) {
+                        player1HasKing = true;
+                    } else if (piece->getSide() == PlayerSide::PLAYER_TWO) {
+                        player2HasKing = true;
+                    }
+                }
+            }
+        }
+    }
+    
+    // Determine if game is over and who won
+    if (!player1HasKing && player2HasKing) {
+        winningSide = PlayerSide::PLAYER_TWO;
+        return true;
+    } else if (!player2HasKing && player1HasKing) {
+        winningSide = PlayerSide::PLAYER_ONE;
+        return true;
+    } else if (!player1HasKing && !player2HasKing) {
+        // Both kings defeated - this is a draw, but we'll say NEUTRAL wins
+        winningSide = PlayerSide::NEUTRAL;
+        return true;
+    }
+    
+    // Both players still have kings, game continues
+    return false;
 }
 
 // Functions removed to simplify implementation

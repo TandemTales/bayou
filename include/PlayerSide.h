@@ -1,4 +1,6 @@
 #pragma once
+#include <SFML/Config.hpp> // For sf::Uint8
+#include <SFML/Network/Packet.hpp> // For sf::Packet
 
 namespace BayouBonanza {
 

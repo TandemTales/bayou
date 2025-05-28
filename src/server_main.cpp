@@ -14,6 +14,7 @@
 // #include "GameRules.h"   // Example for future game logic
 // #include "TurnManager.h" // Example for future game logic
 
+using namespace BayouBonanza;
 
 const unsigned short PORT = 50000;
 const int REQUIRED_PLAYERS = 2;

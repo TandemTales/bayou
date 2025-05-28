@@ -31,20 +31,21 @@ TEST_CASE("TurnManager functionality", "[turnmanager]") {
         REQUIRE(gameState.getActivePlayer() == PlayerSide::PLAYER_ONE);
         REQUIRE(gameState.getTurnNumber() == 1);
         
-        Position startPos(3, 0); 
-        Position endPos(3, 1);
+        // Use a pawn move instead of king move since king can't move to occupied square
+        Position startPos(0, 6); // Player One Pawn position
+        Position endPos(0, 5);   // Move forward one square
 
-        std::shared_ptr<Piece> kingToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
-        REQUIRE(kingToMove != nullptr);
-        REQUIRE(kingToMove->getSide() == PlayerSide::PLAYER_ONE);
-        REQUIRE(kingToMove->isValidMove(gameState.getBoard(), endPos)); 
+        std::shared_ptr<Piece> pawnToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
+        REQUIRE(pawnToMove != nullptr);
+        REQUIRE(pawnToMove->getSide() == PlayerSide::PLAYER_ONE);
+        REQUIRE(pawnToMove->isValidMove(gameState.getBoard(), endPos)); 
 
-        Move gameMove(kingToMove, startPos, endPos);
+        Move gameMove(pawnToMove, startPos, endPos);
         turnManager.processMoveAction(gameMove); 
 
         REQUIRE(gameState.getBoard().getSquare(startPos.x, startPos.y).isEmpty() == true);
-        REQUIRE(gameState.getBoard().getSquare(endPos.x, endPos.y).getPiece() == kingToMove);
-        REQUIRE(kingToMove->getPosition() == endPos);
+        REQUIRE(gameState.getBoard().getSquare(endPos.x, endPos.y).getPiece() == pawnToMove);
+        REQUIRE(pawnToMove->getPosition() == endPos);
         REQUIRE(gameState.getActivePlayer() == PlayerSide::PLAYER_TWO);
         REQUIRE(gameState.getTurnNumber() == 2); 
     }
@@ -57,8 +58,8 @@ TEST_CASE("TurnManager functionality", "[turnmanager]") {
         int initialTurnNumber = gameState.getTurnNumber();
         REQUIRE(initialPlayer == PlayerSide::PLAYER_ONE);
         
-        Position startPos(3, 7); 
-        Position endPos(3, 6);
+        Position startPos(4, 0); // Player Two King position
+        Position endPos(4, 2);   // Move to empty square (not occupied by pawn)
 
         std::shared_ptr<Piece> opponentKing = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
         REQUIRE(opponentKing != nullptr);
@@ -81,8 +82,8 @@ TEST_CASE("TurnManager functionality", "[turnmanager]") {
         int initialTurnNumber = gameState.getTurnNumber();
         REQUIRE(initialPlayer == PlayerSide::PLAYER_ONE);
         
-        Position startPos(3, 0); 
-        Position invalidEndPos(3, 3); 
+        Position startPos(4, 7);     // Player One King position
+        Position invalidEndPos(4, 4); // Invalid move - too far
 
         std::shared_ptr<Piece> kingToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
         REQUIRE(kingToMove != nullptr);
@@ -105,8 +106,8 @@ TEST_CASE("TurnManager functionality", "[turnmanager]") {
         REQUIRE(gameState.getActivePlayer() == PlayerSide::PLAYER_ONE);
         REQUIRE(gameState.getTurnNumber() == 1);
 
-        Position startPos(0, 1); 
-        Position endPos(0, 2);
+        Position startPos(0, 6); // Player One Pawn position
+        Position endPos(0, 5);   // Move forward one square
         
         std::shared_ptr<Piece> pawnToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
         REQUIRE(pawnToMove != nullptr);
@@ -128,11 +129,11 @@ TEST_CASE("TurnManager functionality", "[turnmanager]") {
         TurnManager turnManager(gameState, gameRules);
 
         PlayerSide initialPlayer = gameState.getActivePlayer();
-        int initialTurnNumber = gameState.getTurnNumber(); // Corrected: This was already correct here
+        int initialTurnNumber = gameState.getTurnNumber();
         REQUIRE(initialPlayer == PlayerSide::PLAYER_ONE);
 
-        Position startPos(0, 1); 
-        Position invalidEndPos(0, 0); 
+        Position startPos(0, 6);     // Player One Pawn position
+        Position invalidEndPos(0, 7); // Invalid move - backwards
 
         std::shared_ptr<Piece> pawnToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
         REQUIRE(pawnToMove != nullptr);
@@ -144,6 +145,6 @@ TEST_CASE("TurnManager functionality", "[turnmanager]") {
 
         REQUIRE(gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece() == pawnToMove);
         REQUIRE(gameState.getActivePlayer() == initialPlayer);
-        REQUIRE(gameState.getTurnNumber() == initialTurnNumber); // THIS IS THE LINE THAT HAD THE TYPO
+        REQUIRE(gameState.getTurnNumber() == initialTurnNumber);
     }
 }

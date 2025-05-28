@@ -30,6 +30,10 @@ PlayerSide GameState::getActivePlayer() const {
     return activePlayer;
 }
 
+void GameState::setActivePlayer(PlayerSide player) {
+    activePlayer = player;
+}
+
 void GameState::switchActivePlayer() {
     activePlayer = (activePlayer == PlayerSide::PLAYER_ONE) ? 
                    PlayerSide::PLAYER_TWO : PlayerSide::PLAYER_ONE;
@@ -76,6 +80,10 @@ int GameState::getTurnNumber() const {
     return turnNumber;
 }
 
+void GameState::setTurnNumber(int turn) {
+    turnNumber = turn;
+}
+
 void GameState::incrementTurnNumber() {
     turnNumber++;
 }
@@ -105,6 +113,71 @@ void GameState::addSteam(PlayerSide side, int amount) {
         steamPlayer2 += amount;
     }
     // NEUTRAL side is ignored for adding steam
+}
+
+// SFML Packet operators for GamePhase enum
+sf::Packet& operator<<(sf::Packet& packet, const GamePhase& phase) {
+    return packet << static_cast<int>(phase);
+}
+
+sf::Packet& operator>>(sf::Packet& packet, GamePhase& phase) {
+    int value;
+    packet >> value;
+    phase = static_cast<GamePhase>(value);
+    return packet;
+}
+
+// SFML Packet operators for GameResult enum
+sf::Packet& operator<<(sf::Packet& packet, const GameResult& result) {
+    return packet << static_cast<int>(result);
+}
+
+sf::Packet& operator>>(sf::Packet& packet, GameResult& result) {
+    int value;
+    packet >> value;
+    result = static_cast<GameResult>(value);
+    return packet;
+}
+
+// SFML Packet operators for GameState
+sf::Packet& operator<<(sf::Packet& packet, const GameState& gs) {
+    packet << gs.getBoard();
+    packet << gs.getActivePlayer();
+    packet << gs.getGamePhase();
+    packet << gs.getGameResult();
+    packet << gs.getTurnNumber();
+    packet << gs.getSteam(PlayerSide::PLAYER_ONE);
+    packet << gs.getSteam(PlayerSide::PLAYER_TWO);
+    return packet;
+}
+
+sf::Packet& operator>>(sf::Packet& packet, GameState& gs) {
+    GameBoard board;
+    PlayerSide activePlayer;
+    GamePhase phase;
+    GameResult result;
+    int turnNumber;
+    int steamPlayer1;
+    int steamPlayer2;
+    
+    packet >> board;
+    packet >> activePlayer;
+    packet >> phase;
+    packet >> result;
+    packet >> turnNumber;
+    packet >> steamPlayer1;
+    packet >> steamPlayer2;
+    
+    // Set the deserialized values
+    gs.getBoard() = board;
+    gs.setActivePlayer(activePlayer);
+    gs.setGamePhase(phase);
+    gs.setGameResult(result);
+    gs.setTurnNumber(turnNumber);
+    gs.setSteam(PlayerSide::PLAYER_ONE, steamPlayer1);
+    gs.setSteam(PlayerSide::PLAYER_TWO, steamPlayer2);
+    
+    return packet;
 }
 
 } // namespace BayouBonanza

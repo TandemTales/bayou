@@ -1,4 +1,5 @@
 #include "Square.h"
+#include "PlayerSide.h"   // Explicitly include for packet operators
 #include "Piece.h"        // For std::shared_ptr<Piece>, PieceType, PlayerSide
 #include "PieceFactory.h" // For PieceFactory
 #include <SFML/Network/Packet.hpp> // For sf::Packet

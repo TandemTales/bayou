@@ -65,6 +65,11 @@ set(GAMELOGIC_SOURCES
 add_library(GameLogic STATIC ${GAMELOGIC_SOURCES})
 target_include_directories(GameLogic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+# Link SFML to GameLogic library so it can access SFML headers
+if(SFML_FOUND OR DOWNLOAD_SFML)
+  target_link_libraries(GameLogic PUBLIC sfml-network sfml-system)
+endif()
+
 # Source files for executables
 set(CLIENT_SOURCES src/main.cpp)
 set(SERVER_SOURCES src/server_main.cpp) # Assuming this file will be created
@@ -86,11 +91,11 @@ add_subdirectory(tests)
 
 # Link libraries
 if(SFML_FOUND OR DOWNLOAD_SFML)
-  # Link client
-  target_link_libraries(BayouBonanzaClient GameLogic sfml-graphics sfml-window sfml-system)
+  # Link client (GameLogic already includes sfml-network and sfml-system)
+  target_link_libraries(BayouBonanzaClient GameLogic sfml-graphics sfml-window)
   
-  # Link server
-  target_link_libraries(BayouBonanzaServer GameLogic sfml-network sfml-system)
+  # Link server (GameLogic already includes sfml-network and sfml-system)
+  target_link_libraries(BayouBonanzaServer GameLogic)
 
   # TODO: Update test linking in tests/CMakeLists.txt to link against GameLogic
 

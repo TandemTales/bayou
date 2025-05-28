@@ -4,8 +4,34 @@
 #include <memory>
 #include <string>
 #include "PlayerSide.h"
+#include <SFML/Config.hpp> // For sf::Uint8
+#include <SFML/Network/Packet.hpp> // For sf::Packet
 
 namespace BayouBonanza {
+
+/**
+ * @brief Enum representing different piece types
+ */
+enum class PieceType {
+    KING,
+    QUEEN,
+    ROOK,
+    BISHOP,
+    KNIGHT,
+    PAWN
+};
+
+// SFML Packet operators for PieceType
+inline sf::Packet& operator<<(sf::Packet& packet, const PieceType& type) {
+    return packet << static_cast<sf::Uint8>(type);
+}
+
+inline sf::Packet& operator>>(sf::Packet& packet, PieceType& type) {
+    sf::Uint8 type_uint8;
+    packet >> type_uint8;
+    type = static_cast<PieceType>(type_uint8);
+    return packet;
+}
 
 // Forward declarations
 class GameBoard;
