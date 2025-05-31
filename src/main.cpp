@@ -9,11 +9,16 @@
 
 #include "GameBoard.h"
 #include "GameState.h"
-#include "King.h" // Still needed for piece logic if not fully data-driven
+#include "Square.h"       // For Square::setGlobalPieceFactory
 #include "Move.h"      // For Move and its sf::Packet operators
 #include "NetworkProtocol.h" // For MessageType enum and operators
 #include "PlayerSide.h"  // For PlayerSide enum
 #include "InputManager.h" // New input manager
+#include "GameInitializer.h"
+#include "PieceFactory.h"
+#include "PieceDefinitionManager.h"
+#include "TurnManager.h"
+// #include "King.h" // Removed - using data-driven approach with PieceFactory
 
 
 // The actual sf::Packet operators are now defined with their respective classes.
@@ -26,6 +31,68 @@ bool gameHasStarted = false;
 std::string uiMessage = "Connecting..."; // For displaying messages like "Waiting for opponent"
 sf::Text uiMessageText;
 sf::Font globalFont; // Loaded once
+
+// Global PieceFactory for deserialization
+PieceDefinitionManager globalPieceDefManager;
+std::unique_ptr<PieceFactory> globalPieceFactory;
+
+// Function to recreate pieces after deserialization without resetting game state
+void recreatePiecesAfterDeserialization(GameState& gameState) {
+    // The issue is that Square deserialization loses pieces due to PieceFactory access
+    // Instead of resetting the entire game state, we'll recreate pieces using a standard layout
+    // This is a temporary workaround until we fix the Square deserialization properly
+    
+    GameBoard& board = gameState.getBoard();
+    
+    // Clear the board first
+    board.resetBoard();
+    
+    // Recreate the standard starting position using PieceFactory
+    if (globalPieceFactory) {
+        // Player 1 pieces (bottom of board)
+        // Back row
+        board.getSquare(0, 7).setPiece(globalPieceFactory->createPiece("Rook", PlayerSide::PLAYER_ONE));
+        board.getSquare(1, 7).setPiece(globalPieceFactory->createPiece("Knight", PlayerSide::PLAYER_ONE));
+        board.getSquare(2, 7).setPiece(globalPieceFactory->createPiece("Bishop", PlayerSide::PLAYER_ONE));
+        board.getSquare(3, 7).setPiece(globalPieceFactory->createPiece("Queen", PlayerSide::PLAYER_ONE));
+        board.getSquare(4, 7).setPiece(globalPieceFactory->createPiece("King", PlayerSide::PLAYER_ONE));
+        board.getSquare(5, 7).setPiece(globalPieceFactory->createPiece("Bishop", PlayerSide::PLAYER_ONE));
+        board.getSquare(6, 7).setPiece(globalPieceFactory->createPiece("Knight", PlayerSide::PLAYER_ONE));
+        board.getSquare(7, 7).setPiece(globalPieceFactory->createPiece("Rook", PlayerSide::PLAYER_ONE));
+        
+        // Pawn row
+        for (int x = 0; x < 8; x++) {
+            board.getSquare(x, 6).setPiece(globalPieceFactory->createPiece("Pawn", PlayerSide::PLAYER_ONE));
+        }
+        
+        // Player 2 pieces (top of board)
+        // Back row
+        board.getSquare(0, 0).setPiece(globalPieceFactory->createPiece("Rook", PlayerSide::PLAYER_TWO));
+        board.getSquare(1, 0).setPiece(globalPieceFactory->createPiece("Knight", PlayerSide::PLAYER_TWO));
+        board.getSquare(2, 0).setPiece(globalPieceFactory->createPiece("Bishop", PlayerSide::PLAYER_TWO));
+        board.getSquare(3, 0).setPiece(globalPieceFactory->createPiece("Queen", PlayerSide::PLAYER_TWO));
+        board.getSquare(4, 0).setPiece(globalPieceFactory->createPiece("King", PlayerSide::PLAYER_TWO));
+        board.getSquare(5, 0).setPiece(globalPieceFactory->createPiece("Bishop", PlayerSide::PLAYER_TWO));
+        board.getSquare(6, 0).setPiece(globalPieceFactory->createPiece("Knight", PlayerSide::PLAYER_TWO));
+        board.getSquare(7, 0).setPiece(globalPieceFactory->createPiece("Rook", PlayerSide::PLAYER_TWO));
+        
+        // Pawn row
+        for (int x = 0; x < 8; x++) {
+            board.getSquare(x, 1).setPiece(globalPieceFactory->createPiece("Pawn", PlayerSide::PLAYER_TWO));
+        }
+        
+        // Set piece positions
+        for (int y = 0; y < GameBoard::BOARD_SIZE; y++) {
+            for (int x = 0; x < GameBoard::BOARD_SIZE; x++) {
+                const Square& square = board.getSquare(x, y);
+                if (!square.isEmpty()) {
+                    Piece* piece = square.getPiece();
+                    piece->setPosition(Position(x, y));
+                }
+            }
+        }
+    }
+}
 
 // Function to print board state to console for debugging
 void printBoardState(const GameState& gameState) {
@@ -45,7 +112,7 @@ void printBoardState(const GameState& gameState) {
             
             char symbol = '.';
             if (!square.isEmpty()) {
-                std::shared_ptr<Piece> piece = square.getPiece();
+                Piece* piece = square.getPiece();
                 std::string symbol_str = piece->getSymbol();
                 symbol = symbol_str.empty() ? '.' : symbol_str[0];
                 
@@ -73,6 +140,16 @@ int main()
     
     // Set the framerate limit
     window.setFramerateLimit(60);
+
+    // Initialize global PieceFactory for deserialization
+    if (!globalPieceDefManager.loadDefinitions("assets/data/pieces.json")) {
+        std::cerr << "FATAL: Could not load piece definitions from assets/data/pieces.json" << std::endl;
+        return -1;
+    }
+    globalPieceFactory = std::make_unique<PieceFactory>(globalPieceDefManager);
+    
+    // Set the global PieceFactory for Square deserialization
+    Square::setGlobalPieceFactory(globalPieceFactory.get());
 
     // Network Socket
     sf::TcpSocket socket;
@@ -268,7 +345,7 @@ int main()
 
                 const Square& square = board.getSquare(x, y);
                 if (!square.isEmpty()) {
-                    std::shared_ptr<Piece> piece = square.getPiece();
+                    Piece* piece = square.getPiece();
                     std::string symbol = piece->getSymbol();
 
                     sf::Text pieceText;

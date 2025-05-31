@@ -71,7 +71,6 @@ private:
 
 // SFML Packet operators for GameBoard
 sf::Packet& operator<<(sf::Packet& packet, const GameBoard& gb);
-// GameBoard deserialization will need access to PieceFactory to pass to Square deserialization
-sf::Packet& operator>>(sf::Packet& packet, GameBoard& gb, PieceFactory& factory);
+sf::Packet& operator>>(sf::Packet& packet, GameBoard& gb);
 
 } // namespace BayouBonanza

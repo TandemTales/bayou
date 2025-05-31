@@ -41,7 +41,7 @@ bool InputManager::handleEvent(const sf::Event& event) {
     }
 }
 
-std::shared_ptr<Piece> InputManager::getSelectedPiece() const {
+Piece* InputManager::getSelectedPiece() const {
     return selectedPiece;
 }
 
@@ -172,7 +172,10 @@ void InputManager::attemptMove(int targetX, int targetY) {
                   << targetX << "," << targetY << std::endl;
         
         Position startPosition(originalSquareCoords.x, originalSquareCoords.y);
-        Move gameMove(selectedPiece, startPosition, targetPosition);
+        // Create a temporary shared_ptr wrapper for the Move constructor
+        // Note: Using no-op deleter since the piece is owned by Square
+        std::shared_ptr<Piece> piecePtr(selectedPiece, [](Piece*){});
+        Move gameMove(piecePtr, startPosition, targetPosition);
         
         if (gameHasStarted && myPlayerSide == gameState.getActivePlayer()) {
             sendMoveToServer(gameMove);

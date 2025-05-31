@@ -24,7 +24,7 @@ public:
     /**
      * @brief Constructor
      */
-    GameInitializer() = default;
+    GameInitializer();
     
     /**
      * @brief Initialize a new game state

@@ -87,6 +87,14 @@ add_executable(BayouBonanzaServer ${SERVER_SOURCES})
 add_executable(GameplayTest test_gameplay.cpp)
 target_link_libraries(GameplayTest GameLogic)
 
+# Add initialization test executable
+add_executable(TestInitialization test_initialization.cpp)
+target_link_libraries(TestInitialization GameLogic)
+
+# Add debug pieces test executable (commented out - file doesn't exist)
+# add_executable(DebugPieces debug_pieces.cpp)
+# target_link_libraries(DebugPieces GameLogic)
+
 # Set Visual Studio debugger working directory to project root for client
 set_target_properties(BayouBonanzaClient PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 

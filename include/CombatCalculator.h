@@ -15,13 +15,13 @@ struct CombatResult {
 class CombatCalculator {
 public:
     // Calculate damage from attacker to defender (one-directional)
-    static CombatResult calculateCombat(std::shared_ptr<Piece> attacker, std::shared_ptr<Piece> defender);
+    static CombatResult calculateCombat(Piece* attacker, Piece* defender);
     
     // Calculate damage based on piece types, can include bonuses/penalties
-    static int calculateDamage(std::shared_ptr<Piece> attacker, std::shared_ptr<Piece> defender);
+    static int calculateDamage(Piece* attacker, Piece* defender);
     
     // Check if a piece is defeated (health <= 0)
-    static bool isDefeated(std::shared_ptr<Piece> piece);
+    static bool isDefeated(Piece* piece);
     
     // Method removed - no counter-attacks in the game
 };

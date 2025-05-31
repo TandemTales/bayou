@@ -45,9 +45,9 @@ public:
     /**
      * @brief Get the currently selected piece
      * 
-     * @return Shared pointer to the selected piece, or nullptr if none selected
+     * @return Pointer to the selected piece, or nullptr if none selected
      */
-    std::shared_ptr<Piece> getSelectedPiece() const;
+    Piece* getSelectedPiece() const;
 
     /**
      * @brief Check if a piece is currently selected
@@ -91,7 +91,7 @@ private:
     PlayerSide& myPlayerSide;
 
     // Input state
-    std::shared_ptr<Piece> selectedPiece;
+    Piece* selectedPiece;
     sf::Vector2i originalSquareCoords;
     sf::Vector2f mouseOffset;
     bool pieceSelected;

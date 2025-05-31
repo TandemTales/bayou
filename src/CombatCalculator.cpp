@@ -1,16 +1,18 @@
-#include "../include/CombatCalculator.h"
-#include "../include/Queen.h"
-#include "../include/Rook.h"
-#include "../include/Bishop.h"
-#include "../include/Knight.h"
-#include "../include/Pawn.h"
-#include "../include/King.h"
-#include "../include/Piece.h"
+#include "CombatCalculator.h"
+// #include "../include/Queen.h" // Removed - using data-driven approach
+// #include "../include/Rook.h" // Removed - using data-driven approach
+// #include "../include/Bishop.h" // Removed - using data-driven approach
+// #include "../include/Knight.h" // Removed - using data-driven approach
+// #include "../include/Pawn.h" // Removed - using data-driven approach
+// #include "../include/King.h" // Removed - using data-driven approach
+#include "Piece.h"
+#include "GameBoard.h"
+#include "Square.h"
 #include <algorithm>
 
 namespace BayouBonanza {
 
-CombatResult CombatCalculator::calculateCombat(std::shared_ptr<Piece> attacker, std::shared_ptr<Piece> defender) {
+CombatResult CombatCalculator::calculateCombat(Piece* attacker, Piece* defender) {
     CombatResult result;
     
     // Calculate base damage
@@ -26,7 +28,7 @@ CombatResult CombatCalculator::calculateCombat(std::shared_ptr<Piece> attacker, 
     return result;
 }
 
-int CombatCalculator::calculateDamage(std::shared_ptr<Piece> attacker, std::shared_ptr<Piece> defender) {
+int CombatCalculator::calculateDamage(Piece* attacker, Piece* defender) {
     if (!attacker || !defender) {
         return 0;
     }
@@ -34,23 +36,24 @@ int CombatCalculator::calculateDamage(std::shared_ptr<Piece> attacker, std::shar
     int baseDamage = attacker->getAttack();
     int finalDamage = baseDamage;
     
-    // Implement piece-specific damage bonuses/penalties
-    // For example, certain pieces might have advantages against other piece types
+    // Implement piece-specific damage bonuses/penalties using PieceType
+    PieceType attackerType = attacker->getPieceType();
+    PieceType defenderType = defender->getPieceType();
     
     // Example of type-based damage modifiers
-    if (dynamic_cast<Queen*>(attacker.get())) {
+    if (attackerType == PieceType::QUEEN) {
         // Queen gets bonus damage against Pawns
-        if (dynamic_cast<Pawn*>(defender.get())) {
+        if (defenderType == PieceType::PAWN) {
             finalDamage = static_cast<int>(baseDamage * 1.5);
         }
-    } else if (dynamic_cast<Knight*>(attacker.get())) {
+    } else if (attackerType == PieceType::KNIGHT) {
         // Knights get bonus damage against Bishop and Rook
-        if (dynamic_cast<Bishop*>(defender.get()) || dynamic_cast<Rook*>(defender.get())) {
+        if (defenderType == PieceType::BISHOP || defenderType == PieceType::ROOK) {
             finalDamage = static_cast<int>(baseDamage * 1.25);
         }
-    } else if (dynamic_cast<Pawn*>(attacker.get())) {
+    } else if (attackerType == PieceType::PAWN) {
         // Pawns get bonus damage against other Pawns
-        if (dynamic_cast<Pawn*>(defender.get())) {
+        if (defenderType == PieceType::PAWN) {
             finalDamage = static_cast<int>(baseDamage * 1.2);
         }
     }
@@ -59,8 +62,8 @@ int CombatCalculator::calculateDamage(std::shared_ptr<Piece> attacker, std::shar
     return std::max(1, finalDamage);
 }
 
-bool CombatCalculator::isDefeated(std::shared_ptr<Piece> piece) {
-    return piece && piece->getHealth() <= 0;
+bool CombatCalculator::isDefeated(Piece* piece) {
+    return !piece || piece->getHealth() <= 0;
 }
 
 // Method removed - no counter-attacks in the game

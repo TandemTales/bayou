@@ -2,7 +2,11 @@
 
 #include <string>
 #include <vector>
-#include "Piece.h" // Assuming Piece.h is in the include directory
+
+// Forward declaration to avoid circular include
+namespace BayouBonanza {
+    enum class PieceType;
+}
 
 // Forward declaration if Position is defined elsewhere, or define it here
 // For now, let's assume Position is defined elsewhere and included where needed,
@@ -11,6 +15,16 @@
 struct Position {
     int x;
     int y;
+    
+    Position(int x = 0, int y = 0) : x(x), y(y) {}
+
+    bool operator==(const Position& other) const {
+        return x == other.x && y == other.y;
+    }
+
+    bool operator!=(const Position& other) const {
+        return !(*this == other);
+    }
 };
 
 struct PieceMovementRule {
@@ -28,5 +42,5 @@ struct PieceStats {
     int health;
     std::vector<PieceMovementRule> movementRules;
     std::vector<PieceMovementRule> influenceRules;
-    PieceType pieceType; // From Piece.h
+    BayouBonanza::PieceType pieceType; // Forward declared from Piece.h
 };

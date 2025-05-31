@@ -152,7 +152,6 @@ sf::Packet& operator<<(sf::Packet& packet, const GameState& gs) {
 }
 
 sf::Packet& operator>>(sf::Packet& packet, GameState& gs) {
-    GameBoard board;
     PlayerSide activePlayer;
     GamePhase phase;
     GameResult result;
@@ -160,7 +159,8 @@ sf::Packet& operator>>(sf::Packet& packet, GameState& gs) {
     int steamPlayer1;
     int steamPlayer2;
     
-    packet >> board;
+    // Deserialize directly into the GameState's board
+    packet >> gs.getBoard();
     packet >> activePlayer;
     packet >> phase;
     packet >> result;
@@ -169,7 +169,6 @@ sf::Packet& operator>>(sf::Packet& packet, GameState& gs) {
     packet >> steamPlayer2;
     
     // Set the deserialized values
-    gs.getBoard() = board;
     gs.setActivePlayer(activePlayer);
     gs.setGamePhase(phase);
     gs.setGameResult(result);

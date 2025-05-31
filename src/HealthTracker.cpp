@@ -105,8 +105,8 @@ void HealthTracker::checkBoardForDefeatedPieces(GameBoard& board,
             auto& square = board.getSquare(x, y);
             
             if (!square.isEmpty()) {
-                auto piece = square.getPiece();
-                if (isDefeated(piece)) {
+                Piece* piece = square.getPiece();
+                if (piece && piece->getHealth() <= 0) {
                     if (onPieceDefeated) {
                         onPieceDefeated(pos);
                     }

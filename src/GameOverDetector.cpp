@@ -1,7 +1,7 @@
 #include "GameOverDetector.h"
 #include "GameBoard.h"
-#include "Square.h"
-#include "King.h"
+// #include "King.h" // Removed - using data-driven approach with PieceFactory
+#include "../include/HealthTracker.h"
 
 namespace BayouBonanza {
 
@@ -73,10 +73,10 @@ bool GameOverDetector::hasKing(const GameState& gameState, PlayerSide side) cons
             
             // Check if the square has a piece
             if (!square.isEmpty()) {
-                std::shared_ptr<Piece> piece = square.getPiece();
+                Piece* piece = square.getPiece();
                 
                 // Check if the piece is a king of the specified side
-                if (piece->getSide() == side && dynamic_cast<King*>(piece.get())) {
+                if (piece->getSide() == side && piece->getPieceType() == PieceType::KING) {
                     return true;
                 }
             }

@@ -38,26 +38,7 @@ inline sf::Packet& operator>>(sf::Packet& packet, PieceType& type) {
 class GameBoard;
 class Square;
 
-/**
- * @brief Structure representing a position on the board
- */
-struct Position {
-    int x;
-    int y;
-    
-    Position(int x = 0, int y = 0) : x(x), y(y) {}
-
-    bool operator==(const Position& other) const {
-        return x == other.x && y == other.y;
-    }
-
-    bool operator!=(const Position& other) const {
-        return !(*this == other);
-    }
-};
-
-// Position struct is now also in PieceData.h, ensure consistency or remove one.
-// For now, assuming they are compatible or one will be removed later.
+// Note: Position struct is defined in PieceData.h and imported via include
 
 // SFML Packet operators for Position
 inline sf::Packet& operator<<(sf::Packet& packet, const Position& position) {
@@ -156,7 +137,7 @@ protected:
     int health; // Will be initialized from stats
     Position position;
     bool hasMoved;
-    const PieceStats& stats; // Added PieceStats member
+    PieceStats stats; // Changed from const PieceStats& to PieceStats (store by value)
 
 public:
     // virtual PieceType getPieceType() const = 0; // This was already listed above, removed from here

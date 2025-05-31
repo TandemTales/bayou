@@ -1,11 +1,15 @@
 #include <iostream>
-#include <cctype>
+#include <memory>
 #include "GameState.h"
-#include "GameRules.h"
+#include "GameInitializer.h"
 #include "TurnManager.h"
 #include "Move.h"
-#include "King.h"
-#include "Pawn.h"
+// #include "Pawn.h" // Removed - using data-driven approach with PieceFactory
+#include "GameBoard.h"
+#include "Square.h"
+#include "Piece.h"
+#include "PieceFactory.h"
+#include "PlayerSide.h"
 
 using namespace BayouBonanza;
 
@@ -26,7 +30,7 @@ void printBoardState(const GameState& gameState) {
             
             char symbol = '.';
             if (!square.isEmpty()) {
-                std::shared_ptr<Piece> piece = square.getPiece();
+                Piece* piece = square.getPiece();
                 std::string symbol_str = piece->getSymbol();
                 symbol = symbol_str.empty() ? '.' : symbol_str[0];
                 
@@ -80,11 +84,13 @@ int main() {
         // Get the pawn at position (4, 6) - Player 1's e-pawn
         const Square& pawnSquare = gameState.getBoard().getSquare(4, 6);
         if (!pawnSquare.isEmpty()) {
-            std::shared_ptr<Piece> pawn = pawnSquare.getPiece();
+            Piece* pawn = pawnSquare.getPiece();
             Position from(4, 6);
             Position to(4, 5);
             
-            Move pawnMove(pawn, from, to);
+            // Create a temporary shared_ptr wrapper for the Move constructor
+            std::shared_ptr<Piece> pawnPtr(pawn, [](Piece*){});
+            Move pawnMove(pawnPtr, from, to);
             
             bool moveProcessed = false;
             turnManager.processMoveAction(pawnMove, [&](const ActionResult& result) {
@@ -111,11 +117,13 @@ int main() {
         // Get the pawn at position (4, 1) - Player 2's e-pawn
         const Square& pawn2Square = gameState.getBoard().getSquare(4, 1);
         if (!pawn2Square.isEmpty()) {
-            std::shared_ptr<Piece> pawn = pawn2Square.getPiece();
+            Piece* pawn = pawn2Square.getPiece();
             Position from(4, 1);
             Position to(4, 2);
             
-            Move pawnMove(pawn, from, to);
+            // Create a temporary shared_ptr wrapper for the Move constructor
+            std::shared_ptr<Piece> pawnPtr(pawn, [](Piece*){});
+            Move pawnMove(pawnPtr, from, to);
             
             bool moveProcessed = false;
             turnManager.processMoveAction(pawnMove, [&](const ActionResult& result) {
@@ -135,11 +143,13 @@ int main() {
         
         const Square& enemyPawnSquare = gameState.getBoard().getSquare(0, 1);
         if (!enemyPawnSquare.isEmpty()) {
-            std::shared_ptr<Piece> enemyPawn = enemyPawnSquare.getPiece();
+            Piece* enemyPawn = enemyPawnSquare.getPiece();
             Position from(0, 1);
             Position to(0, 2);
             
-            Move invalidMove(enemyPawn, from, to);
+            // Create a temporary shared_ptr wrapper for the Move constructor
+            std::shared_ptr<Piece> enemyPawnPtr(enemyPawn, [](Piece*){});
+            Move invalidMove(enemyPawnPtr, from, to);
             
             bool moveProcessed = false;
             turnManager.processMoveAction(invalidMove, [&](const ActionResult& result) {

@@ -1,0 +1,160 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# C++ File Organization Rules
+
+## **Header File Placement**
+- **ALL header files (.h) MUST be placed in the `include/` directory**
+- **NEVER place header files in the `src/` directory**
+- Source files (.cpp) belong in the `src/` directory
+- Test files (.cpp) belong in the `tests/` directory
+
+```cpp
+// ✅ DO: Correct file structure
+include/
+├── GameBoard.h
+├── Piece.h
+├── CombatSystem.h
+└── PlayerSide.h
+
+src/
+├── GameBoard.cpp
+├── Piece.cpp
+├── CombatSystem.cpp
+└── main.cpp
+
+// ❌ DON'T: Header files in src directory
+src/
+├── GameBoard.h     // WRONG - should be in include/
+├── GameBoard.cpp
+├── Piece.h         // WRONG - should be in include/
+└── Piece.cpp
+```
+
+## **Include Path Guidelines**
+- **Use relative paths from src/ to include/ when necessary**
+- **Prefer using the build system's include path (-I./include)**
+- **Use quotes for project headers, angle brackets for system headers**
+
+```cpp
+// ✅ DO: Correct include statements
+#include "GameBoard.h"           // When build system includes ./include
+#include "../include/GameBoard.h" // When explicit path needed
+#include <SFML/Network.hpp>      // System/library headers
+
+// ❌ DON'T: Incorrect include patterns
+#include <GameBoard.h>           // Wrong - use quotes for project headers
+#include "SFML/Network.hpp"      // Wrong - use angle brackets for system headers
+```
+
+## **File Naming Conventions**
+- **Use PascalCase for class header/source files**
+- **Match header and source file names exactly**
+- **Use descriptive, clear names that reflect the class/module purpose**
+
+```cpp
+// ✅ DO: Consistent naming
+include/CombatSystem.h
+src/CombatSystem.cpp
+
+include/GameBoard.h
+src/GameBoard.cpp
+
+// ❌ DON'T: Inconsistent naming
+include/combat_system.h    // Wrong case
+src/CombatSystem.cpp
+
+include/GameBoard.h
+src/gameboard.cpp          // Case mismatch
+```
+
+## **Header Guard Standards**
+- **Use include guards in ALL header files**
+- **Follow the pattern: `BAYOU_BONANZA_CLASSNAME_H`**
+- **Use uppercase with underscores**
+
+```cpp
+// ✅ DO: Proper header guards
+#ifndef BAYOU_BONANZA_COMBAT_SYSTEM_H
+#define BAYOU_BONANZA_COMBAT_SYSTEM_H
+
+// Header content here
+
+#endif // BAYOU_BONANZA_COMBAT_SYSTEM_H
+
+// ❌ DON'T: Inconsistent or missing guards
+#ifndef COMBATSYSTEM_H     // Wrong format
+#pragma once               // Avoid - use include guards instead
+```
+
+## **Namespace Organization**
+- **All project code MUST be in the `BayouBonanza` namespace**
+- **Use namespace consistently across all files**
+- **Close namespace with comment indicating the namespace name**
+
+```cpp
+// ✅ DO: Proper namespace usage
+namespace BayouBonanza {
+
+class CombatSystem {
+    // Class implementation
+};
+
+} // namespace BayouBonanza
+
+// ❌ DON'T: Missing or inconsistent namespace
+class CombatSystem {  // Missing namespace
+    // Class implementation
+};
+```
+
+## **Forward Declarations**
+- **Use forward declarations in headers when possible**
+- **Include full headers only when necessary (inheritance, composition)**
+- **Prefer forward declarations to reduce compilation dependencies**
+
+```cpp
+// ✅ DO: Forward declarations in headers
+// In GameBoard.h
+namespace BayouBonanza {
+    class Piece;  // Forward declaration
+    class Square; // Forward declaration
+    
+    class GameBoard {
+        std::vector<std::unique_ptr<Piece>> pieces; // OK with forward declaration
+    };
+}
+
+// ❌ DON'T: Unnecessary includes in headers
+#include "Piece.h"     // Only needed if inheriting or using complete type
+#include "Square.h"    // Only needed if inheriting or using complete type
+```
+
+## **Build System Integration**
+- **Ensure CMakeLists.txt includes the include/ directory**
+- **Use target_include_directories for proper include paths**
+- **Verify all header files are discoverable by the build system**
+
+```cmake
+# ✅ DO: Proper CMake include setup
+target_include_directories(${PROJECT_NAME} 
+    PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+# ❌ DON'T: Hardcoded or missing include paths
+# Missing include directory setup
+```
+
+## **Migration Guidelines**
+- **When moving headers from src/ to include/, update all include statements**
+- **Test compilation after moving files**
+- **Update any build scripts or IDE configurations**
+- **Remove duplicate header files from src/ directory**
+
+## **Related Files**
+- See [CMakeLists.txt](mdc:CMakeLists.txt) for build configuration
+- See [dev_workflow.mdc](mdc:.cursor/rules/dev_workflow.mdc) for development process
+

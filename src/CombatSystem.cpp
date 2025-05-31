@@ -1,7 +1,9 @@
 #include "../include/CombatSystem.h"
-#include "../include/Square.h"
-#include "../include/GameBoard.h"
-#include "../include/King.h"  // For checking king pieces
+#include "GameBoard.h"
+#include "Square.h"
+// #include "../include/King.h"  // Removed - using data-driven approach with PieceFactory
+#include "CombatCalculator.h"
+#include <iostream>
 
 namespace BayouBonanza {
 
@@ -36,10 +38,15 @@ bool CombatSystem::resolveCombat(GameBoard& board, const Position& attacker, con
     return true;
 }
 
-void CombatSystem::applyDamage(std::shared_ptr<Piece> attacker, std::shared_ptr<Piece> defender) {
+void CombatSystem::applyDamage(Piece* attacker, Piece* defender) {
     if (attacker && defender) {
         int damage = attacker->getAttack();
+        std::cout << "CombatSystem::applyDamage - Attacker attack: " << damage 
+                  << ", Defender health before: " << defender->getHealth() << std::endl;
         defender->takeDamage(damage);
+        std::cout << "CombatSystem::applyDamage - Defender health after: " << defender->getHealth() << std::endl;
+    } else {
+        std::cout << "CombatSystem::applyDamage - NULL pointer: attacker=" << attacker << ", defender=" << defender << std::endl;
     }
 }
 

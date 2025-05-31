@@ -5,10 +5,10 @@
 #include <SFML/Network/Packet.hpp> // For sf::Packet
 #include <iostream> // For std::cerr
 
-// Note: Piece.h should already include PlayerSide.h.
-// Square.h should already include Piece.h and PieceFactory.h for the declarations.
-
 namespace BayouBonanza {
+
+// Static variable definition
+PieceFactory* Square::globalPieceFactory = nullptr;
 
 Square::Square() : 
     piece(nullptr),
@@ -26,6 +26,10 @@ Piece* Square::getPiece() const { // Changed return type
 
 void Square::setPiece(std::unique_ptr<Piece> p) { // Changed parameter type
     this->piece = std::move(p);
+}
+
+std::unique_ptr<Piece> Square::extractPiece() {
+    return std::move(piece); // Transfers ownership, automatically sets piece to nullptr
 }
 
 int Square::getControlValue(PlayerSide side) const {
@@ -56,6 +60,10 @@ PlayerSide Square::getControlledBy() const {
     }
 }
 
+void Square::setGlobalPieceFactory(PieceFactory* factory) {
+    globalPieceFactory = factory;
+}
+
 // SFML Packet operators for Square
 sf::Packet& operator<<(sf::Packet& packet, const Square& sq) {
     bool hasPiece = (sq.getPiece() != nullptr);
@@ -76,8 +84,8 @@ sf::Packet& operator<<(sf::Packet& packet, const Square& sq) {
     return packet;
 }
 
-// Updated operator>> to include PieceFactory reference
-sf::Packet& operator>>(sf::Packet& packet, Square& sq, PieceFactory& factory) {
+// Updated operator>> 
+sf::Packet& operator>>(sf::Packet& packet, Square& sq) {
     bool hasPiece;
     packet >> hasPiece;
 
@@ -87,19 +95,32 @@ sf::Packet& operator>>(sf::Packet& packet, Square& sq, PieceFactory& factory) {
         packet >> side;      // Deserialize PlayerSide enum
         packet >> typeName;  // Deserialize typeName string
 
-        std::unique_ptr<Piece> piece = factory.createPiece(typeName, side);
-        if (piece) {
-            packet >> (*piece); // Deserialize common Piece data into the created piece
-            sq.setPiece(std::move(piece));
+        // Use static globalPieceFactory to recreate the piece
+        if (Square::globalPieceFactory) {
+            std::unique_ptr<Piece> piece = Square::globalPieceFactory->createPiece(typeName, side);
+            if (piece) {
+                // Deserialize the piece data
+                packet >> (*piece);
+                sq.setPiece(std::move(piece));
+            } else {
+                std::cerr << "Error: Failed to create piece of type '" << typeName << "'" << std::endl;
+                sq.setPiece(nullptr);
+                // Skip the piece data in the packet to avoid misalignment
+                std::string dummySymbol;
+                Position dummyPosition;
+                sf::Int32 dummyHealth, dummyAttack;
+                bool dummyHasMoved;
+                packet >> dummySymbol >> dummyPosition >> dummyHealth >> dummyAttack >> dummyHasMoved;
+            }
         } else {
-            std::cerr << "Error: Failed to create piece of type '" << typeName << "' during Square deserialization." << std::endl;
-            // If piece creation fails, we can't deserialize the rest of its specific data.
-            // This could lead to packet stream misalignment if not handled carefully.
-            // For now, we set the piece to nullptr and hope the packet stream can recover
-            // for subsequent Square data (control values). This is risky.
-            // A more robust error handling strategy would be needed in a real application,
-            // potentially by reading a "dummy" piece of expected size or failing the stream.
-            sq.setPiece(nullptr); 
+            std::cerr << "Error: Global PieceFactory not available for deserialization" << std::endl;
+            sq.setPiece(nullptr);
+            // Skip the piece data in the packet to avoid misalignment
+            std::string dummySymbol;
+            Position dummyPosition;
+            sf::Int32 dummyHealth, dummyAttack;
+            bool dummyHasMoved;
+            packet >> dummySymbol >> dummyPosition >> dummyHealth >> dummyAttack >> dummyHasMoved;
         }
     } else {
         sq.setPiece(nullptr);

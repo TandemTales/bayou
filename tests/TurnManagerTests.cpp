@@ -3,12 +3,14 @@
 #include "GameState.h"
 #include "GameRules.h"
 #include "GameInitializer.h"
-#include "King.h" 
-#include "Pawn.h" 
+// #include "King.h" // Removed - using data-driven approach with PieceFactory
+// #include "Pawn.h" // Removed - using data-driven approach with PieceFactory
 #include "GameBoard.h"
 #include "Piece.h"
 #include "Square.h"
 #include "Move.h" // Required for Move object
+#include "PieceFactory.h"
+#include "PieceDefinitionManager.h"
 
 using namespace BayouBonanza;
 
@@ -35,12 +37,14 @@ TEST_CASE("TurnManager functionality", "[turnmanager]") {
         Position startPos(0, 6); // Player One Pawn position
         Position endPos(0, 5);   // Move forward one square
 
-        std::shared_ptr<Piece> pawnToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
+        Piece* pawnToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
         REQUIRE(pawnToMove != nullptr);
         REQUIRE(pawnToMove->getSide() == PlayerSide::PLAYER_ONE);
         REQUIRE(pawnToMove->isValidMove(gameState.getBoard(), endPos)); 
 
-        Move gameMove(pawnToMove, startPos, endPos);
+        // Create a temporary shared_ptr wrapper for the Move constructor
+        std::shared_ptr<Piece> pawnPtr(pawnToMove, [](Piece*){});
+        Move gameMove(pawnPtr, startPos, endPos);
         turnManager.processMoveAction(gameMove); 
 
         REQUIRE(gameState.getBoard().getSquare(startPos.x, startPos.y).isEmpty() == true);
@@ -61,11 +65,13 @@ TEST_CASE("TurnManager functionality", "[turnmanager]") {
         Position startPos(4, 0); // Player Two King position
         Position endPos(4, 2);   // Move to empty square (not occupied by pawn)
 
-        std::shared_ptr<Piece> opponentKing = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
+        Piece* opponentKing = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
         REQUIRE(opponentKing != nullptr);
         REQUIRE(opponentKing->getSide() == PlayerSide::PLAYER_TWO); 
         
-        Move gameMove(opponentKing, startPos, endPos);
+        // Create a temporary shared_ptr wrapper for the Move constructor
+        std::shared_ptr<Piece> kingPtr(opponentKing, [](Piece*){});
+        Move gameMove(kingPtr, startPos, endPos);
         turnManager.processMoveAction(gameMove); 
 
         REQUIRE(gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece() == opponentKing); 
@@ -85,12 +91,14 @@ TEST_CASE("TurnManager functionality", "[turnmanager]") {
         Position startPos(4, 7);     // Player One King position
         Position invalidEndPos(4, 4); // Invalid move - too far
 
-        std::shared_ptr<Piece> kingToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
+        Piece* kingToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
         REQUIRE(kingToMove != nullptr);
         REQUIRE(kingToMove->getSide() == PlayerSide::PLAYER_ONE);
         REQUIRE_FALSE(kingToMove->isValidMove(gameState.getBoard(), invalidEndPos)); 
 
-        Move gameMove(kingToMove, startPos, invalidEndPos);
+        // Create a temporary shared_ptr wrapper for the Move constructor
+        std::shared_ptr<Piece> kingPtr(kingToMove, [](Piece*){});
+        Move gameMove(kingPtr, startPos, invalidEndPos);
         turnManager.processMoveAction(gameMove); 
 
         REQUIRE(gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece() == kingToMove); 
@@ -109,12 +117,14 @@ TEST_CASE("TurnManager functionality", "[turnmanager]") {
         Position startPos(0, 6); // Player One Pawn position
         Position endPos(0, 5);   // Move forward one square
         
-        std::shared_ptr<Piece> pawnToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
+        Piece* pawnToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
         REQUIRE(pawnToMove != nullptr);
         REQUIRE(pawnToMove->getSide() == PlayerSide::PLAYER_ONE);
         REQUIRE(pawnToMove->isValidMove(gameState.getBoard(), endPos));
 
-        Move gameMove(pawnToMove, startPos, endPos);
+        // Create a temporary shared_ptr wrapper for the Move constructor
+        std::shared_ptr<Piece> pawnPtr(pawnToMove, [](Piece*){});
+        Move gameMove(pawnPtr, startPos, endPos);
         turnManager.processMoveAction(gameMove); 
 
         REQUIRE(gameState.getBoard().getSquare(startPos.x, startPos.y).isEmpty() == true);
@@ -135,12 +145,14 @@ TEST_CASE("TurnManager functionality", "[turnmanager]") {
         Position startPos(0, 6);     // Player One Pawn position
         Position invalidEndPos(0, 7); // Invalid move - backwards
 
-        std::shared_ptr<Piece> pawnToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
+        Piece* pawnToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
         REQUIRE(pawnToMove != nullptr);
         REQUIRE(pawnToMove->getSide() == PlayerSide::PLAYER_ONE);
         REQUIRE_FALSE(pawnToMove->isValidMove(gameState.getBoard(), invalidEndPos));
         
-        Move gameMove(pawnToMove, startPos, invalidEndPos);
+        // Create a temporary shared_ptr wrapper for the Move constructor
+        std::shared_ptr<Piece> pawnPtr(pawnToMove, [](Piece*){});
+        Move gameMove(pawnPtr, startPos, invalidEndPos);
         turnManager.processMoveAction(gameMove); 
 
         REQUIRE(gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece() == pawnToMove);

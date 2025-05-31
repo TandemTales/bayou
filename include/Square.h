@@ -10,6 +10,7 @@ namespace BayouBonanza {
 
 // Forward declaration to avoid circular includes
 class Piece;
+class PieceFactory;
 
 /**
  * @brief Represents a single square on the game board
@@ -46,6 +47,13 @@ public:
     void setPiece(std::unique_ptr<Piece> piece);
     
     /**
+     * @brief Extract the piece from this square, transferring ownership
+     * 
+     * @return Unique pointer to the piece (caller takes ownership), nullptr if empty
+     */
+    std::unique_ptr<Piece> extractPiece();
+    
+    /**
      * @brief Get the control value for a specific player
      * 
      * @param side The player side to check
@@ -62,17 +70,27 @@ public:
     void setControlValue(PlayerSide side, int value);
     
     /**
-     * @brief Determine which player has control of this square
+     * @brief Get the player that controls this square
      * 
-     * @return The player side that controls this square, or NEUTRAL if tied
+     * @return PlayerSide that controls this square (NEUTRAL if tied)
      */
     PlayerSide getControlledBy() const;
+    
+    /**
+     * @brief Set the global PieceFactory for deserialization
+     * 
+     * @param factory Pointer to the PieceFactory to use
+     */
+    static void setGlobalPieceFactory(PieceFactory* factory);
 
     // PieceFactory needs to be accessible for deserialization.
     // This is a design challenge. For now, we assume it can be accessed.
     // One common way is to pass it to the deserialization operator,
     // e.g., operator>>(sf::Packet& packet, Square& sq, PieceFactory& factory);
     // Or, GameState could hold the factory.
+
+    // Static PieceFactory pointer for deserialization
+    static PieceFactory* globalPieceFactory;
 
 private:
     std::unique_ptr<Piece> piece; // nullptr if empty, Square owns the piece
@@ -81,11 +99,8 @@ private:
 };
 
 // SFML Packet operators for Square
-// If PieceFactory needs to be passed, the signature of operator>> would change.
-// For now, we'll modify its implementation assuming factory is accessible.
 sf::Packet& operator<<(sf::Packet& packet, const Square& sq);
-// The operator>> now needs a PieceFactory reference.
-sf::Packet& operator>>(sf::Packet& packet, Square& sq, PieceFactory& factory);
+sf::Packet& operator>>(sf::Packet& packet, Square& sq);
 
 
 } // namespace BayouBonanza

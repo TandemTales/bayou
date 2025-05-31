@@ -65,13 +65,12 @@ sf::Packet& operator<<(sf::Packet& packet, const GameBoard& gb) {
     return packet;
 }
 
-// Updated to pass PieceFactory to Square's deserialization operator
-sf::Packet& operator>>(sf::Packet& packet, GameBoard& gb, PieceFactory& factory) {
+// Updated to match signature without PieceFactory
+sf::Packet& operator>>(sf::Packet& packet, GameBoard& gb) {
     for (int y = 0; y < GameBoard::BOARD_SIZE; ++y) {
         for (int x = 0; x < GameBoard::BOARD_SIZE; ++x) {
             // GameBoard::getSquare(x,y) returns a Square&.
-            // Pass the factory to Square's operator>>.
-            packet >> gb.getSquare(x, y), factory;
+            packet >> gb.getSquare(x, y);
         }
     }
     return packet;

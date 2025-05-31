@@ -5,6 +5,7 @@
 #include "PieceDefinitionManager.h"
 #include "PieceFactory.h"
 #include "PlayerSide.h"
+#include "PieceData.h"  // For Position
 #include <vector>
 #include <algorithm> // For std::find_if
 
@@ -21,17 +22,17 @@ struct TestFixture {
 
     TestFixture() : factory(pdm) {
         // Attempt to load definitions. Path might need adjustment based on test execution directory.
-        // A more robust solution would use CMAKE_CURRENT_SOURCE_DIR or similar to locate assets.
-        bool loaded = pdm.loadDefinitions("../../assets/data/pieces.json"); // Try relative path from build/tests
+        // Assets are copied to the test executable directory, so use relative path from there
+        bool loaded = pdm.loadDefinitions("assets/data/pieces.json"); // Try relative path from test executable directory
         if (!loaded) {
-            loaded = pdm.loadDefinitions("assets/data/pieces.json"); // Try relative path from build
+            loaded = pdm.loadDefinitions("../../assets/data/pieces.json"); // Fallback to original path
         }
         REQUIRE(loaded); // Crucial for tests to run
     }
 
     // Helper to check if a position is in a list of moves
-    static bool containsMove(const std::vector<BayouBonanza::Position>& moves, const BayouBonanza::Position& pos) {
-        return std::find_if(moves.begin(), moves.end(), [&](const BayouBonanza::Position& move) {
+    static bool containsMove(const std::vector<Position>& moves, const Position& pos) {
+        return std::find_if(moves.begin(), moves.end(), [&](const Position& move) {
             return move.x == pos.x && move.y == pos.y;
         }) != moves.end();
     }
@@ -50,20 +51,20 @@ TEST_CASE_METHOD(TestFixture, "Piece Data-Driven Functionality", "[piece]") {
         REQUIRE(king->getHealth() == 10); // Based on sample JSON
 
         board.getSquare(4, 7).setPiece(std::move(king)); // Place King
-        Piece* kingPtr = board.getSquare(4,7).getPiece();
+        BayouBonanza::Piece* kingPtr = board.getSquare(4,7).getPiece();
         REQUIRE(kingPtr != nullptr);
-        kingPtr->setPosition({4,7});
+        kingPtr->setPosition({3,3});
 
 
-        auto validMoves = kingPtr->getValidMoves(board);
+        auto validMoves = kingPtr->getValidMoves(board); 
         // King moves one step in all 8 directions
         REQUIRE(validMoves.size() == 8); // Assuming edge of board limits some moves for a typical 4,7 start
                                         // For a 3,3 start, it's 8. For 4,7 on 8x8, it's 5 moves.
                                         // Let's place at 3,3 for full 8 moves.
-        board.getSquare(4,7).removePiece(); // remove old king
+        board.getSquare(4,7).setPiece(nullptr); // remove old king
         auto king2 = factory.createPiece("King", BayouBonanza::PlayerSide::PLAYER_ONE);
         board.getSquare(3,3).setPiece(std::move(king2));
-        Piece* king2Ptr = board.getSquare(3,3).getPiece();
+        BayouBonanza::Piece* king2Ptr = board.getSquare(3,3).getPiece();
         king2Ptr->setPosition({3,3});
         validMoves = king2Ptr->getValidMoves(board);
         REQUIRE(validMoves.size() == 8);
@@ -91,7 +92,7 @@ TEST_CASE_METHOD(TestFixture, "Piece Data-Driven Functionality", "[piece]") {
         REQUIRE(pawn->getHealth() == 1);
 
         board.getSquare(3, 6).setPiece(std::move(pawn)); // Place Pawn for Player One
-        Piece* pawnPtr = board.getSquare(3,6).getPiece();
+        BayouBonanza::Piece* pawnPtr = board.getSquare(3,6).getPiece();
         REQUIRE(pawnPtr != nullptr);
         pawnPtr->setPosition({3,6});
 
@@ -125,7 +126,7 @@ TEST_CASE_METHOD(TestFixture, "Piece Data-Driven Functionality", "[piece]") {
     SECTION("Pawn Functionality - Player Two") {
         auto pawn = factory.createPiece("Pawn", BayouBonanza::PlayerSide::PLAYER_TWO);
         board.getSquare(3, 1).setPiece(std::move(pawn)); // Place Pawn for Player Two
-        Piece* pawnPtr = board.getSquare(3,1).getPiece();
+        BayouBonanza::Piece* pawnPtr = board.getSquare(3,1).getPiece();
         REQUIRE(pawnPtr != nullptr);
         pawnPtr->setPosition({3,1});
 
@@ -137,7 +138,7 @@ TEST_CASE_METHOD(TestFixture, "Piece Data-Driven Functionality", "[piece]") {
     SECTION("Rook Functionality - Sliding Piece") {
         auto rook = factory.createPiece("Rook", BayouBonanza::PlayerSide::PLAYER_ONE);
         board.getSquare(0,0).setPiece(std::move(rook));
-        Piece* rookPtr = board.getSquare(0,0).getPiece();
+        BayouBonanza::Piece* rookPtr = board.getSquare(0,0).getPiece();
         rookPtr->setPosition({0,0});
 
         auto validMoves = rookPtr->getValidMoves(board);
@@ -165,7 +166,7 @@ TEST_CASE_METHOD(TestFixture, "Piece Data-Driven Functionality", "[piece]") {
     SECTION("Knight Functionality - Jumping Piece") {
         auto knight = factory.createPiece("Knight", BayouBonanza::PlayerSide::PLAYER_ONE);
         board.getSquare(1,0).setPiece(std::move(knight));
-        Piece* knightPtr = board.getSquare(1,0).getPiece();
+        BayouBonanza::Piece* knightPtr = board.getSquare(1,0).getPiece();
         knightPtr->setPosition({1,0});
 
         auto validMoves = knightPtr->getValidMoves(board);

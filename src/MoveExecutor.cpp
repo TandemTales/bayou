@@ -1,7 +1,8 @@
 #include "MoveExecutor.h"
 #include "GameBoard.h"
+// #include "King.h" // Removed - using data-driven approach with PieceFactory
+#include "GameState.h"
 #include "Square.h"
-#include "King.h"
 
 namespace BayouBonanza {
 
@@ -49,11 +50,15 @@ MoveResult MoveExecutor::executeMove(GameState& gameState, const Move& move) {
     
     // If the target square has a piece, resolve combat
     if (!toSquare.isEmpty()) {
-        std::shared_ptr<Piece> targetPiece = toSquare.getPiece();
+        Piece* targetPiece = toSquare.getPiece();
         
         // Check if the target piece belongs to the opponent
         if (targetPiece->getSide() != piece->getSide()) {
-            bool destroyed = resolveCombat(piece, targetPiece, gameState);
+            // Create a shared_ptr wrapper for targetPiece temporarily for combat resolution
+            // Note: This is a design issue - we should either use all shared_ptr or all raw pointers
+            std::shared_ptr<Piece> targetSharedPtr(targetPiece, [](Piece*){});  // No-op deleter since ownership is managed by Square
+            
+            bool destroyed = resolveCombat(piece, targetSharedPtr, gameState);
             
             // If the opponent's piece is not destroyed, the attacker stays in place
             if (!destroyed) {
@@ -61,7 +66,7 @@ MoveResult MoveExecutor::executeMove(GameState& gameState, const Move& move) {
             }
             
             // Check if the destroyed piece was a king
-            if (dynamic_cast<King*>(targetPiece.get())) {
+            if (targetPiece->getPieceType() == PieceType::KING) {
                 // Set game result based on which king was captured
                 if (targetPiece->getSide() == PlayerSide::PLAYER_ONE) {
                     gameState.setGameResult(GameResult::PLAYER_TWO_WIN);
@@ -69,10 +74,15 @@ MoveResult MoveExecutor::executeMove(GameState& gameState, const Move& move) {
                     gameState.setGameResult(GameResult::PLAYER_ONE_WIN);
                 }
                 
+                // Extract the piece from the source square properly
+                std::unique_ptr<Piece> movingPiece = fromSquare.extractPiece();
+                if (!movingPiece) {
+                    return MoveResult::INVALID_MOVE; // Piece was not at expected location
+                }
+                
                 // Move the attacking piece to the target square
-                toSquare.setPiece(piece);
-                fromSquare.setPiece(nullptr);
-                piece->setPosition(to);
+                movingPiece->setPosition(to);
+                toSquare.setPiece(std::move(movingPiece));
                 
                 return MoveResult::KING_CAPTURED;
             }
@@ -82,10 +92,15 @@ MoveResult MoveExecutor::executeMove(GameState& gameState, const Move& move) {
         }
     }
     
+    // Extract the piece from the source square properly
+    std::unique_ptr<Piece> movingPiece = fromSquare.extractPiece();
+    if (!movingPiece) {
+        return MoveResult::INVALID_MOVE; // Piece was not at expected location
+    }
+    
     // Move the piece to the target square
-    toSquare.setPiece(piece);
-    fromSquare.setPiece(nullptr);
-    piece->setPosition(to);
+    movingPiece->setPosition(to);
+    toSquare.setPiece(std::move(movingPiece));
     
     // Recalculate board control after the move
     recalculateBoardControl(gameState);
@@ -140,7 +155,7 @@ void MoveExecutor::recalculateBoardControl(GameState& gameState) {
             Square& square = board.getSquare(x, y);
             
             if (!square.isEmpty()) {
-                std::shared_ptr<Piece> piece = square.getPiece();
+                Piece* piece = square.getPiece();
                 PlayerSide side = piece->getSide();
                 
                 // A piece always controls its own square

@@ -1,6 +1,6 @@
 #include "../include/PieceRemovalHandler.h"
 #include "../include/HealthTracker.h"
-#include "../include/King.h"
+// #include "../include/King.h" // Removed - using data-driven approach with PieceFactory
 #include "../include/GameBoard.h"
 
 namespace BayouBonanza {
@@ -24,22 +24,24 @@ bool PieceRemovalHandler::removePiece(GameBoard& board, const Position& position
         return false; // No piece to remove
     }
     
-    bool defeated = HealthTracker::isDefeated(piece);
+    // Create a temporary shared_ptr wrapper for HealthTracker compatibility
+    std::shared_ptr<Piece> piecePtr(piece, [](Piece*){});  // No-op deleter
+    bool defeated = HealthTracker::isDefeated(piecePtr);
     
     if (defeated) {
         // Fire the defeated event before removing the piece
-        fireRemovalEvent(position, piece, RemovalEvent::PIECE_DEFEATED);
+        fireRemovalEvent(position, piecePtr, RemovalEvent::PIECE_DEFEATED);
         
         // Check if the piece is a king (for win condition)
-        if (dynamic_cast<King*>(piece.get())) {
-            fireRemovalEvent(position, piece, RemovalEvent::KING_DEFEATED);
+        if (piece->getPieceType() == PieceType::KING) {
+            fireRemovalEvent(position, piecePtr, RemovalEvent::KING_DEFEATED);
         }
         
         // Remove piece from board
         square.setPiece(nullptr);
         
         // Fire the removed event
-        fireRemovalEvent(position, piece, RemovalEvent::PIECE_REMOVED);
+        fireRemovalEvent(position, piecePtr, RemovalEvent::PIECE_REMOVED);
         
         // Recalculate control values if necessary
         board.recalculateControlValues();
@@ -73,8 +75,10 @@ bool PieceRemovalHandler::isKingDefeated(const GameBoard& board, const Position&
     auto& square = board.getSquare(position.x, position.y);
     auto piece = square.getPiece();
     
-    if (piece && dynamic_cast<King*>(piece.get())) {
-        return HealthTracker::isDefeated(piece);
+    if (piece && piece->getPieceType() == PieceType::KING) {
+        // Create a temporary shared_ptr wrapper for HealthTracker compatibility
+        std::shared_ptr<Piece> piecePtr(piece, [](Piece*){});  // No-op deleter
+        return HealthTracker::isDefeated(piecePtr);
     }
     
     return false;
@@ -89,12 +93,16 @@ bool PieceRemovalHandler::checkForDefeatedKings(const GameBoard& board, PlayerSi
             auto& square = board.getSquare(x, y);
             auto piece = square.getPiece();
             
-            if (piece && dynamic_cast<King*>(piece.get()) && HealthTracker::isDefeated(piece)) {
-                kingDefeated = true;
-                // The winner is the opposite side of the defeated king
-                winningSide = (piece->getSide() == PlayerSide::PLAYER_ONE) ? 
-                              PlayerSide::PLAYER_TWO : PlayerSide::PLAYER_ONE;
-                break;
+            if (piece && piece->getPieceType() == PieceType::KING) {
+                // Create a temporary shared_ptr wrapper for HealthTracker compatibility
+                std::shared_ptr<Piece> piecePtr(piece, [](Piece*){});  // No-op deleter
+                if (HealthTracker::isDefeated(piecePtr)) {
+                    kingDefeated = true;
+                    // The winner is the opposite side of the defeated king
+                    winningSide = (piece->getSide() == PlayerSide::PLAYER_ONE) ? 
+                                  PlayerSide::PLAYER_TWO : PlayerSide::PLAYER_ONE;
+                    break;
+                }
             }
         }
         if (kingDefeated) break;

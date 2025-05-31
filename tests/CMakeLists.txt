@@ -60,3 +60,45 @@ else()
   add_test(NAME BayouBonanzaAllTests_Fallback COMMAND BayouBonanzaTests) # Ensure fallback is present here too
   add_test(NAME BayouBonanzaClientTests_Fallback COMMAND BayouBonanzaClientTests) # Ensure fallback is present here too
 endif()
+
+# --- Copy DLLs for Tests on Windows ---
+if(WIN32)
+  # Copy Catch2 DLLs to test output directories
+  add_custom_command(TARGET BayouBonanzaTests POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "$<TARGET_FILE:Catch2::Catch2>"
+      "$<TARGET_FILE:Catch2::Catch2WithMain>"
+      $<TARGET_FILE_DIR:BayouBonanzaTests>)
+      
+  add_custom_command(TARGET BayouBonanzaClientTests POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "$<TARGET_FILE:Catch2::Catch2>"
+      "$<TARGET_FILE:Catch2::Catch2WithMain>"
+      $<TARGET_FILE_DIR:BayouBonanzaClientTests>)
+
+  # Copy SFML DLLs to test output directories
+  add_custom_command(TARGET BayouBonanzaTests POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "$<TARGET_FILE:sfml-graphics>"
+      "$<TARGET_FILE:sfml-window>"
+      "$<TARGET_FILE:sfml-system>"
+      "$<TARGET_FILE:sfml-network>"
+      $<TARGET_FILE_DIR:BayouBonanzaTests>)
+      
+  add_custom_command(TARGET BayouBonanzaClientTests POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "$<TARGET_FILE:sfml-graphics>"
+      "$<TARGET_FILE:sfml-window>"
+      "$<TARGET_FILE:sfml-system>"
+      "$<TARGET_FILE:sfml-network>"
+      $<TARGET_FILE_DIR:BayouBonanzaClientTests>)
+      
+  # Copy assets directory to test output directories
+  add_custom_command(TARGET BayouBonanzaTests POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+      ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:BayouBonanzaTests>/assets)
+      
+  add_custom_command(TARGET BayouBonanzaClientTests POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+      ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:BayouBonanzaClientTests>/assets)
+endif()

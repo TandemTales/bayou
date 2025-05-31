@@ -1,11 +1,14 @@
+// #include "King.h" // Removed - using data-driven approach
 #include "GameRules.h"
-#include "King.h"
-#include "Queen.h"
-#include "Rook.h"
-#include "Bishop.h"
-#include "Knight.h"
-#include "Pawn.h"
+#include "GameBoard.h"
+// #include "Queen.h" // Removed - using data-driven approach
+// #include "Rook.h" // Removed - using data-driven approach  
+// #include "Bishop.h" // Removed - using data-driven approach
+// #include "Knight.h" // Removed - using data-driven approach
+// #include "Pawn.h" // Removed - using data-driven approach
 #include "Square.h"
+#include "PieceFactory.h"
+#include "PieceDefinitionManager.h"
 
 namespace BayouBonanza {
 
@@ -15,39 +18,17 @@ void GameRules::initializeGame(GameState& gameState) {
     // Reset the game state
     gameState.initializeNewGame();
     
-    // Place pieces for both players in a chess-like starting formation
+    // For now, we'll create a simplified initialization
+    // In a full implementation, we would use PieceFactory to create pieces
+    // based on a configuration file
     
-    // Player 1 (bottom of board) - rows 6 and 7
-    // Place pawns on row 6
-    for (int x = 0; x < GameBoard::BOARD_SIZE; x++) {
-        placePiece<Pawn>(gameState, PlayerSide::PLAYER_ONE, x, 6);
-    }
+    // TODO: This should be handled by GameInitializer with PieceFactory
+    // For now, just set up an empty board and basic game state
     
-    // Place major pieces on row 7
-    placePiece<Rook>(gameState, PlayerSide::PLAYER_ONE, 0, 7);
-    placePiece<Knight>(gameState, PlayerSide::PLAYER_ONE, 1, 7);
-    placePiece<Bishop>(gameState, PlayerSide::PLAYER_ONE, 2, 7);
-    placePiece<Queen>(gameState, PlayerSide::PLAYER_ONE, 3, 7);
-    placePiece<King>(gameState, PlayerSide::PLAYER_ONE, 4, 7);
-    placePiece<Bishop>(gameState, PlayerSide::PLAYER_ONE, 5, 7);
-    placePiece<Knight>(gameState, PlayerSide::PLAYER_ONE, 6, 7);
-    placePiece<Rook>(gameState, PlayerSide::PLAYER_ONE, 7, 7);
-    
-    // Player 2 (top of board) - rows 0 and 1
-    // Place pawns on row 1
-    for (int x = 0; x < GameBoard::BOARD_SIZE; x++) {
-        placePiece<Pawn>(gameState, PlayerSide::PLAYER_TWO, x, 1);
-    }
-    
-    // Place major pieces on row 0
-    placePiece<Rook>(gameState, PlayerSide::PLAYER_TWO, 0, 0);
-    placePiece<Knight>(gameState, PlayerSide::PLAYER_TWO, 1, 0);
-    placePiece<Bishop>(gameState, PlayerSide::PLAYER_TWO, 2, 0);
-    placePiece<Queen>(gameState, PlayerSide::PLAYER_TWO, 3, 0);
-    placePiece<King>(gameState, PlayerSide::PLAYER_TWO, 4, 0);
-    placePiece<Bishop>(gameState, PlayerSide::PLAYER_TWO, 5, 0);
-    placePiece<Knight>(gameState, PlayerSide::PLAYER_TWO, 6, 0);
-    placePiece<Rook>(gameState, PlayerSide::PLAYER_TWO, 7, 0);
+    // Set starting player
+    gameState.setActivePlayer(PlayerSide::PLAYER_ONE);
+    gameState.setGamePhase(GamePhase::MAIN_GAME);
+    gameState.setGameResult(GameResult::IN_PROGRESS);
     
     // Recalculate board control after placing pieces
     moveExecutor.recalculateBoardControl(gameState);
@@ -101,9 +82,12 @@ std::vector<Move> GameRules::getValidMovesForActivePlayer(const GameState& gameS
             
             // If square has a piece belonging to the active player
             if (!square.isEmpty() && square.getPiece()->getSide() == activeSide) {
+                // Create a temporary shared_ptr wrapper for the piece
+                Piece* rawPiece = square.getPiece();
+                std::shared_ptr<Piece> piecePtr(rawPiece, [](Piece*){});  // No-op deleter
+                
                 // Get valid moves for this piece
-                std::vector<Move> pieceMoves = moveExecutor.getValidMoves(
-                    gameState, square.getPiece());
+                std::vector<Move> pieceMoves = moveExecutor.getValidMoves(gameState, piecePtr);
                 
                 // Add them to the list of all valid moves
                 validMoves.insert(validMoves.end(), pieceMoves.begin(), pieceMoves.end());
@@ -122,26 +106,6 @@ bool GameRules::hasPlayerWon(const GameState& gameState, PlayerSide side) const 
     return !hasKing(gameState, opponent);
 }
 
-template<typename PieceType>
-void GameRules::placePiece(GameState& gameState, PlayerSide side, int x, int y) {
-    GameBoard& board = gameState.getBoard();
-    
-    // Create a new piece of the specified type
-    std::shared_ptr<PieceType> piece = std::make_shared<PieceType>(side);
-    
-    // Set the piece's position
-    Position pos(x, y);
-    piece->setPosition(pos);
-    
-    // Place the piece on the board
-    Square& square = board.getSquare(x, y);
-    square.setPiece(piece);
-}
-
-void GameRules::placeKing(GameState& gameState, PlayerSide side, int x, int y) {
-    placePiece<King>(gameState, side, x, y);
-}
-
 bool GameRules::hasKing(const GameState& gameState, PlayerSide side) const {
     const GameBoard& board = gameState.getBoard();
     
@@ -152,10 +116,10 @@ bool GameRules::hasKing(const GameState& gameState, PlayerSide side) const {
             
             // Check if the square has a piece
             if (!square.isEmpty()) {
-                std::shared_ptr<Piece> piece = square.getPiece();
+                Piece* piece = square.getPiece();
                 
                 // Check if the piece is a king of the specified side
-                if (piece->getSide() == side && dynamic_cast<King*>(piece.get())) {
+                if (piece->getSide() == side && piece->getPieceType() == PieceType::KING) {
                     return true;
                 }
             }

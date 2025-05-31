@@ -50,7 +50,10 @@ Move reconstructMoveWithPiece(const Move& clientMove, const GameState& gameState
         return Move(); // No piece at position, return default move
     }
     
-    std::shared_ptr<Piece> piece = fromSquare.getPiece();
+    // Create a temporary shared_ptr wrapper for the Move constructor
+    // Note: Using no-op deleter since the piece is owned by Square
+    Piece* rawPiece = fromSquare.getPiece();
+    std::shared_ptr<Piece> piece(rawPiece, [](Piece*){});
     
     // Create complete move with piece reference
     if (clientMove.isPromotion()) {
@@ -252,7 +255,27 @@ int main() {
                     // Initialize the game state and create turn manager
                     gameInitializer.initializeNewGame(globalGameState);
                     turnManager = std::make_unique<TurnManager>(globalGameState, gameRules);
-                    turnManager->startNewGame();
+                    
+                    // Debug: Print board state after initialization
+                    std::cout << "DEBUG: Board state after initialization:" << std::endl;
+                    const GameBoard& board = globalGameState.getBoard();
+                    for (int y = 0; y < GameBoard::BOARD_SIZE; y++) {
+                        std::cout << y << " | ";
+                        for (int x = 0; x < GameBoard::BOARD_SIZE; x++) {
+                            const Square& square = board.getSquare(x, y);
+                            char symbol = '.';
+                            if (!square.isEmpty()) {
+                                Piece* piece = square.getPiece();
+                                std::string symbol_str = piece->getSymbol();
+                                symbol = symbol_str.empty() ? '.' : symbol_str[0];
+                                if (piece->getSide() == PlayerSide::PLAYER_TWO) {
+                                    symbol = std::tolower(symbol);
+                                }
+                            }
+                            std::cout << symbol << ' ';
+                        }
+                        std::cout << "|" << std::endl;
+                    }
                     
                     std::cout << "Game initialized. Broadcasting GameStart and initial state." << std::endl;
 

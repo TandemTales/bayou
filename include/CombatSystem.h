@@ -17,7 +17,7 @@ public:
     static bool resolveCombat(GameBoard& board, const Position& attacker, const Position& defender);
     
     // Applies damage from attacker to defender
-    static void applyDamage(std::shared_ptr<Piece> attacker, std::shared_ptr<Piece> defender);
+    static void applyDamage(Piece* attacker, Piece* defender);
     
     // Checks entire board for dead pieces and removes them
     static void checkAndRemoveDeadPieces(GameBoard& board);
