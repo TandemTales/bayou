@@ -12,6 +12,11 @@ node_modules/
 # Environment variables
 .env
 
+# Database files
+# Local SQLite databases contain user-specific data and should not be committed
+*.db
+bayou_bonanza.db
+
 # Editor directories and files
 .idea
 .vscode

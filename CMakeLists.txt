@@ -8,6 +8,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Option to download SFML if not found
 option(DOWNLOAD_SFML "Download SFML if not found" ON)
 
+# Option to download SQLite3 if not found
+option(DOWNLOAD_SQLITE3 "Download SQLite3 if not found" ON)
+
 # Find SFML packages
 find_package(SFML 2.5 COMPONENTS graphics window system network)
 
@@ -25,11 +28,45 @@ if(NOT SFML_FOUND AND DOWNLOAD_SFML)
   
   # Disable unneeded components to speed up the build
   set(SFML_BUILD_AUDIO OFF CACHE BOOL "" FORCE)
+  set(SFML_BUILD_GRAPHICS ON CACHE BOOL "" FORCE) # Re-enabled for client
+  set(SFML_BUILD_WINDOW ON CACHE BOOL "" FORCE)   # Re-enabled for client
   set(SFML_BUILD_NETWORK ON CACHE BOOL "" FORCE)
   
   FetchContent_MakeAvailable(SFML)
   
   message(STATUS "SFML downloaded successfully")
+endif()
+
+# Find or download SQLite3
+find_package(SQLite3)
+if(NOT SQLite3_FOUND AND DOWNLOAD_SQLITE3)
+  include(FetchContent)
+  
+  message(STATUS "SQLite3 not found, downloading from GitHub...")
+  
+  FetchContent_Declare(
+    sqlite3
+    GIT_REPOSITORY https://github.com/azadkuh/sqlite-amalgamation.git
+    GIT_TAG master
+  )
+  
+  FetchContent_MakeAvailable(sqlite3)
+  
+  # Create SQLite3 library target
+  add_library(sqlite3_lib STATIC 
+    ${sqlite3_SOURCE_DIR}/sqlite3.c
+  )
+  
+  target_include_directories(sqlite3_lib PUBLIC ${sqlite3_SOURCE_DIR})
+  
+  # Create an alias to match the expected target name
+  add_library(SQLite::SQLite3 ALIAS sqlite3_lib)
+  
+  set(SQLite3_FOUND TRUE)
+  set(SQLite3_LIBRARIES sqlite3_lib)
+  set(SQLite3_INCLUDE_DIRS ${sqlite3_SOURCE_DIR})
+  
+  message(STATUS "SQLite3 downloaded and configured successfully")
 endif()
 
 # Include directories
@@ -83,6 +120,15 @@ set(SERVER_SOURCES src/server_main.cpp)
 add_executable(BayouBonanzaClient ${CLIENT_SOURCES})
 add_executable(BayouBonanzaServer ${SERVER_SOURCES})
 
+# Link SQLite3 to BayouBonanzaServer
+if(SQLite3_FOUND)
+    message(STATUS "SQLite3 found, linking to BayouBonanzaServer.")
+    target_include_directories(BayouBonanzaServer PUBLIC ${SQLite3_INCLUDE_DIRS})
+    target_link_libraries(BayouBonanzaServer PRIVATE ${SQLite3_LIBRARIES})
+else()
+    message(WARNING "SQLite3 not found. The server might not compile or run correctly if database features are used.")
+endif()
+
 # Add gameplay test executable
 add_executable(GameplayTest test_gameplay.cpp)
 target_link_libraries(GameplayTest GameLogic)
@@ -109,10 +155,10 @@ add_subdirectory(tests)
 # Link libraries
 if(SFML_FOUND OR DOWNLOAD_SFML)
   # Link client (GameLogic already includes sfml-network and sfml-system)
-  target_link_libraries(BayouBonanzaClient GameLogic sfml-graphics sfml-window)
+  target_link_libraries(BayouBonanzaClient PUBLIC GameLogic sfml-graphics sfml-window) # Added PUBLIC
   
   # Link server (GameLogic already includes sfml-network and sfml-system)
-  target_link_libraries(BayouBonanzaServer GameLogic)
+  target_link_libraries(BayouBonanzaServer PUBLIC GameLogic) # Added PUBLIC
 
   # TODO: Update test linking in tests/CMakeLists.txt to link against GameLogic
 

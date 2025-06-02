@@ -36,6 +36,12 @@ sf::Font globalFont; // Loaded once
 PieceDefinitionManager globalPieceDefManager;
 std::unique_ptr<PieceFactory> globalPieceFactory;
 
+// UI Elements for Usernames/Ratings
+sf::Text localPlayerUsernameText;
+sf::Text localPlayerRatingText;
+sf::Text remotePlayerUsernameText;
+sf::Text remotePlayerRatingText;
+
 // Function to recreate pieces after deserialization without resetting game state
 void recreatePiecesAfterDeserialization(GameState& gameState) {
     // The issue is that Square deserialization loses pieces due to PieceFactory access
@@ -151,6 +157,17 @@ int main()
     // Set the global PieceFactory for Square deserialization
     Square::setGlobalPieceFactory(globalPieceFactory.get());
 
+    // Get username input
+    std::string username;
+    std::cout << "Enter your username: ";
+    std::cin >> username;
+
+    // Basic validation: ensure username is not empty
+    while (username.empty()) {
+        std::cout << "Username cannot be empty. Please enter your username: ";
+        std::cin >> username;
+    }
+
     // Network Socket
     sf::TcpSocket socket;
     const unsigned short PORT = 50000;
@@ -163,9 +180,20 @@ int main()
         // No return -1 yet, let the window open to display the message
     } else {
         std::cout << "Connected to server!" << std::endl;
-        uiMessage = "Connected! Waiting for assignment...";
+        
+        // Send UserLogin message
+        sf::Packet loginPacket;
+        loginPacket << MessageType::UserLogin << username;
+        if (socket.send(loginPacket) != sf::Socket::Done) {
+            std::cerr << "Error: Failed to send login packet." << std::endl;
+            uiMessage = "Failed to send login info.";
+            // Consider closing socket or handling error more robustly
+        } else {
+            std::cout << "Login packet sent with username: " << username << std::endl;
+            uiMessage = "Login sent! Waiting for assignment...";
+        }
     }
-    socket.setBlocking(false); // Use non-blocking mode
+    socket.setBlocking(false); // Use non-blocking mode for game loop
 
     // Load font (use globalFont)
     if (!globalFont.loadFromFile("assets/fonts/Roboto-Regular.ttf")) {
@@ -176,6 +204,26 @@ int main()
     uiMessageText.setCharacterSize(24);
     uiMessageText.setFillColor(sf::Color::White);
     uiMessageText.setPosition(10.f, 10.f);
+
+    // Initialize Username/Rating UI elements
+    localPlayerUsernameText.setFont(globalFont);
+    localPlayerRatingText.setFont(globalFont);
+    remotePlayerUsernameText.setFont(globalFont);
+    remotePlayerRatingText.setFont(globalFont);
+
+    localPlayerUsernameText.setCharacterSize(18);
+    localPlayerUsernameText.setFillColor(sf::Color::White);
+    // Initial positions will be set after window size is known or dynamically updated
+    // For now, placeholder or defer until GameStart
+    
+    localPlayerRatingText.setCharacterSize(18);
+    localPlayerRatingText.setFillColor(sf::Color::White);
+
+    remotePlayerUsernameText.setCharacterSize(18);
+    remotePlayerUsernameText.setFillColor(sf::Color::White);
+
+    remotePlayerRatingText.setCharacterSize(18);
+    remotePlayerRatingText.setFillColor(sf::Color::White);
     
     // Create game components
     GameState gameState; // Client's local copy of the game state, updated by server
@@ -245,12 +293,43 @@ int main()
                         std::cout << uiMessage << std::endl;
                         break;
                     case MessageType::GameStart:
-                        uiMessage = "Game is starting!";
-                        std::cout << uiMessage << std::endl;
-                        if (receivedPacket >> gameState) { // Deserialize the initial GameState
-                            gameHasStarted = true;
-                            printBoardState(gameState);
-                        } else { std::cerr << "Error deserializing GameStart state." << std::endl; }
+                        {
+                            std::string p1_username, p2_username;
+                            int p1_rating, p2_rating;
+
+                            if (receivedPacket >> p1_username >> p1_rating >> p2_username >> p2_rating >> gameState) {
+                                gameHasStarted = true;
+                                printBoardState(gameState); // Keep this for debugging
+
+                                // Determine local and remote player data
+                                if (myPlayerSide == PlayerSide::PLAYER_ONE) {
+                                    localPlayerUsernameText.setString("You: " + p1_username);
+                                    localPlayerRatingText.setString("Rating: " + std::to_string(p1_rating));
+                                    remotePlayerUsernameText.setString("Opponent: " + p2_username);
+                                    remotePlayerRatingText.setString("Rating: " + std::to_string(p2_rating));
+                                } else if (myPlayerSide == PlayerSide::PLAYER_TWO) {
+                                    localPlayerUsernameText.setString("You: " + p2_username);
+                                    localPlayerRatingText.setString("Rating: " + std::to_string(p2_rating));
+                                    remotePlayerUsernameText.setString("Opponent: " + p1_username);
+                                    remotePlayerRatingText.setString("Rating: " + std::to_string(p1_rating));
+                                }
+                                uiMessage = "Game started!"; 
+                                std::cout << uiMessage << " P1: " << p1_username << " (" << p1_rating << "), P2: " << p2_username << " (" << p2_rating << ")" << std::endl;
+
+                                // Set positions for username/rating texts
+                                localPlayerUsernameText.setPosition(10.f, uiMessageText.getPosition().y + 30.f);
+                                localPlayerRatingText.setPosition(10.f, localPlayerUsernameText.getPosition().y + 20.f);
+                                
+                                // Estimate width for remote player text to align right (simple approach)
+                                // A more robust way would be to get text bounds after setting string
+                                float remoteTextWidthEstimate = 200.f; 
+                                remotePlayerUsernameText.setPosition(window.getSize().x - remoteTextWidthEstimate - 10.f, uiMessageText.getPosition().y + 30.f);
+                                remotePlayerRatingText.setPosition(window.getSize().x - remoteTextWidthEstimate - 10.f, remotePlayerUsernameText.getPosition().y + 20.f);
+
+                            } else {
+                                std::cerr << "Error deserializing GameStart data (with user info)." << std::endl;
+                            }
+                        }
                         break;
                     case MessageType::GameStateUpdate:
                         if (gameHasStarted) {
@@ -303,6 +382,14 @@ int main()
         }
         uiMessageText.setString(uiMessage);
         window.draw(uiMessageText);
+
+        // Draw username/rating info if game has started
+        if (gameHasStarted) {
+            window.draw(localPlayerUsernameText);
+            window.draw(localPlayerRatingText);
+            window.draw(remotePlayerUsernameText);
+            window.draw(remotePlayerRatingText);
+        }
 
         // --- Game Board Rendering ---
         const GameBoard& board = gameState.getBoard();

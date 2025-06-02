@@ -44,6 +44,29 @@ target_link_libraries(BayouBonanzaClientTests PRIVATE
   Catch2::Catch2WithMain # Link against Catch2's main
 )
 
+# --- Database Test Executable ---
+add_executable(DatabaseTests DatabaseTests.cpp)
+# Use the same SQLite3 setup as the main project
+if(TARGET sqlite3_lib)
+  target_include_directories(DatabaseTests PRIVATE ${sqlite3_SOURCE_DIR})
+  target_link_libraries(DatabaseTests PRIVATE sqlite3_lib)
+  message(STATUS "DatabaseTests linked with sqlite3_lib from FetchContent")
+else()
+  # Fallback to system SQLite3 if available
+  find_package(SQLite3)
+  if(SQLite3_FOUND)
+    target_include_directories(DatabaseTests PRIVATE ${SQLite3_INCLUDE_DIRS})
+    target_link_libraries(DatabaseTests PRIVATE ${SQLite3_LIBRARIES})
+    message(STATUS "DatabaseTests linked with system SQLite3")
+  else()
+    target_link_libraries(DatabaseTests PRIVATE sqlite3)
+    message(WARNING "SQLite3_FOUND is false. Attempting to link DatabaseTests with 'sqlite3' directly. Ensure libsqlite3-dev is installed.")
+  endif()
+endif()
+
+# Add DatabaseTests to CTest (simple registration)
+add_test(NAME Database_Tests COMMAND DatabaseTests)
+
 # --- CTest Integration with Catch2 ---
 # Diagnostic message to check if catch2_SOURCE_DIR is set
 if(DEFINED catch2_SOURCE_DIR AND EXISTS "${catch2_SOURCE_DIR}/extras/Catch.cmake")
