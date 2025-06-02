@@ -9,6 +9,11 @@
 #include "PlayerSide.h"
 #include "NetworkProtocol.h"
 
+// Forward declaration
+namespace BayouBonanza {
+    class GraphicsManager;
+}
+
 namespace BayouBonanza {
 
 /**
@@ -27,12 +32,14 @@ public:
      * @param gameState Reference to the current game state
      * @param gameHasStarted Reference to game start flag
      * @param myPlayerSide Reference to the player's assigned side
+     * @param graphicsManager Reference to the graphics manager for coordinate conversion
      */
     InputManager(sf::RenderWindow& window, 
                  sf::TcpSocket& socket,
                  GameState& gameState,
                  bool& gameHasStarted,
-                 PlayerSide& myPlayerSide);
+                 PlayerSide& myPlayerSide,
+                 GraphicsManager& graphicsManager);
 
     /**
      * @brief Process a single SFML event
@@ -64,9 +71,9 @@ public:
     sf::Vector2i getOriginalSquareCoords() const;
 
     /**
-     * @brief Get the current mouse position for dragging
+     * @brief Get the current mouse position for dragging (in game coordinates)
      * 
-     * @return Current mouse position in screen coordinates
+     * @return Current mouse position in game coordinates
      */
     sf::Vector2f getCurrentMousePosition() const;
 
@@ -89,38 +96,23 @@ private:
     GameState& gameState;
     bool& gameHasStarted;
     PlayerSide& myPlayerSide;
+    GraphicsManager& graphicsManager;
 
     // Input state
     Piece* selectedPiece;
     sf::Vector2i originalSquareCoords;
     sf::Vector2f mouseOffset;
     bool pieceSelected;
-    sf::Vector2f currentMousePosition;
+    sf::Vector2f currentMousePosition; // In game coordinates
 
     // Helper methods
     /**
-     * @brief Calculate board layout parameters
+     * @brief Convert game coordinates to board coordinates
      * 
-     * @param boardSize Output: size of the board in pixels
-     * @param squareSize Output: size of each square in pixels
-     * @param boardStartX Output: X coordinate of board top-left corner
-     * @param boardStartY Output: Y coordinate of board top-left corner
-     */
-    void calculateBoardLayout(float& boardSize, float& squareSize, 
-                             float& boardStartX, float& boardStartY) const;
-
-    /**
-     * @brief Convert screen coordinates to board coordinates
-     * 
-     * @param screenPos Screen position
-     * @param boardStartX X coordinate of board top-left corner
-     * @param boardStartY Y coordinate of board top-left corner
-     * @param squareSize Size of each square in pixels
+     * @param gamePos Game position
      * @return Board coordinates, or (-1, -1) if outside board
      */
-    sf::Vector2i screenToBoard(const sf::Vector2f& screenPos, 
-                              float boardStartX, float boardStartY, 
-                              float squareSize) const;
+    sf::Vector2i gamePosToBoard(const sf::Vector2f& gamePos) const;
 
     /**
      * @brief Handle mouse button press events
@@ -148,13 +140,9 @@ private:
      * 
      * @param boardX Board X coordinate
      * @param boardY Board Y coordinate
-     * @param mousePos Screen mouse position
-     * @param boardStartX X coordinate of board top-left corner
-     * @param boardStartY Y coordinate of board top-left corner
-     * @param squareSize Size of each square in pixels
+     * @param gameMousePos Game mouse position
      */
-    void selectPiece(int boardX, int boardY, const sf::Vector2i& mousePos,
-                    float boardStartX, float boardStartY, float squareSize);
+    void selectPiece(int boardX, int boardY, const sf::Vector2f& gameMousePos);
 
     /**
      * @brief Attempt to move the selected piece

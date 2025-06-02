@@ -36,6 +36,7 @@ target_link_libraries(BayouBonanzaTests PRIVATE
 add_executable(BayouBonanzaClientTests
   InputManagerTests.cpp
   ${CMAKE_SOURCE_DIR}/src/InputManager.cpp  # Include InputManager source as part of the executable
+  ${CMAKE_SOURCE_DIR}/src/GraphicsManager.cpp  # Include GraphicsManager source as InputManager depends on it
 )
 target_include_directories(BayouBonanzaClientTests PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(BayouBonanzaClientTests PRIVATE

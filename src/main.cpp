@@ -14,6 +14,7 @@
 #include "NetworkProtocol.h" // For MessageType enum and operators
 #include "PlayerSide.h"  // For PlayerSide enum
 #include "InputManager.h" // New input manager
+#include "GraphicsManager.h" // New graphics manager
 #include "GameInitializer.h"
 #include "PieceFactory.h"
 #include "PieceDefinitionManager.h"
@@ -141,11 +142,12 @@ void printBoardState(const GameState& gameState) {
 
 int main()
 {
-    // Create the main window
-    sf::RenderWindow window(sf::VideoMode(800, 600), "Bayou Bonanza");
-    
-    // Set the framerate limit
+    // Create the main window with a default size - GraphicsManager will handle scaling
+    sf::RenderWindow window(sf::VideoMode(1280, 720), "Bayou Bonanza");
     window.setFramerateLimit(60);
+
+    // Initialize graphics manager for resolution scaling
+    GraphicsManager graphicsManager(window);
 
     // Initialize global PieceFactory for deserialization
     if (!globalPieceDefManager.loadDefinitions("assets/data/pieces.json")) {
@@ -198,71 +200,50 @@ int main()
     // Load font (use globalFont)
     if (!globalFont.loadFromFile("assets/fonts/Roboto-Regular.ttf")) {
         std::cerr << "Error loading font from assets/fonts/Roboto-Regular.ttf\n";
-        return -1; 
+        return -1;
     }
+
+    // Initialize UI text elements
     uiMessageText.setFont(globalFont);
     uiMessageText.setCharacterSize(24);
     uiMessageText.setFillColor(sf::Color::White);
     uiMessageText.setPosition(10.f, 10.f);
+    uiMessageText.setString(uiMessage);
 
-    // Initialize Username/Rating UI elements
     localPlayerUsernameText.setFont(globalFont);
-    localPlayerRatingText.setFont(globalFont);
-    remotePlayerUsernameText.setFont(globalFont);
-    remotePlayerRatingText.setFont(globalFont);
-
     localPlayerUsernameText.setCharacterSize(18);
-    localPlayerUsernameText.setFillColor(sf::Color::White);
-    // Initial positions will be set after window size is known or dynamically updated
-    // For now, placeholder or defer until GameStart
-    
-    localPlayerRatingText.setCharacterSize(18);
+    localPlayerUsernameText.setFillColor(sf::Color::Cyan);
+
+    localPlayerRatingText.setFont(globalFont);
+    localPlayerRatingText.setCharacterSize(16);
     localPlayerRatingText.setFillColor(sf::Color::White);
 
+    remotePlayerUsernameText.setFont(globalFont);
     remotePlayerUsernameText.setCharacterSize(18);
-    remotePlayerUsernameText.setFillColor(sf::Color::White);
+    remotePlayerUsernameText.setFillColor(sf::Color::Yellow);
 
-    remotePlayerRatingText.setCharacterSize(18);
+    remotePlayerRatingText.setFont(globalFont);
+    remotePlayerRatingText.setCharacterSize(16);
     remotePlayerRatingText.setFillColor(sf::Color::White);
-    
-    // Create game components
-    GameState gameState; // Client's local copy of the game state, updated by server
-    // GameRules gameRules; // Removed
-    // GameInitializer initializer; // Removed
-    // TurnManager turnManager(gameState, gameRules); // Removed
-    // GameOverDetector gameOverDetector; // Removed
-    
-    // Initialize a new game - This will now be handled by server sending initial state
-    // initializer.initializeNewGame(gameState); // Removed
-    
-    // Print initial board state (client will wait for server's first state update)
-    std::cout << "BayouBonanza - Client" << std::endl; // Corrected project name
-    std::cout << "----------------------------------------" << std::endl;
-    // printBoardState(gameState); // Removed - client waits for server's state
 
-    // Placeholder for player's assigned side - to be received from server
-    // PlayerSide myPlayerSide = PlayerSide::PLAYER_ONE; // Default or unassigned
+    // Initialize game state
+    GameState gameState;
 
-    // Create input manager
-    InputManager inputManager(window, socket, gameState, gameHasStarted, myPlayerSide);
-    
+    // Initialize input manager with graphics manager
+    InputManager inputManager(window, socket, gameState, gameHasStarted, myPlayerSide, graphicsManager);
+
     // Main game loop
-    while (window.isOpen())
-    {
-        // Process events
+    while (window.isOpen()) {
         sf::Event event;
-        while (window.pollEvent(event))
-        {
-            // Close window if requested
+        while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
                 window.close();
-                continue;
-            }
-
-            // Let the input manager handle input events
-            if (!inputManager.handleEvent(event)) {
-                // Event was not handled by input manager
-                // Handle other events here if needed
+            } else if (event.type == sf::Event::Resized) {
+                // Update graphics manager when window is resized
+                graphicsManager.updateView();
+            } else if (gameHasStarted && myPlayerSide == gameState.getActivePlayer()) {
+                // Only handle input if it's the player's turn
+                inputManager.handleEvent(event);
             }
         }
 
@@ -271,16 +252,10 @@ int main()
         sf::Socket::Status status = socket.receive(receivedPacket);
         if (status == sf::Socket::Done) {
             MessageType messageType;
-            if (!(receivedPacket >> messageType)) { // Deserialize the type first
-                if (receivedPacket.getDataSize() > 0) { // Check if there was data to even attempt deserializing type
-                     std::cerr << "Error deserializing message type." << std::endl;
-                }
-                // If getDataSize is 0, it might just be a keep-alive or empty packet, ignore.
-            } else {
-                std::cout << "Received message type: " << static_cast<int>(messageType) << std::endl;
+            if (receivedPacket >> messageType) {
                 switch (messageType) {
                     case MessageType::PlayerAssignment:
-                        sf::Uint8 side_uint8;
+                        uint8_t side_uint8;
                         if (receivedPacket >> side_uint8) {
                             myPlayerSide = static_cast<PlayerSide>(side_uint8);
                             uiMessage = "Assigned player side: Player ";
@@ -316,15 +291,14 @@ int main()
                                 uiMessage = "Game started!"; 
                                 std::cout << uiMessage << " P1: " << p1_username << " (" << p1_rating << "), P2: " << p2_username << " (" << p2_rating << ")" << std::endl;
 
-                                // Set positions for username/rating texts
+                                // Set positions for username/rating texts (using base resolution coordinates)
                                 localPlayerUsernameText.setPosition(10.f, uiMessageText.getPosition().y + 30.f);
                                 localPlayerRatingText.setPosition(10.f, localPlayerUsernameText.getPosition().y + 20.f);
                                 
-                                // Estimate width for remote player text to align right (simple approach)
-                                // A more robust way would be to get text bounds after setting string
+                                // Position remote player text on the right side
                                 float remoteTextWidthEstimate = 200.f; 
-                                remotePlayerUsernameText.setPosition(window.getSize().x - remoteTextWidthEstimate - 10.f, uiMessageText.getPosition().y + 30.f);
-                                remotePlayerRatingText.setPosition(window.getSize().x - remoteTextWidthEstimate - 10.f, remotePlayerUsernameText.getPosition().y + 20.f);
+                                remotePlayerUsernameText.setPosition(GraphicsManager::BASE_WIDTH - remoteTextWidthEstimate - 10.f, uiMessageText.getPosition().y + 30.f);
+                                remotePlayerRatingText.setPosition(GraphicsManager::BASE_WIDTH - remoteTextWidthEstimate - 10.f, remotePlayerUsernameText.getPosition().y + 20.f);
 
                             } else {
                                 std::cerr << "Error deserializing GameStart data (with user info)." << std::endl;
@@ -370,6 +344,9 @@ int main()
         }
         // --- End Network Receive ---
         
+        // Apply the game view for proper scaling
+        graphicsManager.applyView();
+        
         // Clear screen with a dark green background (bayou-like)
         window.clear(sf::Color(10, 50, 20));
         
@@ -393,21 +370,16 @@ int main()
 
         // --- Game Board Rendering ---
         const GameBoard& board = gameState.getBoard();
-        float windowWidth = static_cast<float>(window.getSize().x);
-        float windowHeight = static_cast<float>(window.getSize().y);
-        
-        float boardSize = std::min(windowWidth, windowHeight) * 0.8f; // Use 80% of the smaller dimension
-        float squareSize = boardSize / GameBoard::BOARD_SIZE;
-        float boardStartX = (windowWidth - boardSize) / 2.0f;
-        float boardStartY = (windowHeight - boardSize) / 2.0f;
+        auto boardParams = graphicsManager.getBoardRenderParams();
 
         sf::Color lightSquareColor(170, 210, 130);
         sf::Color darkSquareColor(100, 150, 80);
 
         for (int y = 0; y < GameBoard::BOARD_SIZE; ++y) {
             for (int x = 0; x < GameBoard::BOARD_SIZE; ++x) {
-                sf::RectangleShape squareShape(sf::Vector2f(squareSize, squareSize));
-                squareShape.setPosition(boardStartX + x * squareSize, boardStartY + y * squareSize);
+                sf::RectangleShape squareShape(sf::Vector2f(boardParams.squareSize, boardParams.squareSize));
+                squareShape.setPosition(boardParams.boardStartX + x * boardParams.squareSize, 
+                                       boardParams.boardStartY + y * boardParams.squareSize);
 
                 // Alternate colors for chessboard pattern
                 if ((x + y) % 2 == 0) {
@@ -438,7 +410,7 @@ int main()
                     sf::Text pieceText;
                     pieceText.setFont(globalFont); // Use globalFont
                     pieceText.setString(symbol);
-                    pieceText.setCharacterSize(static_cast<unsigned int>(squareSize * 0.6f)); // Adjust size as needed
+                    pieceText.setCharacterSize(static_cast<unsigned int>(boardParams.squareSize * 0.6f)); // Adjust size as needed
 
                     if (piece->getSide() == PlayerSide::PLAYER_ONE) {
                         pieceText.setFillColor(sf::Color::Blue);
@@ -449,8 +421,8 @@ int main()
                     sf::FloatRect textBounds = pieceText.getLocalBounds();
                     pieceText.setOrigin(textBounds.left + textBounds.width / 2.0f,
                                         textBounds.top + textBounds.height / 2.0f);
-                    pieceText.setPosition(boardStartX + x * squareSize + squareSize / 2.0f,
-                                          boardStartY + y * squareSize + squareSize / 2.0f);
+                    pieceText.setPosition(boardParams.boardStartX + x * boardParams.squareSize + boardParams.squareSize / 2.0f,
+                                          boardParams.boardStartY + y * boardParams.squareSize + boardParams.squareSize / 2.0f);
 
                     window.draw(pieceText);
                 }
@@ -459,7 +431,7 @@ int main()
 
         // Draw the selected piece at the mouse cursor position if it's being dragged
         if (inputManager.isPieceSelected() && inputManager.getSelectedPiece()) {
-            sf::RectangleShape selectedPieceShape(sf::Vector2f(squareSize, squareSize));
+            sf::RectangleShape selectedPieceShape(sf::Vector2f(boardParams.squareSize, boardParams.squareSize));
             // Adjust position using mouseOffset so the piece is grabbed correctly
             sf::Vector2f mouseOffset = inputManager.getMouseOffset();
             sf::Vector2f currentMousePosition = inputManager.getCurrentMousePosition();

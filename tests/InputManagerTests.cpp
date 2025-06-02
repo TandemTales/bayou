@@ -2,6 +2,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Network.hpp>
 #include "InputManager.h"
+#include "GraphicsManager.h"
 #include "GameState.h"
 #include "GameInitializer.h"
 
@@ -13,8 +14,9 @@ TEST_CASE("InputManager Construction", "[InputManager]") {
     GameState gameState;
     bool gameHasStarted = false;
     PlayerSide myPlayerSide = PlayerSide::PLAYER_ONE;
+    GraphicsManager graphicsManager(window);
     
-    REQUIRE_NOTHROW(InputManager(window, socket, gameState, gameHasStarted, myPlayerSide));
+    REQUIRE_NOTHROW(InputManager(window, socket, gameState, gameHasStarted, myPlayerSide, graphicsManager));
 }
 
 TEST_CASE("InputManager Initial State", "[InputManager]") {
@@ -23,8 +25,9 @@ TEST_CASE("InputManager Initial State", "[InputManager]") {
     GameState gameState;
     bool gameHasStarted = false;
     PlayerSide myPlayerSide = PlayerSide::PLAYER_ONE;
+    GraphicsManager graphicsManager(window);
     
-    InputManager inputManager(window, socket, gameState, gameHasStarted, myPlayerSide);
+    InputManager inputManager(window, socket, gameState, gameHasStarted, myPlayerSide, graphicsManager);
     
     SECTION("Initial state should have no piece selected") {
         REQUIRE(inputManager.getSelectedPiece() == nullptr);
@@ -41,8 +44,9 @@ TEST_CASE("InputManager Reset State", "[InputManager]") {
     GameState gameState;
     bool gameHasStarted = false;
     PlayerSide myPlayerSide = PlayerSide::PLAYER_ONE;
+    GraphicsManager graphicsManager(window);
     
-    InputManager inputManager(window, socket, gameState, gameHasStarted, myPlayerSide);
+    InputManager inputManager(window, socket, gameState, gameHasStarted, myPlayerSide, graphicsManager);
     
     SECTION("Reset should clear all state") {
         inputManager.resetInputState();
@@ -61,12 +65,13 @@ TEST_CASE("InputManager Event Handling", "[InputManager]") {
     GameState gameState;
     bool gameHasStarted = true;
     PlayerSide myPlayerSide = PlayerSide::PLAYER_ONE;
+    GraphicsManager graphicsManager(window);
     
     // Initialize game state with pieces
     GameInitializer initializer;
     initializer.initializeNewGame(gameState);
     
-    InputManager inputManager(window, socket, gameState, gameHasStarted, myPlayerSide);
+    InputManager inputManager(window, socket, gameState, gameHasStarted, myPlayerSide, graphicsManager);
     
     SECTION("Should handle mouse events") {
         sf::Event mouseEvent;

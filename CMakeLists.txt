@@ -113,6 +113,7 @@ endif()
 set(CLIENT_SOURCES 
     src/main.cpp
     src/InputManager.cpp
+    src/GraphicsManager.cpp
 )
 set(SERVER_SOURCES src/server_main.cpp)
 
