@@ -27,6 +27,10 @@ int Piece::getHealth() const {
     return health;
 }
 
+int Piece::getMaxHealth() const {
+    return stats.health;
+}
+
 void Piece::setHealth(int health) {
     this->health = health;
 }

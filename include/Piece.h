@@ -95,6 +95,13 @@ public:
     int getHealth() const;
     
     /**
+     * @brief Get the maximum health value of the piece
+     * 
+     * @return The maximum health value from piece stats
+     */
+    int getMaxHealth() const;
+    
+    /**
      * @brief Set the health value of the piece
      * 
      * @param health The new health value
