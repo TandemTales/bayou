@@ -1,5 +1,6 @@
 #include "GameBoard.h"
 #include "Square.h" // Ensure Square and its packet operators are included
+#include "InfluenceSystem.h" // Include the new InfluenceSystem
 #include <SFML/Network/Packet.hpp> // For sf::Packet
 
 // GameBoard.h should already include Square.h
@@ -33,26 +34,8 @@ void GameBoard::resetBoard() {
 }
 
 void GameBoard::recalculateControlValues() {
-    // Reset all control values
-    for (int y = 0; y < BOARD_SIZE; y++) {
-        for (int x = 0; x < BOARD_SIZE; x++) {
-            board[y][x].setControlValue(PlayerSide::PLAYER_ONE, 0);
-            board[y][x].setControlValue(PlayerSide::PLAYER_TWO, 0);
-        }
-    }
-    
-    // Calculate control for each piece on the board
-    // This is placeholder logic - the actual implementation will depend on
-    // the Piece class which we'll create in later tasks
-    for (int y = 0; y < BOARD_SIZE; y++) {
-        for (int x = 0; x < BOARD_SIZE; x++) {
-            auto& square = board[y][x];
-            if (!square.isEmpty()) {
-                // TODO: Implement piece influence calculation logic
-                // This will be implemented when we have the Piece class
-            }
-        }
-    }
+    // Use the new InfluenceSystem to calculate board influence and control
+    InfluenceSystem::calculateBoardInfluence(*this);
 }
 
 // SFML Packet operators for GameBoard

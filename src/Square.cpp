@@ -13,7 +13,8 @@ PieceFactory* Square::globalPieceFactory = nullptr;
 Square::Square() : 
     piece(nullptr),
     controlValuePlayer1(0),
-    controlValuePlayer2(0) {
+    controlValuePlayer2(0),
+    currentController(PlayerSide::NEUTRAL) {
 }
 
 bool Square::isEmpty() const {
@@ -51,12 +52,41 @@ void Square::setControlValue(PlayerSide side, int value) {
 }
 
 PlayerSide Square::getControlledBy() const {
-    if (controlValuePlayer1 > controlValuePlayer2) {
-        return PlayerSide::PLAYER_ONE;
-    } else if (controlValuePlayer2 > controlValuePlayer1) {
-        return PlayerSide::PLAYER_TWO;
-    } else {
-        return PlayerSide::NEUTRAL;
+    return currentController;
+}
+
+void Square::setControlledBy(PlayerSide controller) {
+    currentController = controller;
+}
+
+void Square::updateControlFromInfluence() {
+    // Sticky control logic:
+    // 1. If no one has ever controlled this square, highest influence wins
+    // 2. If someone controls it, they keep it unless another player has MORE influence
+    // 3. Ties go to the current controller
+    
+    if (currentController == PlayerSide::NEUTRAL) {
+        // No one has ever controlled this square - highest influence wins
+        if (controlValuePlayer1 > controlValuePlayer2) {
+            currentController = PlayerSide::PLAYER_ONE;
+        } else if (controlValuePlayer2 > controlValuePlayer1) {
+            currentController = PlayerSide::PLAYER_TWO;
+        }
+        // If tied at 0 or equal non-zero values, remains neutral
+    } else if (currentController == PlayerSide::PLAYER_ONE) {
+        // Player One currently controls - they keep it unless Player Two has MORE influence
+        // Player Two needs STRICTLY MORE influence than Player One to take control
+        if (controlValuePlayer2 > controlValuePlayer1) {
+            currentController = PlayerSide::PLAYER_TWO;
+        }
+        // Player One retains control in all other cases (including ties)
+    } else if (currentController == PlayerSide::PLAYER_TWO) {
+        // Player Two currently controls - they keep it unless Player One has MORE influence
+        // Player One needs STRICTLY MORE influence than Player Two to take control
+        if (controlValuePlayer1 > controlValuePlayer2) {
+            currentController = PlayerSide::PLAYER_ONE;
+        }
+        // Player Two retains control in all other cases (including ties)
     }
 }
 
@@ -81,6 +111,7 @@ sf::Packet& operator<<(sf::Packet& packet, const Square& sq) {
 
     packet << static_cast<sf::Int32>(sq.getControlValue(PlayerSide::PLAYER_ONE));
     packet << static_cast<sf::Int32>(sq.getControlValue(PlayerSide::PLAYER_TWO));
+    packet << static_cast<sf::Uint8>(sq.getControlledBy()); // Serialize persistent controller
     return packet;
 }
 
@@ -130,6 +161,12 @@ sf::Packet& operator>>(sf::Packet& packet, Square& sq) {
     packet >> controlP1_sf >> controlP2_sf;
     sq.setControlValue(PlayerSide::PLAYER_ONE, static_cast<int>(controlP1_sf));
     sq.setControlValue(PlayerSide::PLAYER_TWO, static_cast<int>(controlP2_sf));
+    
+    // Deserialize persistent controller
+    sf::Uint8 controller_uint8;
+    packet >> controller_uint8;
+    sq.setControlledBy(static_cast<PlayerSide>(controller_uint8));
+    
     return packet;
 }
 

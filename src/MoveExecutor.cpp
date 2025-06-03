@@ -1,5 +1,6 @@
 #include "MoveExecutor.h"
 #include "GameBoard.h"
+#include "InfluenceSystem.h"
 // #include "King.h" // Removed - using data-driven approach with PieceFactory
 #include "GameState.h"
 #include "Square.h"
@@ -140,41 +141,8 @@ bool MoveExecutor::resolveCombat(std::shared_ptr<Piece> attacker, std::shared_pt
 void MoveExecutor::recalculateBoardControl(GameState& gameState) {
     GameBoard& board = gameState.getBoard();
     
-    // Reset all control values
-    for (int y = 0; y < GameBoard::BOARD_SIZE; y++) {
-        for (int x = 0; x < GameBoard::BOARD_SIZE; x++) {
-            Square& square = board.getSquare(x, y);
-            square.setControlValue(PlayerSide::PLAYER_ONE, 0);
-            square.setControlValue(PlayerSide::PLAYER_TWO, 0);
-        }
-    }
-    
-    // Calculate control for each piece on the board
-    for (int y = 0; y < GameBoard::BOARD_SIZE; y++) {
-        for (int x = 0; x < GameBoard::BOARD_SIZE; x++) {
-            Square& square = board.getSquare(x, y);
-            
-            if (!square.isEmpty()) {
-                Piece* piece = square.getPiece();
-                PlayerSide side = piece->getSide();
-                
-                // A piece always controls its own square
-                square.setControlValue(side, square.getControlValue(side) + 1);
-                
-                // Get the influence area of this piece
-                std::vector<Position> influenceArea = piece->getInfluenceArea(board);
-                
-                // Apply influence to each square in the area
-                for (const Position& pos : influenceArea) {
-                    if (pos.x != x || pos.y != y) { // Skip the piece's own square
-                        Square& influencedSquare = board.getSquare(pos.x, pos.y);
-                        influencedSquare.setControlValue(side, 
-                            influencedSquare.getControlValue(side) + 1);
-                    }
-                }
-            }
-        }
-    }
+    // Use the new InfluenceSystem to calculate board influence and control
+    InfluenceSystem::calculateBoardInfluence(board);
     
     // After recalculating control, update steam for each player
     int player1ControlledSquares = 0;
@@ -183,7 +151,7 @@ void MoveExecutor::recalculateBoardControl(GameState& gameState) {
     for (int y = 0; y < GameBoard::BOARD_SIZE; y++) {
         for (int x = 0; x < GameBoard::BOARD_SIZE; x++) {
             Square& square = board.getSquare(x, y);
-            PlayerSide controller = square.getControlledBy();
+            PlayerSide controller = InfluenceSystem::getControllingPlayer(square);
             
             if (controller == PlayerSide::PLAYER_ONE) {
                 player1ControlledSquares++;

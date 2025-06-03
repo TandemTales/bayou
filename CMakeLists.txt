@@ -98,6 +98,7 @@ set(GAMELOGIC_SOURCES
     src/HealthTracker.cpp
     src/PieceRemovalHandler.cpp
     src/PieceDefinitionManager.cpp # Added PieceDefinitionManager.cpp
+    src/InfluenceSystem.cpp # Added InfluenceSystem.cpp
 )
 
 # Add static library for game logic

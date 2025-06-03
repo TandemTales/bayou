@@ -19,6 +19,7 @@
 #include "PieceFactory.h"
 #include "PieceDefinitionManager.h"
 #include "TurnManager.h"
+#include "InfluenceSystem.h" // Added for InfluenceSystem
 // #include "King.h" // Removed - using data-driven approach with PieceFactory
 
 
@@ -391,6 +392,31 @@ int main()
             }
         }
         // --- End Game Board Rendering ---
+
+        // --- Control Visualization ---
+        for (int y = 0; y < GameBoard::BOARD_SIZE; ++y) {
+            for (int x = 0; x < GameBoard::BOARD_SIZE; ++x) {
+                const Square& square = board.getSquare(x, y);
+                PlayerSide controller = InfluenceSystem::getControllingPlayer(square);
+                
+                if (controller != PlayerSide::NEUTRAL) {
+                    sf::RectangleShape controlIndicator(sf::Vector2f(boardParams.squareSize, boardParams.squareSize));
+                    controlIndicator.setPosition(boardParams.boardStartX + x * boardParams.squareSize, 
+                                                boardParams.boardStartY + y * boardParams.squareSize);
+                    
+                    if (controller == PlayerSide::PLAYER_ONE) {
+                        // More visible blue tint for Player One control
+                        controlIndicator.setFillColor(sf::Color(0, 100, 255, 120)); // Blue with higher alpha
+                    } else if (controller == PlayerSide::PLAYER_TWO) {
+                        // More visible red tint for Player Two control
+                        controlIndicator.setFillColor(sf::Color(255, 50, 0, 120)); // Red with higher alpha
+                    }
+                    
+                    window.draw(controlIndicator);
+                }
+            }
+        }
+        // --- End Control Visualization ---
 
         // --- Piece Rendering ---
         for (int y = 0; y < GameBoard::BOARD_SIZE; ++y) {

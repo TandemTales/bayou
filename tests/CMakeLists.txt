@@ -24,6 +24,7 @@ add_executable(BayouBonanzaTests
   PieceFactoryTests.cpp
   CombatSystemTests.cpp
   TurnManagerTests.cpp
+  InfluenceSystemTests.cpp
 )
 target_include_directories(BayouBonanzaTests PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(BayouBonanzaTests PRIVATE

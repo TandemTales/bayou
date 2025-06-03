@@ -1,6 +1,6 @@
 # Task ID: 5
 # Title: Implement Influence and Control System
-# Status: in-progress
+# Status: done
 # Dependencies: 3
 # Priority: high
 # Description: Create the system for calculating piece influence on adjacent squares and determining square control.

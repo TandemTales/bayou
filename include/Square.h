@@ -17,6 +17,7 @@ class PieceFactory;
  * 
  * Each square may contain a piece and has control values for both players.
  * Control values determine which player has influence over this square.
+ * Control is persistent - once gained, it's only lost when another player gains MORE influence.
  */
 class Square {
 public:
@@ -54,27 +55,42 @@ public:
     std::unique_ptr<Piece> extractPiece();
     
     /**
-     * @brief Get the control value for a specific player
+     * @brief Get the current influence value for a specific player
      * 
      * @param side The player side to check
-     * @return Control value (higher means more control)
+     * @return Current influence value (reset each turn)
      */
     int getControlValue(PlayerSide side) const;
     
     /**
-     * @brief Set the control value for a specific player
+     * @brief Set the current influence value for a specific player
      * 
      * @param side The player side to set
-     * @param value The control value to set
+     * @param value The influence value to set
      */
     void setControlValue(PlayerSide side, int value);
     
     /**
-     * @brief Get the player that controls this square
+     * @brief Get the player that currently controls this square (persistent)
      * 
-     * @return PlayerSide that controls this square (NEUTRAL if tied)
+     * @return PlayerSide that controls this square (NEUTRAL if no one has ever controlled it)
      */
     PlayerSide getControlledBy() const;
+    
+    /**
+     * @brief Set the controlling player for this square (used by InfluenceSystem)
+     * 
+     * @param controller The player that should control this square
+     */
+    void setControlledBy(PlayerSide controller);
+    
+    /**
+     * @brief Update control based on current influence values (implements sticky control logic)
+     * 
+     * Control only changes when another player has MORE influence than the current controller.
+     * If no one has ever controlled this square, the player with more influence gains control.
+     */
+    void updateControlFromInfluence();
     
     /**
      * @brief Set the global PieceFactory for deserialization
@@ -94,8 +110,9 @@ public:
 
 private:
     std::unique_ptr<Piece> piece; // nullptr if empty, Square owns the piece
-    int controlValuePlayer1;      // Control value for player 1
-    int controlValuePlayer2;      // Control value for player 2
+    int controlValuePlayer1;      // Current influence value for player 1 (reset each turn)
+    int controlValuePlayer2;      // Current influence value for player 2 (reset each turn)
+    PlayerSide currentController; // Persistent control - who actually controls this square
 };
 
 // SFML Packet operators for Square
