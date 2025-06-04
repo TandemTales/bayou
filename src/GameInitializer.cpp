@@ -103,9 +103,7 @@ void GameInitializer::resetGameState(GameState& gameState) {
     gameState.setGameResult(GameResult::IN_PROGRESS);
     
     // Reset turn number to 1
-    while (gameState.getTurnNumber() > 1) {
-        gameState.incrementTurnNumber();
-    }
+    gameState.setTurnNumber(1);
     
     // Reset steam for both players
     gameState.setSteam(PlayerSide::PLAYER_ONE, 0);
