@@ -3,6 +3,7 @@
 #include <memory>
 #include "GameBoard.h" // Includes Square.h, Piece.h, etc.
 #include "PlayerSide.h"
+#include "ResourceSystem.h" // Added ResourceSystem include
 #include <SFML/Network/Packet.hpp> // For sf::Packet
 
 // GameBoard.h should bring in Square.h, which should bring in Piece.h (for PieceType)
@@ -158,6 +159,36 @@ public:
      * @param amount The amount of steam to add
      */
     void addSteam(PlayerSide side, int amount);
+    
+    /**
+     * @brief Spend steam for a player
+     * 
+     * @param side The player side
+     * @param amount The amount of steam to spend
+     * @return true if successful (player had enough steam), false otherwise
+     */
+    bool spendSteam(PlayerSide side, int amount);
+    
+    /**
+     * @brief Get the ResourceSystem for advanced steam management
+     * 
+     * @return Reference to the ResourceSystem
+     */
+    ResourceSystem& getResourceSystem();
+    
+    /**
+     * @brief Get the ResourceSystem for advanced steam management (const version)
+     * 
+     * @return Const reference to the ResourceSystem
+     */
+    const ResourceSystem& getResourceSystem() const;
+    
+    /**
+     * @brief Process turn start - calculate and add steam generation
+     * 
+     * This should be called at the beginning of each player's turn.
+     */
+    void processTurnStart();
 
 private:
     GameBoard board;
@@ -165,6 +196,9 @@ private:
     GamePhase phase;
     GameResult result;
     int turnNumber;
+    ResourceSystem resourceSystem; // Added ResourceSystem member
+    
+    // Legacy steam tracking (kept for backward compatibility)
     int steamPlayer1;
     int steamPlayer2;
 };

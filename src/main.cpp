@@ -45,6 +45,9 @@ sf::Text localPlayerRatingText;
 sf::Text remotePlayerUsernameText;
 sf::Text remotePlayerRatingText;
 
+// UI Element for Local Player Steam
+sf::Text localPlayerSteamText;
+
 // Function to recreate pieces after deserialization without resetting game state
 void recreatePiecesAfterDeserialization(GameState& gameState) {
     // The issue is that Square deserialization loses pieces due to PieceFactory access
@@ -336,6 +339,10 @@ int main()
     remotePlayerRatingText.setCharacterSize(16);
     remotePlayerRatingText.setFillColor(sf::Color::White);
 
+    localPlayerSteamText.setFont(globalFont);
+    localPlayerSteamText.setCharacterSize(16);
+    localPlayerSteamText.setFillColor(sf::Color::White);
+
     // Initialize game state
     GameState gameState;
 
@@ -404,6 +411,11 @@ int main()
                                 // Set positions for username/rating texts (using base resolution coordinates)
                                 localPlayerUsernameText.setPosition(10.f, uiMessageText.getPosition().y + 30.f);
                                 localPlayerRatingText.setPosition(10.f, localPlayerUsernameText.getPosition().y + 20.f);
+                                localPlayerSteamText.setPosition(10.f, localPlayerRatingText.getPosition().y + 20.f);
+                                
+                                // Update local player steam display
+                                int localPlayerSteam = gameState.getSteam(myPlayerSide);
+                                localPlayerSteamText.setString("Steam: " + std::to_string(localPlayerSteam));
                                 
                                 // Position remote player text on the right side
                                 float remoteTextWidthEstimate = 200.f; 
@@ -421,6 +433,10 @@ int main()
                                 // uiMessage = (myPlayerSide == gameState.getActivePlayer() ? "Your turn" : "Opponent's turn");
                                 std::cout << "GameState updated. Turn: " << gameState.getTurnNumber() << std::endl;
                                 printBoardState(gameState);
+                                
+                                // Update local player steam display
+                                int localPlayerSteam = gameState.getSteam(myPlayerSide);
+                                localPlayerSteamText.setString("Steam: " + std::to_string(localPlayerSteam));
                             } else { std::cerr << "Error deserializing GameStateUpdate." << std::endl; }
                         }
                         break;
@@ -476,6 +492,7 @@ int main()
             window.draw(localPlayerRatingText);
             window.draw(remotePlayerUsernameText);
             window.draw(remotePlayerRatingText);
+            window.draw(localPlayerSteamText);
         }
 
         // --- Game Board Rendering ---

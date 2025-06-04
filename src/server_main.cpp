@@ -219,7 +219,7 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                                         p2_new_rating = std::max(0, p2_new_rating);
 
                                         sqlite3* db;
-                                        if (sqlite3_open("../../bayou_bonanza.db", &db) == SQLITE_OK) {
+                                        if (sqlite3_open("bayou_bonanza.db", &db) == SQLITE_OK) {
                                             const char* sql_update = "UPDATE users SET rating = ? WHERE username = ?;";
                                             sqlite3_stmt* stmt_update;
 
@@ -309,8 +309,8 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
 void initialize_database() {
     sqlite3* db;
     char* err_msg = 0;
-    // Use absolute path to project root for consistent database location
-    std::string db_path = "../../bayou_bonanza.db"; // Relative to build/Debug/ directory
+    // Use path relative to project root since working directory is now set to base directory
+    std::string db_path = "bayou_bonanza.db"; // Database in project root
     int rc = sqlite3_open(db_path.c_str(), &db);
 
     if (rc) {
@@ -380,7 +380,7 @@ int main() {
                     if (loginPacket >> msg_type && msg_type == MessageType::UserLogin) {
                         if (loginPacket >> received_username && !received_username.empty()) {
                             sqlite3* db;
-                            int rc_db = sqlite3_open("../../bayou_bonanza.db", &db);
+                            int rc_db = sqlite3_open("bayou_bonanza.db", &db);
                             if (rc_db) {
                                 std::cerr << "Can't open database: " << sqlite3_errmsg(db) << std::endl;
                                 if(db) sqlite3_close(db);

@@ -55,3 +55,11 @@ public:
 3. Test card effects on game state
 4. Validate card collection management
 5. Ensure proper card type identification and serialization
+
+# Subtasks:
+## 1. Design Card Base Class and Enums [pending]
+### Dependencies: None
+### Description: Create the foundational Card base class with common attributes and define necessary enums for card types, piece types, and player sides.
+### Details:
+1. Create Card.h header file with base Card class\n2. Define CardType enum (PieceCard, EffectCard, etc.)\n3. Define PieceType enum for different pieces\n4. Implement basic card attributes (name, steamCost, description)\n5. Define pure virtual methods for canPlay() and play()\n6. Add proper C++20 features like concepts if applicable
+

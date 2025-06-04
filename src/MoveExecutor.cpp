@@ -160,10 +160,6 @@ void MoveExecutor::recalculateBoardControl(GameState& gameState) {
             }
         }
     }
-    
-    // Add steam based on controlled squares
-    gameState.addSteam(PlayerSide::PLAYER_ONE, player1ControlledSquares);
-    gameState.addSteam(PlayerSide::PLAYER_TWO, player2ControlledSquares);
 }
 
 } // namespace BayouBonanza

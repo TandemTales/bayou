@@ -99,6 +99,7 @@ set(GAMELOGIC_SOURCES
     src/PieceRemovalHandler.cpp
     src/PieceDefinitionManager.cpp # Added PieceDefinitionManager.cpp
     src/InfluenceSystem.cpp # Added InfluenceSystem.cpp
+    src/ResourceSystem.cpp # Added ResourceSystem.cpp
 )
 
 # Add static library for game logic
@@ -141,6 +142,9 @@ target_link_libraries(TestInitialization GameLogic)
 
 # Set Visual Studio debugger working directory to project root for client
 set_target_properties(BayouBonanzaClient PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+
+# Set Visual Studio debugger working directory to project root for server
+set_target_properties(BayouBonanzaServer PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 
 # Copy assets directory to build output directory for client
 add_custom_command(TARGET BayouBonanzaClient POST_BUILD

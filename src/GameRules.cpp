@@ -66,6 +66,9 @@ void GameRules::endTurn(GameState& gameState) {
     // Increment the turn number after each move
     gameState.incrementTurnNumber();
     
+    // Process turn start for the new active player (calculate and add steam generation)
+    gameState.processTurnStart();
+    
     // Recalculate board control at the end of each turn
     moveExecutor.recalculateBoardControl(gameState);
 }

@@ -14,6 +14,7 @@ GameState::GameState() :
     phase(GamePhase::SETUP),
     result(GameResult::IN_PROGRESS),
     turnNumber(1),
+    resourceSystem(0), // Initialize ResourceSystem with 0 starting steam
     steamPlayer1(0),
     steamPlayer2(0) {
 }
@@ -69,6 +70,11 @@ void GameState::initializeNewGame() {
     phase = GamePhase::MAIN_GAME;
     result = GameResult::IN_PROGRESS;
     turnNumber = 1;
+    
+    // Reset ResourceSystem
+    resourceSystem.reset(0);
+    
+    // Reset legacy steam tracking for backward compatibility
     steamPlayer1 = 0;
     steamPlayer2 = 0;
     
@@ -89,30 +95,65 @@ void GameState::incrementTurnNumber() {
 }
 
 int GameState::getSteam(PlayerSide side) const {
-    if (side == PlayerSide::PLAYER_ONE) {
-        return steamPlayer1;
-    } else if (side == PlayerSide::PLAYER_TWO) {
-        return steamPlayer2;
-    }
-    return 0; // NEUTRAL has no steam
+    // Delegate to ResourceSystem for primary steam tracking
+    return resourceSystem.getSteam(side);
 }
 
 void GameState::setSteam(PlayerSide side, int amount) {
+    // Delegate to ResourceSystem
+    resourceSystem.setSteam(side, amount);
+    
+    // Update legacy tracking for backward compatibility
     if (side == PlayerSide::PLAYER_ONE) {
         steamPlayer1 = amount;
     } else if (side == PlayerSide::PLAYER_TWO) {
         steamPlayer2 = amount;
     }
-    // NEUTRAL side is ignored for setting steam
 }
 
 void GameState::addSteam(PlayerSide side, int amount) {
+    // Delegate to ResourceSystem
+    resourceSystem.addSteam(side, amount);
+    
+    // Update legacy tracking for backward compatibility
     if (side == PlayerSide::PLAYER_ONE) {
-        steamPlayer1 += amount;
+        steamPlayer1 = resourceSystem.getSteam(PlayerSide::PLAYER_ONE);
     } else if (side == PlayerSide::PLAYER_TWO) {
-        steamPlayer2 += amount;
+        steamPlayer2 = resourceSystem.getSteam(PlayerSide::PLAYER_TWO);
     }
-    // NEUTRAL side is ignored for adding steam
+}
+
+bool GameState::spendSteam(PlayerSide side, int amount) {
+    // Delegate to ResourceSystem
+    bool success = resourceSystem.spendSteam(side, amount);
+    
+    // Update legacy tracking for backward compatibility
+    if (success) {
+        if (side == PlayerSide::PLAYER_ONE) {
+            steamPlayer1 = resourceSystem.getSteam(PlayerSide::PLAYER_ONE);
+        } else if (side == PlayerSide::PLAYER_TWO) {
+            steamPlayer2 = resourceSystem.getSteam(PlayerSide::PLAYER_TWO);
+        }
+    }
+    
+    return success;
+}
+
+ResourceSystem& GameState::getResourceSystem() {
+    return resourceSystem;
+}
+
+const ResourceSystem& GameState::getResourceSystem() const {
+    return resourceSystem;
+}
+
+void GameState::processTurnStart() {
+    // Use ResourceSystem to process turn start and calculate steam generation
+    resourceSystem.processTurnStart(activePlayer, board);
+    
+    // Update legacy tracking for backward compatibility
+    steamPlayer1 = resourceSystem.getSteam(PlayerSide::PLAYER_ONE);
+    steamPlayer2 = resourceSystem.getSteam(PlayerSide::PLAYER_TWO);
 }
 
 // SFML Packet operators for GamePhase enum

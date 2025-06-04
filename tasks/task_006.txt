@@ -1,6 +1,6 @@
 # Task ID: 6
 # Title: Implement Steam Resource Generation System
-# Status: pending
+# Status: done
 # Dependencies: 5
 # Priority: medium
 # Description: Create the system for generating and managing the 'Steam' resource based on controlled squares.
@@ -57,3 +57,45 @@ void ResourceSystem::calculateSteamGeneration(const GameBoard& board) {
 3. Test steam spending mechanics
 4. Validate resource updates based on board control changes
 5. Ensure proper resource limits and constraints
+
+# Subtasks:
+## 1. Create ResourceSystem Class Structure [done]
+### Dependencies: None
+### Description: Design and implement the basic ResourceSystem class with steam tracking for both players
+### Details:
+1. Create ResourceSystem.h header file\n2. Define private member variables for player1Steam and player2Steam\n3. Implement constructor to initialize steam values\n4. Add getter methods: getSteam(PlayerSide player)\n5. Add setter methods: setSteam(PlayerSide player, int amount)\n6. Add utility methods: addSteam() and spendSteam()\n7. Include proper error checking for negative values
+
+## 2. Implement Steam Generation Calculation [done]
+### Dependencies: 6.1
+### Description: Create the logic to calculate steam generation based on controlled squares using the InfluenceSystem
+### Details:
+1. Implement calculateSteamGeneration(const GameBoard& board) method\n2. Iterate through all board squares (8x8 grid)\n3. Use InfluenceSystem::getControllingPlayer() to determine square control\n4. Count controlled squares for each player\n5. Store generation values for use in turn processing\n6. Add configurable steam generation rates if needed
+
+## 3. Implement Turn-Based Steam Processing [done]
+### Dependencies: 6.2
+### Description: Create the processTurnStart method to add generated steam to players at the beginning of their turn
+### Details:
+1. Implement processTurnStart(PlayerSide activePlayer, const GameBoard& board) method\n2. Call calculateSteamGeneration() to get current generation values\n3. Add generated steam to the active player's total\n4. Ensure steam accumulation is properly tracked\n5. Add logging/debugging output for steam generation\n6. Handle edge cases like maximum steam limits if applicable
+
+## 4. Integrate ResourceSystem with Game Engine [done]
+### Dependencies: 6.3
+### Description: Connect the ResourceSystem with the existing game engine components and ensure proper integration
+### Details:
+1. Add ResourceSystem as a member to GameState or GameBoard class\n2. Update existing game loop to call processTurnStart() at turn beginning\n3. Ensure ResourceSystem is properly initialized in game setup\n4. Add methods to query steam values from other game systems\n5. Update any existing placeholder resource code\n6. Test integration with existing piece and board systems
+
+## 5. Create Unit Tests for ResourceSystem [done]
+### Dependencies: 6.4
+### Description: Implement comprehensive unit tests to verify steam calculation, accumulation, and spending mechanics
+### Details:
+1. Create test file for ResourceSystem (test_ResourceSystem.cpp)\n2. Test basic steam getter/setter functionality\n3. Test steam spending with sufficient and insufficient funds\n4. Test steam generation calculation with various board states\n5. Test turn-based steam accumulation\n6. Test edge cases like negative values and overflow\n7. Mock InfluenceSystem for isolated testing
+
+## 6. Implement Steam UI Display for Local Player [done]
+### Dependencies: 6.5
+### Description: Add UI element to display the local player's current steam amount in the game interface
+### Details:
+1. Add sf::Text UI element for steam display
+2. Position steam display in the local player info area
+3. Update steam display in GameStart and GameStateUpdate handlers
+4. Ensure proper formatting and styling consistency
+5. Test steam display updates during gameplay
+
