@@ -253,6 +253,69 @@ void renderHealthBar(sf::RenderWindow& window, const Piece* piece, float squareX
     }
 }
 
+// Simple username login screen
+std::string runLoginScreen(sf::RenderWindow& window, GraphicsManager& graphicsManager) {
+    std::string username;
+
+    sf::Text promptText;
+    promptText.setFont(globalFont);
+    promptText.setCharacterSize(32);
+    promptText.setFillColor(sf::Color::White);
+    promptText.setString("Enter Username");
+
+    sf::Text inputText;
+    inputText.setFont(globalFont);
+    inputText.setCharacterSize(28);
+    inputText.setFillColor(sf::Color::Cyan);
+
+    sf::RectangleShape inputBox(sf::Vector2f(400.f, 50.f));
+    inputBox.setFillColor(sf::Color(30, 30, 30));
+    inputBox.setOutlineColor(sf::Color::White);
+    inputBox.setOutlineThickness(2.f);
+
+    bool done = false;
+    while (window.isOpen() && !done) {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                window.close();
+                return "";
+            } else if (event.type == sf::Event::Resized) {
+                graphicsManager.updateView();
+            } else if (event.type == sf::Event::TextEntered) {
+                if (event.text.unicode == 8) { // Backspace
+                    if (!username.empty()) username.pop_back();
+                } else if (event.text.unicode == 13 || event.text.unicode == 10) { // Enter
+                    if (!username.empty()) done = true;
+                } else if (event.text.unicode < 128 && std::isprint(event.text.unicode)) {
+                    username += static_cast<char>(event.text.unicode);
+                }
+            }
+        }
+
+        graphicsManager.applyView();
+        window.clear(sf::Color(10, 50, 20));
+
+        float centerX = GraphicsManager::BASE_WIDTH / 2.f;
+        float centerY = GraphicsManager::BASE_HEIGHT / 2.f;
+
+        sf::FloatRect promptBounds = promptText.getLocalBounds();
+        promptText.setPosition(centerX - promptBounds.width / 2.f, centerY - 80.f);
+
+        inputBox.setPosition(centerX - inputBox.getSize().x / 2.f, centerY - inputBox.getSize().y / 2.f);
+
+        inputText.setString(username);
+        inputText.setPosition(inputBox.getPosition().x + 10.f, inputBox.getPosition().y + 10.f);
+
+        window.draw(promptText);
+        window.draw(inputBox);
+        window.draw(inputText);
+        window.display();
+    }
+
+    return username;
+}
+
 int main()
 {
     // Create the main window with a default size - GraphicsManager will handle scaling
@@ -262,25 +325,26 @@ int main()
     // Initialize graphics manager for resolution scaling
     GraphicsManager graphicsManager(window);
 
+    // Load font early for login screen and UI
+    if (!globalFont.loadFromFile("assets/fonts/Roboto-Regular.ttf")) {
+        std::cerr << "Error loading font from assets/fonts/Roboto-Regular.ttf\n";
+        return -1;
+    }
+
     // Initialize global PieceFactory for deserialization
     if (!globalPieceDefManager.loadDefinitions("assets/data/pieces.json")) {
         std::cerr << "FATAL: Could not load piece definitions from assets/data/pieces.json" << std::endl;
         return -1;
     }
     globalPieceFactory = std::make_unique<PieceFactory>(globalPieceDefManager);
-    
+
     // Set the global PieceFactory for Square deserialization
     Square::setGlobalPieceFactory(globalPieceFactory.get());
 
-    // Get username input
-    std::string username;
-    std::cout << "Enter your username: ";
-    std::cin >> username;
-
-    // Basic validation: ensure username is not empty
-    while (username.empty()) {
-        std::cout << "Username cannot be empty. Please enter your username: ";
-        std::cin >> username;
+    // Display login screen for username input
+    std::string username = runLoginScreen(window, graphicsManager);
+    if (username.empty()) {
+        return 0; // Window closed before entering username
     }
 
     // Network Socket
@@ -309,12 +373,6 @@ int main()
         }
     }
     socket.setBlocking(false); // Use non-blocking mode for game loop
-
-    // Load font (use globalFont)
-    if (!globalFont.loadFromFile("assets/fonts/Roboto-Regular.ttf")) {
-        std::cerr << "Error loading font from assets/fonts/Roboto-Regular.ttf\n";
-        return -1;
-    }
 
     // Initialize UI text elements
     uiMessageText.setFont(globalFont);
