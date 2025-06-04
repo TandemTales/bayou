@@ -253,6 +253,25 @@ void renderHealthBar(sf::RenderWindow& window, const Piece* piece, float squareX
     }
 }
 
+// Function to render the attack value in the bottom right corner of a piece square
+void renderAttackValue(sf::RenderWindow& window, const Piece* piece, float squareX, float squareY, float squareSize) {
+    if (!piece) return;
+
+    sf::Text attackText;
+    attackText.setFont(globalFont);
+    attackText.setString(std::to_string(piece->getAttack()));
+    attackText.setCharacterSize(static_cast<unsigned int>(squareSize * 0.2f));
+    attackText.setFillColor(sf::Color::White);
+
+    sf::FloatRect bounds = attackText.getLocalBounds();
+    attackText.setOrigin(bounds.left + bounds.width, bounds.top + bounds.height);
+
+    float offset = squareSize * 0.05f; // Small margin from the square edges
+    attackText.setPosition(squareX + squareSize - offset, squareY + squareSize - offset);
+
+    window.draw(attackText);
+}
+
 // Simple username login screen
 std::string runLoginScreen(sf::RenderWindow& window, GraphicsManager& graphicsManager) {
     std::string username;
@@ -637,7 +656,16 @@ int main()
                     window.draw(pieceText);
 
                     // Render health bar
-                    renderHealthBar(window, piece, boardParams.boardStartX + x * boardParams.squareSize, boardParams.boardStartY + y * boardParams.squareSize, boardParams.squareSize);
+                    renderHealthBar(window, piece,
+                                    boardParams.boardStartX + x * boardParams.squareSize,
+                                    boardParams.boardStartY + y * boardParams.squareSize,
+                                    boardParams.squareSize);
+
+                    // Render attack value
+                    renderAttackValue(window, piece,
+                                     boardParams.boardStartX + x * boardParams.squareSize,
+                                     boardParams.boardStartY + y * boardParams.squareSize,
+                                     boardParams.squareSize);
                 }
             }
         }
@@ -681,6 +709,9 @@ int main()
             
             // Render health bar for the dragged piece
             renderHealthBar(window, draggedPiece, draggedPieceX, draggedPieceY, boardParams.squareSize);
+
+            // Render attack value for the dragged piece
+            renderAttackValue(window, draggedPiece, draggedPieceX, draggedPieceY, boardParams.squareSize);
         }
         // --- End Piece Rendering ---
         
