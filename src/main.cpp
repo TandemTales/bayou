@@ -68,7 +68,7 @@ void recreatePiecesAfterDeserialization(GameState& gameState) {
         board.getSquare(2, 7).setPiece(globalPieceFactory->createPiece("Bishop", PlayerSide::PLAYER_ONE));
         board.getSquare(3, 7).setPiece(globalPieceFactory->createPiece("Queen", PlayerSide::PLAYER_ONE));
         board.getSquare(4, 7).setPiece(globalPieceFactory->createPiece("King", PlayerSide::PLAYER_ONE));
-        board.getSquare(5, 7).setPiece(globalPieceFactory->createPiece("Bishop", PlayerSide::PLAYER_ONE));
+        board.getSquare(5, 7).setPiece(globalPieceFactory->createPiece("Archer", PlayerSide::PLAYER_ONE));
         board.getSquare(6, 7).setPiece(globalPieceFactory->createPiece("Knight", PlayerSide::PLAYER_ONE));
         board.getSquare(7, 7).setPiece(globalPieceFactory->createPiece("Rook", PlayerSide::PLAYER_ONE));
         
@@ -81,7 +81,7 @@ void recreatePiecesAfterDeserialization(GameState& gameState) {
         // Back row
         board.getSquare(0, 0).setPiece(globalPieceFactory->createPiece("Rook", PlayerSide::PLAYER_TWO));
         board.getSquare(1, 0).setPiece(globalPieceFactory->createPiece("Knight", PlayerSide::PLAYER_TWO));
-        board.getSquare(2, 0).setPiece(globalPieceFactory->createPiece("Bishop", PlayerSide::PLAYER_TWO));
+        board.getSquare(2, 0).setPiece(globalPieceFactory->createPiece("Archer", PlayerSide::PLAYER_TWO));
         board.getSquare(3, 0).setPiece(globalPieceFactory->createPiece("Queen", PlayerSide::PLAYER_TWO));
         board.getSquare(4, 0).setPiece(globalPieceFactory->createPiece("King", PlayerSide::PLAYER_TWO));
         board.getSquare(5, 0).setPiece(globalPieceFactory->createPiece("Bishop", PlayerSide::PLAYER_TWO));

@@ -40,7 +40,7 @@ void GameInitializer::setupBoard(GameState& gameState) {
     createAndPlacePiece(gameState, "Bishop", playerOne, 2, 7);
     createAndPlacePiece(gameState, "Queen", playerOne, 3, 7);
     createAndPlacePiece(gameState, "King", playerOne, 4, 7);
-    createAndPlacePiece(gameState, "Bishop", playerOne, 5, 7);
+    createAndPlacePiece(gameState, "Archer", playerOne, 5, 7);
     createAndPlacePiece(gameState, "Knight", playerOne, 6, 7);
     createAndPlacePiece(gameState, "Rook", playerOne, 7, 7);
     
@@ -54,7 +54,7 @@ void GameInitializer::setupBoard(GameState& gameState) {
     // Back row
     createAndPlacePiece(gameState, "Rook", playerTwo, 0, 0);
     createAndPlacePiece(gameState, "Knight", playerTwo, 1, 0);
-    createAndPlacePiece(gameState, "Bishop", playerTwo, 2, 0);
+    createAndPlacePiece(gameState, "Archer", playerTwo, 2, 0);
     createAndPlacePiece(gameState, "Queen", playerTwo, 3, 0);
     createAndPlacePiece(gameState, "King", playerTwo, 4, 0);
     createAndPlacePiece(gameState, "Bishop", playerTwo, 5, 0);
