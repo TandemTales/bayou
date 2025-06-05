@@ -62,6 +62,10 @@ PieceType Piece::getPieceType() const {
     return stats.pieceType;
 }
 
+bool Piece::isRanged() const {
+    return stats.isRanged;
+}
+
 bool Piece::isValidMove(const GameBoard& board, const Position& target) const {
     for (const auto& rule : stats.movementRules) {
         for (auto baseMove : rule.relativeMoves) { // Make a copy to potentially modify y

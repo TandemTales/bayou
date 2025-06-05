@@ -60,12 +60,34 @@ MoveResult MoveExecutor::executeMove(GameState& gameState, const Move& move) {
             std::shared_ptr<Piece> targetSharedPtr(targetPiece, [](Piece*){});  // No-op deleter since ownership is managed by Square
             
             bool destroyed = resolveCombat(piece, targetSharedPtr, gameState);
-            
+
+            // Special handling for ranged pieces like the Archer
+            if (piece->isRanged()) {
+                if (destroyed) {
+                    // Remove the defeated piece from the board
+                    toSquare.setPiece(nullptr);
+
+                    if (targetPiece->getPieceType() == PieceType::KING) {
+                        if (targetPiece->getSide() == PlayerSide::PLAYER_ONE) {
+                            gameState.setGameResult(GameResult::PLAYER_TWO_WIN);
+                        } else {
+                            gameState.setGameResult(GameResult::PLAYER_ONE_WIN);
+                        }
+                        recalculateBoardControl(gameState);
+                        return MoveResult::KING_CAPTURED;
+                    }
+                }
+
+                // Recalculate board control after ranged attack
+                recalculateBoardControl(gameState);
+                return MoveResult::SUCCESS;
+            }
+
             // If the opponent's piece is not destroyed, the attacker stays in place
             if (!destroyed) {
                 return MoveResult::SUCCESS;
             }
-            
+
             // Check if the destroyed piece was a king
             if (targetPiece->getPieceType() == PieceType::KING) {
                 // Set game result based on which king was captured
@@ -74,17 +96,17 @@ MoveResult MoveExecutor::executeMove(GameState& gameState, const Move& move) {
                 } else {
                     gameState.setGameResult(GameResult::PLAYER_ONE_WIN);
                 }
-                
+
                 // Extract the piece from the source square properly
                 std::unique_ptr<Piece> movingPiece = fromSquare.extractPiece();
                 if (!movingPiece) {
                     return MoveResult::INVALID_MOVE; // Piece was not at expected location
                 }
-                
+
                 // Move the attacking piece to the target square
                 movingPiece->setPosition(to);
                 toSquare.setPiece(std::move(movingPiece));
-                
+
                 return MoveResult::KING_CAPTURED;
             }
         } else {

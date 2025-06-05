@@ -6,6 +6,10 @@
 #include "PieceFactory.h"
 #include "PlayerSide.h"
 #include "PieceData.h"  // For Position
+#include "MoveExecutor.h"
+#include "GameState.h"
+
+using namespace BayouBonanza;
 #include <vector>
 #include <algorithm> // For std::find_if
 
@@ -182,6 +186,27 @@ TEST_CASE_METHOD(TestFixture, "Piece Data-Driven Functionality", "[piece]") {
         board.getSquare(0,1).getPiece()->setPosition({0,1});
 
         validMoves = knightPtr->getValidMoves(board);
-        REQUIRE(validMoves.size() == 3); 
+        REQUIRE(validMoves.size() == 3);
+    }
+
+    SECTION("Archer Ranged Attack") {
+        GameState gameState;
+        MoveExecutor executor;
+
+        auto archer = factory.createPiece("Archer", BayouBonanza::PlayerSide::PLAYER_ONE);
+        gameState.getBoard().getSquare(3,3).setPiece(std::move(archer));
+        BayouBonanza::Piece* archerPtr = gameState.getBoard().getSquare(3,3).getPiece();
+        archerPtr->setPosition({3,3});
+
+        auto enemyPawn = factory.createPiece("Pawn", BayouBonanza::PlayerSide::PLAYER_TWO);
+        gameState.getBoard().getSquare(3,5).setPiece(std::move(enemyPawn));
+        gameState.getBoard().getSquare(3,5).getPiece()->setPosition({3,5});
+
+        std::shared_ptr<Piece> archerShared(archerPtr, [](Piece*){});
+        Move attackMove(archerShared, {3,3}, {3,5});
+        executor.executeMove(gameState, attackMove);
+
+        REQUIRE(gameState.getBoard().getSquare(3,3).getPiece() == archerPtr);
+        REQUIRE(gameState.getBoard().getSquare(3,5).isEmpty());
     }
 }
