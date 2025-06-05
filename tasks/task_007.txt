@@ -57,9 +57,100 @@ public:
 5. Ensure proper card type identification and serialization
 
 # Subtasks:
-## 1. Design Card Base Class and Enums [pending]
+## 1. Design Card Base Class and Type System [done]
 ### Dependencies: None
 ### Description: Create the foundational Card base class with common attributes and define necessary enums for card types, piece types, and player sides.
 ### Details:
-1. Create Card.h header file with base Card class\n2. Define CardType enum (PieceCard, EffectCard, etc.)\n3. Define PieceType enum for different pieces\n4. Implement basic card attributes (name, steamCost, description)\n5. Define pure virtual methods for canPlay() and play()\n6. Add proper C++20 features like concepts if applicable
+1. Create Card.h header file with base Card class
+2. Define CardType enum (PieceCard, EffectCard, SpellCard, etc.)
+3. Define PieceType enum for different pieces that can be created
+4. Implement basic card attributes (name, steamCost, description, cardType)
+5. Define pure virtual methods for canPlay() and play()
+6. Add proper C++20 features like concepts if applicable
+7. Include proper forward declarations and includes
+
+## 2. Implement PieceCard Class [done]
+### Dependencies: 7.1
+### Description: Create the PieceCard class for cards that spawn new pieces on the board.
+### Details:
+1. Create PieceCard.h and PieceCard.cpp files
+2. Inherit from Card base class
+3. Add pieceType attribute to specify which piece to create
+4. Implement canPlay() method to check for valid placement positions
+5. Implement play() method to create and place piece on board
+6. Add validation for steam cost and board state
+7. Include proper error handling for invalid placements
+
+## 3. Implement EffectCard Class [done]
+### Dependencies: 7.1
+### Description: Create the EffectCard class for cards that apply temporary or permanent effects to the game state.
+### Details:
+1. Create EffectCard.h and EffectCard.cpp files
+2. Inherit from Card base class
+3. Define EffectType enum (Heal, Damage, Buff, Debuff, etc.)
+4. Add effect attributes (effectType, magnitude, duration, target)
+5. Implement canPlay() method to validate effect targets
+6. Implement play() method to apply effects to pieces or board
+7. Add support for both instant and ongoing effects
+
+## 4. Create Card Factory System [done]
+### Dependencies: 7.2, 7.3
+### Description: Implement a factory pattern for creating cards and managing card definitions.
+### Details:
+1. Create CardFactory.h and CardFactory.cpp files
+2. Implement static factory methods for creating different card types
+3. Create card definition data structure (JSON or hardcoded)
+4. Add methods for creating starter decks for each player
+5. Implement card ID system for unique identification
+6. Add validation for card creation parameters
+7. Include methods for loading card definitions from external files
+
+## 5. Implement Card Data Storage and Serialization [done]
+### Dependencies: 7.4
+### Description: Create systems for storing card data and serializing/deserializing card collections.
+### Details:
+1. Design card data format (JSON structure)
+2. Implement card serialization methods (toJson, fromJson)
+3. Create card collection serialization for decks and hands
+4. Add file I/O operations for saving/loading card data
+5. Implement validation for loaded card data
+6. Add error handling for corrupted or invalid card files
+7. Create utility functions for card data manipulation
+
+## 6. Integrate Card System with Game Engine [done]
+### Dependencies: 7.5
+### Description: Connect the card system with existing game components like GameState, ResourceSystem, and Board.
+### Details:
+1. Add card system integration to GameState class
+2. Connect card play mechanics with ResourceSystem for steam costs
+3. Integrate card effects with existing piece and board systems
+4. Add card system to game initialization and reset procedures
+5. Implement proper cleanup and memory management for cards
+6. Add event system for card-related game events
+7. Ensure thread safety if applicable
+
+## 7. Create Card Validation and Play Mechanics [done]
+### Dependencies: 7.6
+### Description: Implement comprehensive validation and execution systems for card play.
+### Details:
+1. Create CardPlayValidator class for pre-play validation
+2. Implement target validation for different card types
+3. Add placement validation for piece cards
+4. Create effect validation for effect cards
+5. Implement card play execution pipeline
+6. Add rollback mechanisms for failed card plays
+7. Create comprehensive error reporting for invalid plays
+
+## 8. Implement Unit Tests for Card System [done]
+### Dependencies: 7.7
+### Description: Create comprehensive unit tests for all card system components.
+### Details:
+1. Create test files for each card class (Card, PieceCard, EffectCard)
+2. Test card creation and attribute access
+3. Test card play validation and execution
+4. Test card factory functionality
+5. Test card serialization and deserialization
+6. Test integration with game systems
+7. Add performance tests for card operations
+8. Create mock objects for isolated testing
 

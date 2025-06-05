@@ -4,7 +4,15 @@
 #include "GameBoard.h" // Includes Square.h, Piece.h, etc.
 #include "PlayerSide.h"
 #include "ResourceSystem.h" // Added ResourceSystem include
+#include "CardCollection.h" // Added CardCollection include
+#include "PieceData.h" // Include PieceData.h for Position struct
 #include <SFML/Network/Packet.hpp> // For sf::Packet
+
+// Forward declarations to avoid circular dependencies
+namespace BayouBonanza {
+    struct ValidationResult;
+    struct PlayResult;
+}
 
 // GameBoard.h should bring in Square.h, which should bring in Piece.h (for PieceType)
 // and PlayerSide.h.
@@ -190,6 +198,92 @@ public:
      */
     void processTurnStart();
 
+    // Card System Integration
+    
+    /**
+     * @brief Get a player's deck
+     * 
+     * @param side The player side
+     * @return Reference to the player's deck
+     */
+    Deck& getDeck(PlayerSide side);
+    
+    /**
+     * @brief Get a player's deck (const version)
+     * 
+     * @param side The player side
+     * @return Const reference to the player's deck
+     */
+    const Deck& getDeck(PlayerSide side) const;
+    
+    /**
+     * @brief Get a player's hand
+     * 
+     * @param side The player side
+     * @return Reference to the player's hand
+     */
+    Hand& getHand(PlayerSide side);
+    
+    /**
+     * @brief Get a player's hand (const version)
+     * 
+     * @param side The player side
+     * @return Const reference to the player's hand
+     */
+    const Hand& getHand(PlayerSide side) const;
+    
+    /**
+     * @brief Draw a card from deck to hand for a player
+     * 
+     * @param side The player side
+     * @return true if a card was drawn, false if deck is empty or hand is full
+     */
+    bool drawCard(PlayerSide side);
+    
+    /**
+     * @brief Play a card from a player's hand
+     * 
+     * @param side The player side
+     * @param handIndex The index of the card in the hand
+     * @param targetPosition Optional target position for targeted cards
+     * @return true if the card was played successfully, false otherwise
+     */
+    bool playCard(PlayerSide side, size_t handIndex, const Position& targetPosition = {-1, -1});
+    
+    /**
+     * @brief Play a card with detailed result information
+     * 
+     * @param side The player side
+     * @param handIndex The index of the card in the hand
+     * @param targetPosition Optional target position for targeted cards
+     * @return PlayResult containing detailed execution status and error information
+     */
+    PlayResult playCardWithResult(PlayerSide side, size_t handIndex, const Position& targetPosition = {-1, -1});
+    
+    /**
+     * @brief Validate if a card can be played without actually playing it
+     * 
+     * @param side The player side
+     * @param handIndex The index of the card in the hand
+     * @param targetPosition Optional target position for targeted cards
+     * @return ValidationResult containing validation status and error details
+     */
+    ValidationResult validateCardPlay(PlayerSide side, size_t handIndex, const Position& targetPosition = {-1, -1}) const;
+    
+    /**
+     * @brief Initialize card system for both players
+     * 
+     * Creates starter decks and draws initial hands.
+     */
+    void initializeCardSystem();
+    
+    /**
+     * @brief Process card-related turn start events
+     * 
+     * Draws cards and handles turn-based card effects.
+     */
+    void processCardTurnStart();
+
 private:
     GameBoard board;
     PlayerSide activePlayer;
@@ -201,6 +295,12 @@ private:
     // Legacy steam tracking (kept for backward compatibility)
     int steamPlayer1;
     int steamPlayer2;
+    
+    // Card System
+    Deck deckPlayer1;
+    Deck deckPlayer2;
+    Hand handPlayer1;
+    Hand handPlayer2;
 };
 
 // SFML Packet operators for GameState

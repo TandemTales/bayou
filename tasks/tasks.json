@@ -406,11 +406,89 @@
       "subtasks": [
         {
           "id": 1,
-          "title": "Design Card Base Class and Enums",
+          "title": "Design Card Base Class and Type System",
           "description": "Create the foundational Card base class with common attributes and define necessary enums for card types, piece types, and player sides.",
-          "details": "1. Create Card.h header file with base Card class\\n2. Define CardType enum (PieceCard, EffectCard, etc.)\\n3. Define PieceType enum for different pieces\\n4. Implement basic card attributes (name, steamCost, description)\\n5. Define pure virtual methods for canPlay() and play()\\n6. Add proper C++20 features like concepts if applicable",
-          "status": "pending",
+          "details": "1. Create Card.h header file with base Card class\n2. Define CardType enum (PieceCard, EffectCard, SpellCard, etc.)\n3. Define PieceType enum for different pieces that can be created\n4. Implement basic card attributes (name, steamCost, description, cardType)\n5. Define pure virtual methods for canPlay() and play()\n6. Add proper C++20 features like concepts if applicable\n7. Include proper forward declarations and includes",
+          "status": "done",
           "dependencies": [],
+          "parentTaskId": 7
+        },
+        {
+          "id": 2,
+          "title": "Implement PieceCard Class",
+          "description": "Create the PieceCard class for cards that spawn new pieces on the board.",
+          "details": "1. Create PieceCard.h and PieceCard.cpp files\n2. Inherit from Card base class\n3. Add pieceType attribute to specify which piece to create\n4. Implement canPlay() method to check for valid placement positions\n5. Implement play() method to create and place piece on board\n6. Add validation for steam cost and board state\n7. Include proper error handling for invalid placements",
+          "status": "done",
+          "dependencies": [
+            1
+          ],
+          "parentTaskId": 7
+        },
+        {
+          "id": 3,
+          "title": "Implement EffectCard Class",
+          "description": "Create the EffectCard class for cards that apply temporary or permanent effects to the game state.",
+          "details": "1. Create EffectCard.h and EffectCard.cpp files\n2. Inherit from Card base class\n3. Define EffectType enum (Heal, Damage, Buff, Debuff, etc.)\n4. Add effect attributes (effectType, magnitude, duration, target)\n5. Implement canPlay() method to validate effect targets\n6. Implement play() method to apply effects to pieces or board\n7. Add support for both instant and ongoing effects",
+          "status": "done",
+          "dependencies": [
+            1
+          ],
+          "parentTaskId": 7
+        },
+        {
+          "id": 4,
+          "title": "Create Card Factory System",
+          "description": "Implement a factory pattern for creating cards and managing card definitions.",
+          "details": "1. Create CardFactory.h and CardFactory.cpp files\n2. Implement static factory methods for creating different card types\n3. Create card definition data structure (JSON or hardcoded)\n4. Add methods for creating starter decks for each player\n5. Implement card ID system for unique identification\n6. Add validation for card creation parameters\n7. Include methods for loading card definitions from external files",
+          "status": "done",
+          "dependencies": [
+            2,
+            3
+          ],
+          "parentTaskId": 7
+        },
+        {
+          "id": 5,
+          "title": "Implement Card Data Storage and Serialization",
+          "description": "Create systems for storing card data and serializing/deserializing card collections.",
+          "details": "1. Design card data format (JSON structure)\n2. Implement card serialization methods (toJson, fromJson)\n3. Create card collection serialization for decks and hands\n4. Add file I/O operations for saving/loading card data\n5. Implement validation for loaded card data\n6. Add error handling for corrupted or invalid card files\n7. Create utility functions for card data manipulation",
+          "status": "done",
+          "dependencies": [
+            4
+          ],
+          "parentTaskId": 7
+        },
+        {
+          "id": 6,
+          "title": "Integrate Card System with Game Engine",
+          "description": "Connect the card system with existing game components like GameState, ResourceSystem, and Board.",
+          "details": "1. Add card system integration to GameState class\n2. Connect card play mechanics with ResourceSystem for steam costs\n3. Integrate card effects with existing piece and board systems\n4. Add card system to game initialization and reset procedures\n5. Implement proper cleanup and memory management for cards\n6. Add event system for card-related game events\n7. Ensure thread safety if applicable",
+          "status": "done",
+          "dependencies": [
+            5
+          ],
+          "parentTaskId": 7
+        },
+        {
+          "id": 7,
+          "title": "Create Card Validation and Play Mechanics",
+          "description": "Implement comprehensive validation and execution systems for card play.",
+          "details": "1. Create CardPlayValidator class for pre-play validation\n2. Implement target validation for different card types\n3. Add placement validation for piece cards\n4. Create effect validation for effect cards\n5. Implement card play execution pipeline\n6. Add rollback mechanisms for failed card plays\n7. Create comprehensive error reporting for invalid plays",
+          "status": "done",
+          "dependencies": [
+            6
+          ],
+          "parentTaskId": 7
+        },
+        {
+          "id": 8,
+          "title": "Implement Unit Tests for Card System",
+          "description": "Create comprehensive unit tests for all card system components.",
+          "details": "1. Create test files for each card class (Card, PieceCard, EffectCard)\n2. Test card creation and attribute access\n3. Test card play validation and execution\n4. Test card factory functionality\n5. Test card serialization and deserialization\n6. Test integration with game systems\n7. Add performance tests for card operations\n8. Create mock objects for isolated testing",
+          "status": "done",
+          "dependencies": [
+            7
+          ],
           "parentTaskId": 7
         }
       ]

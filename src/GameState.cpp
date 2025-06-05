@@ -1,6 +1,8 @@
 #include "GameState.h"
 #include "GameBoard.h" // For GameBoard serialization
 #include "PlayerSide.h" // For PlayerSide serialization
+#include "CardFactory.h" // For card system initialization
+#include "CardPlayValidator.h" // For comprehensive card validation
 #include <SFML/Network/Packet.hpp> // For sf::Packet
 
 // GameState.h should have already included these.
@@ -78,6 +80,9 @@ void GameState::initializeNewGame() {
     steamPlayer1 = 0;
     steamPlayer2 = 0;
     
+    // Initialize card system
+    initializeCardSystem();
+    
     // TODO: Place initial pieces on the board (King for each player)
     // This will be implemented when we have the Piece class
 }
@@ -154,6 +159,106 @@ void GameState::processTurnStart() {
     // Update legacy tracking for backward compatibility
     steamPlayer1 = resourceSystem.getSteam(PlayerSide::PLAYER_ONE);
     steamPlayer2 = resourceSystem.getSteam(PlayerSide::PLAYER_TWO);
+    
+    // Process card-related turn start events
+    processCardTurnStart();
+}
+
+// Card System Integration Methods
+
+Deck& GameState::getDeck(PlayerSide side) {
+    return (side == PlayerSide::PLAYER_ONE) ? deckPlayer1 : deckPlayer2;
+}
+
+const Deck& GameState::getDeck(PlayerSide side) const {
+    return (side == PlayerSide::PLAYER_ONE) ? deckPlayer1 : deckPlayer2;
+}
+
+Hand& GameState::getHand(PlayerSide side) {
+    return (side == PlayerSide::PLAYER_ONE) ? handPlayer1 : handPlayer2;
+}
+
+const Hand& GameState::getHand(PlayerSide side) const {
+    return (side == PlayerSide::PLAYER_ONE) ? handPlayer1 : handPlayer2;
+}
+
+bool GameState::drawCard(PlayerSide side) {
+    Deck& deck = getDeck(side);
+    Hand& hand = getHand(side);
+    
+    // Check if deck has cards and hand has space
+    if (deck.empty() || hand.isFull()) {
+        return false;
+    }
+    
+    // Draw a card from the deck
+    auto card = deck.drawCard();
+    if (!card) {
+        return false;
+    }
+    
+    // Add the card to the hand
+    return hand.addCard(std::move(card));
+}
+
+bool GameState::playCard(PlayerSide side, size_t handIndex, const Position& targetPosition) {
+    // Use the comprehensive CardPlayValidator for validation and execution
+    PlayResult result = CardPlayValidator::executeCardPlay(*this, side, handIndex, targetPosition);
+    
+    // The CardPlayValidator handles all validation, steam deduction, card removal,
+    // execution, and rollback automatically, so we just need to return the result
+    return result.success;
+}
+
+PlayResult GameState::playCardWithResult(PlayerSide side, size_t handIndex, const Position& targetPosition) {
+    // Use the comprehensive CardPlayValidator for validation and execution
+    return CardPlayValidator::executeCardPlay(*this, side, handIndex, targetPosition);
+}
+
+ValidationResult GameState::validateCardPlay(PlayerSide side, size_t handIndex, const Position& targetPosition) const {
+    // Use the CardPlayValidator for validation without execution
+    if (targetPosition.x != -1 && targetPosition.y != -1) {
+        return CardPlayValidator::validateTargetedCardPlay(*this, side, handIndex, targetPosition);
+    } else {
+        return CardPlayValidator::validateCardPlay(*this, side, handIndex);
+    }
+}
+
+void GameState::initializeCardSystem() {
+    // Initialize the CardFactory if not already done
+    CardFactory::initialize();
+    
+    // Create starter decks for both players
+    auto player1Cards = CardFactory::createStarterDeck();
+    auto player2Cards = CardFactory::createStarterDeck();
+    
+    // Initialize decks
+    deckPlayer1 = Deck(std::move(player1Cards));
+    deckPlayer2 = Deck(std::move(player2Cards));
+    
+    // Shuffle the decks
+    deckPlayer1.shuffle();
+    deckPlayer2.shuffle();
+    
+    // Clear hands
+    handPlayer1.clear();
+    handPlayer2.clear();
+    
+    // Draw initial hands (4 cards each)
+    for (int i = 0; i < Hand::MAX_HAND_SIZE; i++) {
+        drawCard(PlayerSide::PLAYER_ONE);
+        drawCard(PlayerSide::PLAYER_TWO);
+    }
+}
+
+void GameState::processCardTurnStart() {
+    // Draw a card for the active player if their hand isn't full
+    if (!getHand(activePlayer).isFull()) {
+        drawCard(activePlayer);
+    }
+    
+    // TODO: Process any ongoing card effects or status effects
+    // This would be implemented when we have a status effect system
 }
 
 // SFML Packet operators for GamePhase enum
@@ -189,6 +294,11 @@ sf::Packet& operator<<(sf::Packet& packet, const GameState& gs) {
     packet << gs.getTurnNumber();
     packet << gs.getSteam(PlayerSide::PLAYER_ONE);
     packet << gs.getSteam(PlayerSide::PLAYER_TWO);
+    
+    // TODO: Add card system serialization
+    // For now, we'll skip serializing decks and hands
+    // This would need to be implemented for save/load functionality
+    
     return packet;
 }
 
@@ -216,6 +326,11 @@ sf::Packet& operator>>(sf::Packet& packet, GameState& gs) {
     gs.setTurnNumber(turnNumber);
     gs.setSteam(PlayerSide::PLAYER_ONE, steamPlayer1);
     gs.setSteam(PlayerSide::PLAYER_TWO, steamPlayer2);
+    
+    // TODO: Add card system deserialization
+    // For now, we'll reinitialize the card system
+    // This is not ideal for save/load but works for basic functionality
+    gs.initializeCardSystem();
     
     return packet;
 }
