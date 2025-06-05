@@ -19,7 +19,8 @@ enum class PieceType {
     ROOK,
     BISHOP,
     KNIGHT,
-    PAWN
+    PAWN,
+    ARCHER
 };
 
 // SFML Packet operators for PieceType
@@ -137,6 +138,7 @@ public:
     virtual std::string getTypeName() const;
     virtual std::string getSymbol() const;
     virtual PieceType getPieceType() const; // Added this from previous pure virtual
+    bool isRanged() const;
 
 protected:
     PlayerSide side;

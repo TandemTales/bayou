@@ -195,5 +195,39 @@
       }
     ],
     "pieceType": 5
+  },
+  {
+    "typeName": "Archer",
+    "symbol": "A",
+    "attack": 2,
+    "health": 2,
+    "movementRules": [
+      {
+        "relativeMoves": [
+          {"x": -1, "y": -1}, {"x": 0, "y": -1}, {"x": 1, "y": -1},
+          {"x": -1, "y": 0},                    {"x": 1, "y": 0},
+          {"x": -1, "y": 1}, {"x": 0, "y": 1}, {"x": 1, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 3
+      }
+    ],
+    "influenceRules": [
+      {
+        "relativeMoves": [
+          {"x": -1, "y": -1}, {"x": 0, "y": -1}, {"x": 1, "y": -1},
+          {"x": -1, "y": 0},                    {"x": 1, "y": 0},
+          {"x": -1, "y": 1}, {"x": 0, "y": 1}, {"x": 1, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 3
+      }
+    ],
+    "pieceType": 6,
+    "isRanged": true
   }
 ]

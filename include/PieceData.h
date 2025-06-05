@@ -43,4 +43,5 @@ struct PieceStats {
     std::vector<PieceMovementRule> movementRules;
     std::vector<PieceMovementRule> influenceRules;
     BayouBonanza::PieceType pieceType; // Forward declared from Piece.h
+    bool isRanged{false};
 };

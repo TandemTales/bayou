@@ -44,6 +44,8 @@ bool PieceDefinitionManager::loadDefinitions(const std::string& filePath) {
             stats.symbol = pieceJson.at("symbol").get<std::string>();
             stats.attack = pieceJson.at("attack").get<int>();
             stats.health = pieceJson.at("health").get<int>();
+
+            stats.isRanged = pieceJson.value("isRanged", false);
             
             // PieceType enum mapping
             stats.pieceType = static_cast<PieceType>(pieceJson.at("pieceType").get<int>());
