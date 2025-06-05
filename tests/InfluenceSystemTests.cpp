@@ -162,7 +162,7 @@ TEST_CASE_METHOD(InfluenceSystemTestFixture, "InfluenceSystem sticky control beh
 TEST_CASE_METHOD(InfluenceSystemTestFixture, "InfluenceSystem piece type independence", "[InfluenceSystem]") {
     SECTION("Different piece types have same influence pattern") {
         // Test that different piece types all influence the same way
-        std::vector<std::string> pieceTypes = {"Pawn", "Rook", "Bishop", "Knight", "Queen", "King"};
+        std::vector<std::string> pieceTypes = {"Pawn", "Rook", "Bishop", "Knight", "Queen", "King", "Archer"};
         
         for (const std::string& pieceType : pieceTypes) {
             // Clear pieces but preserve control state (don't call resetBoard())

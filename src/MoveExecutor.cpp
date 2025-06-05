@@ -64,11 +64,15 @@ MoveResult MoveExecutor::executeMove(GameState& gameState, const Move& move) {
             // Special handling for ranged pieces like the Archer
             if (piece->isRanged()) {
                 if (destroyed) {
+                    // Check if the destroyed piece was a king BEFORE removing it
+                    bool wasKing = (targetPiece->getPieceType() == PieceType::KING);
+                    PlayerSide targetSide = targetPiece->getSide();
+                    
                     // Remove the defeated piece from the board
                     toSquare.setPiece(nullptr);
 
-                    if (targetPiece->getPieceType() == PieceType::KING) {
-                        if (targetPiece->getSide() == PlayerSide::PLAYER_ONE) {
+                    if (wasKing) {
+                        if (targetSide == PlayerSide::PLAYER_ONE) {
                             gameState.setGameResult(GameResult::PLAYER_TWO_WIN);
                         } else {
                             gameState.setGameResult(GameResult::PLAYER_ONE_WIN);
