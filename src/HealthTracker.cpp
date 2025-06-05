@@ -33,12 +33,14 @@ int HealthTracker::getHealthPercentage(std::shared_ptr<Piece> piece) {
         return 0;
     }
     
-    // We would need initial max health here
-    // Since we don't have it stored currently, we'll approximate based on piece type
-    // A better implementation would store max health in the Piece class
+    // Use the max health stored in the piece stats instead of a hardcoded value
     int currentHealth = piece->getHealth();
-    int maxHealth = 10; // Default max health
-    
+    int maxHealth = piece->getMaxHealth();
+
+    if (maxHealth <= 0) {
+        return 0; // Avoid division by zero if stats are misconfigured
+    }
+
     // Scale to percentage
     return (currentHealth * 100) / maxHealth;
 }
