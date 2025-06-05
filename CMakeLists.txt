@@ -100,6 +100,13 @@ set(GAMELOGIC_SOURCES
     src/PieceDefinitionManager.cpp # Added PieceDefinitionManager.cpp
     src/InfluenceSystem.cpp # Added InfluenceSystem.cpp
     src/ResourceSystem.cpp # Added ResourceSystem.cpp
+    # Card System
+    src/Card.cpp
+    src/PieceCard.cpp
+    src/EffectCard.cpp
+    src/CardFactory.cpp
+    src/CardCollection.cpp
+    src/CardPlayValidator.cpp
 )
 
 # Add static library for game logic

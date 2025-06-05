@@ -324,8 +324,73 @@
       "dependencies": [
         5
       ],
-      "status": "pending",
-      "subtasks": []
+      "status": "done",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create ResourceSystem Class Structure",
+          "description": "Design and implement the basic ResourceSystem class with steam tracking for both players",
+          "details": "1. Create ResourceSystem.h header file\\n2. Define private member variables for player1Steam and player2Steam\\n3. Implement constructor to initialize steam values\\n4. Add getter methods: getSteam(PlayerSide player)\\n5. Add setter methods: setSteam(PlayerSide player, int amount)\\n6. Add utility methods: addSteam() and spendSteam()\\n7. Include proper error checking for negative values",
+          "status": "done",
+          "dependencies": [],
+          "parentTaskId": 6
+        },
+        {
+          "id": 2,
+          "title": "Implement Steam Generation Calculation",
+          "description": "Create the logic to calculate steam generation based on controlled squares using the InfluenceSystem",
+          "details": "1. Implement calculateSteamGeneration(const GameBoard& board) method\\n2. Iterate through all board squares (8x8 grid)\\n3. Use InfluenceSystem::getControllingPlayer() to determine square control\\n4. Count controlled squares for each player\\n5. Store generation values for use in turn processing\\n6. Add configurable steam generation rates if needed",
+          "status": "done",
+          "dependencies": [
+            1
+          ],
+          "parentTaskId": 6
+        },
+        {
+          "id": 3,
+          "title": "Implement Turn-Based Steam Processing",
+          "description": "Create the processTurnStart method to add generated steam to players at the beginning of their turn",
+          "details": "1. Implement processTurnStart(PlayerSide activePlayer, const GameBoard& board) method\\n2. Call calculateSteamGeneration() to get current generation values\\n3. Add generated steam to the active player's total\\n4. Ensure steam accumulation is properly tracked\\n5. Add logging/debugging output for steam generation\\n6. Handle edge cases like maximum steam limits if applicable",
+          "status": "done",
+          "dependencies": [
+            2
+          ],
+          "parentTaskId": 6
+        },
+        {
+          "id": 4,
+          "title": "Integrate ResourceSystem with Game Engine",
+          "description": "Connect the ResourceSystem with the existing game engine components and ensure proper integration",
+          "details": "1. Add ResourceSystem as a member to GameState or GameBoard class\\n2. Update existing game loop to call processTurnStart() at turn beginning\\n3. Ensure ResourceSystem is properly initialized in game setup\\n4. Add methods to query steam values from other game systems\\n5. Update any existing placeholder resource code\\n6. Test integration with existing piece and board systems",
+          "status": "done",
+          "dependencies": [
+            3
+          ],
+          "parentTaskId": 6
+        },
+        {
+          "id": 5,
+          "title": "Create Unit Tests for ResourceSystem",
+          "description": "Implement comprehensive unit tests to verify steam calculation, accumulation, and spending mechanics",
+          "details": "1. Create test file for ResourceSystem (test_ResourceSystem.cpp)\\n2. Test basic steam getter/setter functionality\\n3. Test steam spending with sufficient and insufficient funds\\n4. Test steam generation calculation with various board states\\n5. Test turn-based steam accumulation\\n6. Test edge cases like negative values and overflow\\n7. Mock InfluenceSystem for isolated testing",
+          "status": "done",
+          "dependencies": [
+            4
+          ],
+          "parentTaskId": 6
+        },
+        {
+          "id": 6,
+          "title": "Implement Steam UI Display for Local Player",
+          "description": "Add UI element to display the local player's current steam amount in the game interface",
+          "details": "1. Add sf::Text UI element for steam display\n2. Position steam display in the local player info area\n3. Update steam display in GameStart and GameStateUpdate handlers\n4. Ensure proper formatting and styling consistency\n5. Test steam display updates during gameplay",
+          "status": "done",
+          "dependencies": [
+            5
+          ],
+          "parentTaskId": 6
+        }
+      ]
     },
     {
       "id": 7,
