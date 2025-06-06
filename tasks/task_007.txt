@@ -1,6 +1,6 @@
 # Task ID: 7
 # Title: Implement Card System and Data Models
-# Status: pending
+# Status: done
 # Dependencies: 2
 # Priority: high
 # Description: Design and implement the card system with data models for different card types, costs, and effects.

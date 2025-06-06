@@ -4,7 +4,7 @@
 #include "GameBoard.h" // Includes Square.h, Piece.h, etc.
 #include "PlayerSide.h"
 #include "ResourceSystem.h" // Added ResourceSystem include
-#include "CardCollection.h" // Added CardCollection include
+#include "CardCollection.h" // Added CardCollection include (includes Deck and Hand)
 #include "PieceData.h" // Include PieceData.h for Position struct
 #include <SFML/Network/Packet.hpp> // For sf::Packet
 

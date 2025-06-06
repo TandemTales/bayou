@@ -1,6 +1,6 @@
 # Task ID: 8
 # Title: Implement Hand and Deck Management
-# Status: pending
+# Status: done
 # Dependencies: 7
 # Priority: medium
 # Description: Create the system for managing player hands (4 cards) and decks (20 cards with max 2 copies of each card).
@@ -50,3 +50,83 @@ public:
 3. Test deck building rules
 4. Validate card play from hand
 5. Ensure proper deck validation
+
+# Subtasks:
+## 1. Design Deck Class Structure [done]
+### Dependencies: None
+### Description: Create the Deck class with card storage, shuffling, and drawing capabilities
+### Details:
+1. Create Deck.h header file with class definition
+2. Implement private member for storing cards (vector of unique_ptr<Card>)
+3. Add constructor and destructor
+4. Implement addCard() method for deck building
+5. Implement drawCard() method that removes and returns top card
+6. Implement shuffle() method using random number generation
+7. Add size(), isEmpty(), and isValid() utility methods
+8. Include proper validation for deck constraints (20 cards, max 2 copies)
+
+## 2. Design Hand Class Structure [done]
+### Dependencies: 8.1
+### Description: Create the Hand class with 4-card limit and card management
+### Details:
+1. Create Hand.h header file with class definition
+2. Implement private member for storing cards (vector of unique_ptr<Card>)
+3. Define MAX_HAND_SIZE constant as 4
+4. Add constructor and destructor
+5. Implement addCard() method with hand size validation
+6. Implement playCard() method that removes and returns card by index
+7. Add size(), isFull(), and getCard() utility methods
+8. Include proper bounds checking and error handling
+
+## 3. Implement Deck Class Methods [done]
+### Dependencies: 8.1, 8.2
+### Description: Implement the Deck class methods in Deck.cpp
+### Details:
+1. Create Deck.cpp implementation file
+2. Implement constructor and destructor
+3. Implement addCard() with validation for deck building rules
+4. Implement drawCard() with proper card removal and return
+5. Implement shuffle() using std::random_shuffle or std::shuffle
+6. Implement size(), isEmpty() utility methods
+7. Implement isValid() method to check 20-card limit and max 2 copies rule
+8. Add proper error handling and edge case management
+
+## 4. Implement Hand Class Methods [done]
+### Dependencies: 8.2, 8.3
+### Description: Implement the Hand class methods in Hand.cpp
+### Details:
+1. Create Hand.cpp implementation file
+2. Implement constructor and destructor
+3. Implement addCard() with hand size limit validation
+4. Implement playCard() with bounds checking and card removal
+5. Implement size(), isFull() utility methods
+6. Implement getCard() with const correctness and bounds checking
+7. Add proper error handling for invalid operations
+8. Include logging or debug output for hand operations
+
+## 5. Integrate with GameState [done]
+### Dependencies: 8.3, 8.4
+### Description: Integrate Deck and Hand classes with the existing GameState system
+### Details:
+1. Add Deck and Hand includes to GameState.h
+2. Add player deck and hand members to GameState class
+3. Update GameState constructor to initialize decks and hands
+4. Add methods to access player decks and hands
+5. Integrate deck/hand operations with turn management
+6. Update game initialization to create starter decks
+7. Add deck/hand state to game serialization if applicable
+8. Ensure proper cleanup and memory management
+
+## 6. Create Unit Tests [done]
+### Dependencies: 8.5
+### Description: Create comprehensive unit tests for Deck and Hand classes
+### Details:
+1. Create test_Deck.cpp for Deck class testing
+2. Create test_Hand.cpp for Hand class testing
+3. Test deck creation, shuffling, and drawing
+4. Test hand management with size limits
+5. Test deck validation rules (20 cards, max 2 copies)
+6. Test edge cases like empty decks/hands
+7. Test integration with card system
+8. Add performance tests for large deck operations
+

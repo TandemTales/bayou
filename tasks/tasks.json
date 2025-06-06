@@ -402,7 +402,7 @@
       "dependencies": [
         2
       ],
-      "status": "pending",
+      "status": "done",
       "subtasks": [
         {
           "id": 1,
@@ -503,8 +503,76 @@
       "dependencies": [
         7
       ],
-      "status": "pending",
-      "subtasks": []
+      "status": "done",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Design Deck Class Structure",
+          "description": "Create the Deck class with card storage, shuffling, and drawing capabilities",
+          "details": "1. Create Deck.h header file with class definition\n2. Implement private member for storing cards (vector of unique_ptr<Card>)\n3. Add constructor and destructor\n4. Implement addCard() method for deck building\n5. Implement drawCard() method that removes and returns top card\n6. Implement shuffle() method using random number generation\n7. Add size(), isEmpty(), and isValid() utility methods\n8. Include proper validation for deck constraints (20 cards, max 2 copies)",
+          "status": "done",
+          "dependencies": [],
+          "parentTaskId": 8
+        },
+        {
+          "id": 2,
+          "title": "Design Hand Class Structure",
+          "description": "Create the Hand class with 4-card limit and card management",
+          "details": "1. Create Hand.h header file with class definition\n2. Implement private member for storing cards (vector of unique_ptr<Card>)\n3. Define MAX_HAND_SIZE constant as 4\n4. Add constructor and destructor\n5. Implement addCard() method with hand size validation\n6. Implement playCard() method that removes and returns card by index\n7. Add size(), isFull(), and getCard() utility methods\n8. Include proper bounds checking and error handling",
+          "status": "done",
+          "dependencies": [
+            1
+          ],
+          "parentTaskId": 8
+        },
+        {
+          "id": 3,
+          "title": "Implement Deck Class Methods",
+          "description": "Implement the Deck class methods in Deck.cpp",
+          "details": "1. Create Deck.cpp implementation file\n2. Implement constructor and destructor\n3. Implement addCard() with validation for deck building rules\n4. Implement drawCard() with proper card removal and return\n5. Implement shuffle() using std::random_shuffle or std::shuffle\n6. Implement size(), isEmpty() utility methods\n7. Implement isValid() method to check 20-card limit and max 2 copies rule\n8. Add proper error handling and edge case management",
+          "status": "done",
+          "dependencies": [
+            1,
+            2
+          ],
+          "parentTaskId": 8
+        },
+        {
+          "id": 4,
+          "title": "Implement Hand Class Methods",
+          "description": "Implement the Hand class methods in Hand.cpp",
+          "details": "1. Create Hand.cpp implementation file\n2. Implement constructor and destructor\n3. Implement addCard() with hand size limit validation\n4. Implement playCard() with bounds checking and card removal\n5. Implement size(), isFull() utility methods\n6. Implement getCard() with const correctness and bounds checking\n7. Add proper error handling for invalid operations\n8. Include logging or debug output for hand operations",
+          "status": "done",
+          "dependencies": [
+            2,
+            3
+          ],
+          "parentTaskId": 8
+        },
+        {
+          "id": 5,
+          "title": "Integrate with GameState",
+          "description": "Integrate Deck and Hand classes with the existing GameState system",
+          "details": "1. Add Deck and Hand includes to GameState.h\n2. Add player deck and hand members to GameState class\n3. Update GameState constructor to initialize decks and hands\n4. Add methods to access player decks and hands\n5. Integrate deck/hand operations with turn management\n6. Update game initialization to create starter decks\n7. Add deck/hand state to game serialization if applicable\n8. Ensure proper cleanup and memory management",
+          "status": "done",
+          "dependencies": [
+            3,
+            4
+          ],
+          "parentTaskId": 8
+        },
+        {
+          "id": 6,
+          "title": "Create Unit Tests",
+          "description": "Create comprehensive unit tests for Deck and Hand classes",
+          "details": "1. Create test_Deck.cpp for Deck class testing\n2. Create test_Hand.cpp for Hand class testing\n3. Test deck creation, shuffling, and drawing\n4. Test hand management with size limits\n5. Test deck validation rules (20 cards, max 2 copies)\n6. Test edge cases like empty decks/hands\n7. Test integration with card system\n8. Add performance tests for large deck operations",
+          "status": "done",
+          "dependencies": [
+            5
+          ],
+          "parentTaskId": 8
+        }
+      ]
     },
     {
       "id": 9,
