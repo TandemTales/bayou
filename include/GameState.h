@@ -14,8 +14,7 @@ namespace BayouBonanza {
     struct PlayResult;
 }
 
-// GameBoard.h should bring in Square.h, which should bring in Piece.h (for PieceType)
-// and PlayerSide.h.
+// GameBoard.h brings in Square.h which includes Piece.h and PlayerSide.h.
 
 namespace BayouBonanza {
 

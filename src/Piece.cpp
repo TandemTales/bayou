@@ -58,8 +58,8 @@ std::string Piece::getSymbol() const {
     return stats.symbol;
 }
 
-PieceType Piece::getPieceType() const {
-    return stats.pieceType;
+bool Piece::isVictoryPiece() const {
+    return stats.isVictoryPiece;
 }
 
 bool Piece::isRanged() const {

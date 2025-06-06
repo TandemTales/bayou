@@ -8,12 +8,12 @@
 namespace BayouBonanza {
 
 PieceCard::PieceCard(int id, const std::string& name, const std::string& description,
-                     int steamCost, PieceType pieceType, CardRarity rarity)
-    : Card(id, name, description, steamCost, CardType::PIECE_CARD, rarity), 
+                     int steamCost, const std::string& pieceType, CardRarity rarity)
+    : Card(id, name, description, steamCost, CardType::PIECE_CARD, rarity),
       pieceType(pieceType) {
 }
 
-PieceType PieceCard::getPieceType() const {
+const std::string& PieceCard::getPieceType() const {
     return pieceType;
 }
 
@@ -92,17 +92,7 @@ bool PieceCard::playAtPosition(GameState& gameState, PlayerSide player, const Po
     // Don't spend steam here to avoid double-spending
     
     // Create the piece using the existing piece factory system
-    // Note: We need to convert PieceType enum to string for the factory
-    std::string typeName;
-    switch (pieceType) {
-        case PieceType::KING: typeName = "King"; break;
-        case PieceType::QUEEN: typeName = "Queen"; break;
-        case PieceType::ROOK: typeName = "Rook"; break;
-        case PieceType::BISHOP: typeName = "Bishop"; break;
-        case PieceType::KNIGHT: typeName = "Knight"; break;
-        case PieceType::PAWN: typeName = "Pawn"; break;
-        default: return false; // Unknown piece type
-    }
+    std::string typeName = pieceType;
     
     // Get the piece definition manager and factory from game state
     // Note: This is a simplified approach - in a real implementation,
@@ -140,17 +130,7 @@ std::string PieceCard::getDetailedDescription() const {
     std::string detail = Card::getDetailedDescription();
     
     // Add piece type information
-    std::string pieceTypeName;
-    switch (pieceType) {
-        case PieceType::KING: pieceTypeName = "King"; break;
-        case PieceType::QUEEN: pieceTypeName = "Queen"; break;
-        case PieceType::ROOK: pieceTypeName = "Rook"; break;
-        case PieceType::BISHOP: pieceTypeName = "Bishop"; break;
-        case PieceType::KNIGHT: pieceTypeName = "Knight"; break;
-        case PieceType::PAWN: pieceTypeName = "Pawn"; break;
-    }
-    
-    detail += "\nPiece Type: " + pieceTypeName;
+    detail += "\nPiece Type: " + pieceType;
     detail += "\nPlacement: Can be placed on your starting rows";
     
     return detail;

@@ -30,7 +30,7 @@
         "maxRange": 1
       }
     ],
-    "pieceType": 0
+    "victoryPiece": true
   },
   {
     "typeName": "Queen",
@@ -62,9 +62,8 @@
         "canJump": false,
         "maxRange": 7
       }
-    ],
-    "pieceType": 1
-  },
+    ]
+    },
   {
     "typeName": "Rook",
     "symbol": "R",
@@ -95,9 +94,8 @@
         "canJump": false,
         "maxRange": 7
       }
-    ],
-    "pieceType": 2
-  },
+    ]
+    },
   {
     "typeName": "Bishop",
     "symbol": "B",
@@ -126,9 +124,8 @@
         "canJump": false,
         "maxRange": 7
       }
-    ],
-    "pieceType": 3
-  },
+    ]
+    },
   {
     "typeName": "Knight",
     "symbol": "N",
@@ -161,9 +158,8 @@
         "canJump": true,
         "maxRange": 1
       }
-    ],
-    "pieceType": 4
-  },
+    ]
+    },
   {
     "typeName": "Pawn",
     "symbol": "P",
@@ -193,9 +189,8 @@
         "canJump": false,
         "maxRange": 1
       }
-    ],
-    "pieceType": 5
-  },
+    ]
+    },
   {
     "typeName": "Archer",
     "symbol": "A",
@@ -227,7 +222,6 @@
         "maxRange": 3
       }
     ],
-    "pieceType": 6,
     "isRanged": true
   }
 ]

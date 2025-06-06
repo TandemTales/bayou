@@ -14,9 +14,7 @@ public:
     // Constructor now takes a reference to the definition manager
     PieceFactory(const PieceDefinitionManager& manager);
 
-    // createPiece now takes typeName string.
-    // The PieceType enum might still be useful for some contexts,
-    // but for creation, typeName is primary.
+    // createPiece takes a type name string allowing for data-driven pieces
     std::unique_ptr<Piece> createPiece(const std::string& typeName, PlayerSide side);
 
 private:

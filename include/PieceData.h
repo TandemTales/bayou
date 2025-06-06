@@ -3,10 +3,7 @@
 #include <string>
 #include <vector>
 
-// Forward declaration to avoid circular include
-namespace BayouBonanza {
-    enum class PieceType;
-}
+
 
 // Forward declaration if Position is defined elsewhere, or define it here
 // For now, let's assume Position is defined elsewhere and included where needed,
@@ -42,6 +39,6 @@ struct PieceStats {
     int health;
     std::vector<PieceMovementRule> movementRules;
     std::vector<PieceMovementRule> influenceRules;
-    BayouBonanza::PieceType pieceType; // Forward declared from Piece.h
     bool isRanged{false};
+    bool isVictoryPiece{false};
 };

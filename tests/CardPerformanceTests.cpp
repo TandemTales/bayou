@@ -25,10 +25,10 @@ struct CardPerformanceFixture {
     
     std::unique_ptr<PieceCard> createTestPieceCard(int index = 0) {
         return std::make_unique<PieceCard>(
-            "Test Card " + std::to_string(index), 
-            1, 
-            "Test description", 
-            PieceType::PAWN
+            "Test Card " + std::to_string(index),
+            1,
+            "Test description",
+            "Pawn"
         );
     }
     
@@ -86,11 +86,11 @@ TEST_CASE_METHOD(CardPerformanceFixture, "Card System Performance Tests", "[card
             cards.reserve(1000);
             
             for (int i = 0; i < 1000; ++i) {
-                cards.push_back(CardFactory::createPieceCard(
+                cards.push_back(std::make_unique<PieceCard>(
                     "Benchmark Card " + std::to_string(i),
                     1,
                     "Benchmark description",
-                    PieceType::PAWN
+                    "Pawn"
                 ));
             }
             
@@ -300,7 +300,7 @@ TEST_CASE("Card System Stress Tests", "[card][stress]") {
                 "Stress Test Card " + std::to_string(i),
                 1,
                 "Stress test description",
-                PieceType::PAWN
+                "Pawn"
             );
             
             Hand& hand = gameState.getHand(PlayerSide::PLAYER_ONE);
@@ -340,7 +340,7 @@ TEST_CASE("Card System Stress Tests", "[card][stress]") {
         for (int i = 0; i < ITERATIONS; ++i) {
             // Create various card types
             auto pieceCard = std::make_unique<PieceCard>(
-                "Memory Test " + std::to_string(i), 1, "Test", PieceType::PAWN);
+                "Memory Test " + std::to_string(i), 1, "Test", "Pawn");
             
             Effect effect{EffectType::HEAL, 1, 0, TargetType::SINGLE_PIECE};
             auto effectCard = std::make_unique<EffectCard>(

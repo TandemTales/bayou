@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-#include "Piece.h" // Includes Position, PieceType
+#include "Piece.h" // Includes Position
 #include <SFML/Network/Packet.hpp> // For sf::Packet
 
 namespace BayouBonanza {
@@ -33,7 +33,7 @@ public:
      * @param to Target position (promotion square)
      * @param promotionType The type of piece to promote to
      */
-    Move(std::shared_ptr<Piece> piece, const Position& from, const Position& to, PieceType promotionType);
+    Move(std::shared_ptr<Piece> piece, const Position& from, const Position& to, const std::string& promotionType);
     
     /**
      * @brief Get the piece being moved
@@ -64,9 +64,9 @@ public:
 
     /**
      * @brief Get the type of piece to promote to (if isPromotion is true)
-     * @return PieceType to promote to
+     * @return name of piece type to promote to
      */
-    PieceType getPromotionType() const;
+    const std::string& getPromotionType() const;
 
     // Friend functions for SFML packet operators
     friend sf::Packet& operator<<(sf::Packet& packet, const Move& mv);
@@ -77,7 +77,7 @@ private:
     Position from_;
     Position to_;
     bool isPromotion_;
-    PieceType pieceTypePromotedTo_; // Type to promote to, e.g., QUEEN
+    std::string pieceTypePromotedTo_; // Type to promote to by name
 };
 
 // SFML Packet operators for Move

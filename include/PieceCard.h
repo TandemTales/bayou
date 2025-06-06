@@ -25,14 +25,14 @@ public:
      * @param rarity The rarity level of this card
      */
     PieceCard(int id, const std::string& name, const std::string& description,
-              int steamCost, PieceType pieceType, CardRarity rarity = CardRarity::COMMON);
+              int steamCost, const std::string& pieceType, CardRarity rarity = CardRarity::COMMON);
     
     /**
      * @brief Get the type of piece this card creates
      * 
      * @return The piece type
      */
-    PieceType getPieceType() const;
+    const std::string& getPieceType() const;
     
     /**
      * @brief Check if this card can be played in the current game state
@@ -106,7 +106,7 @@ public:
     std::unique_ptr<Card> clone() const override;
 
 private:
-    PieceType pieceType;
+    std::string pieceType;
     
     /**
      * @brief Get the default placement position for a player

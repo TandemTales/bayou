@@ -23,7 +23,7 @@ struct CardDefinition {
     CardRarity rarity;
     
     // For PieceCards
-    PieceType pieceType;
+    std::string pieceType;
     
     // For EffectCards
     Effect effect;
@@ -32,12 +32,12 @@ struct CardDefinition {
     CardDefinition() 
         : id(0), name(""), description(""), steamCost(0),
           cardType(CardType::PIECE_CARD), rarity(CardRarity::COMMON),
-          pieceType(PieceType::PAWN), effect(EffectType::HEAL, 0) {}
+          pieceType("Pawn"), effect(EffectType::HEAL, 0) {}
     
     CardDefinition(int id, const std::string& name, const std::string& description,
                    int steamCost, CardType cardType, CardRarity rarity = CardRarity::COMMON)
         : id(id), name(name), description(description), steamCost(steamCost),
-          cardType(cardType), rarity(rarity), pieceType(PieceType::PAWN),
+          cardType(cardType), rarity(rarity), pieceType("Pawn"),
           effect(EffectType::HEAL, 0) {}
 };
 
@@ -76,7 +76,7 @@ public:
      * @param pieceType The type of piece to create a card for
      * @return A unique pointer to the created piece card
      */
-    static std::unique_ptr<PieceCard> createPieceCard(PieceType pieceType);
+    static std::unique_ptr<PieceCard> createPieceCard(const std::string& pieceType);
     
     /**
      * @brief Create an effect card with specific parameters

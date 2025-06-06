@@ -65,7 +65,7 @@ MoveResult MoveExecutor::executeMove(GameState& gameState, const Move& move) {
             if (piece->isRanged()) {
                 if (destroyed) {
                     // Check if the destroyed piece was a king BEFORE removing it
-                    bool wasKing = (targetPiece->getPieceType() == PieceType::KING);
+                    bool wasKing = targetPiece->isVictoryPiece();
                     PlayerSide targetSide = targetPiece->getSide();
                     
                     // Remove the defeated piece from the board
@@ -93,7 +93,7 @@ MoveResult MoveExecutor::executeMove(GameState& gameState, const Move& move) {
             }
 
             // Check if the destroyed piece was a king
-            if (targetPiece->getPieceType() == PieceType::KING) {
+            if (targetPiece->isVictoryPiece()) {
                 // Set game result based on which king was captured
                 if (targetPiece->getSide() == PlayerSide::PLAYER_ONE) {
                     gameState.setGameResult(GameResult::PLAYER_TWO_WIN);

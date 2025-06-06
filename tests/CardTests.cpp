@@ -38,9 +38,9 @@ struct CardTestFixture {
     }
     
     // Helper to create a test piece card
-    std::unique_ptr<PieceCard> createTestPieceCard(const std::string& name = "Test Pawn", 
-                                                   int cost = 2, 
-                                                   PieceType pieceType = PieceType::PAWN) {
+    std::unique_ptr<PieceCard> createTestPieceCard(const std::string& name = "Test Pawn",
+                                                   int cost = 2,
+                                                   const std::string& pieceType = "Pawn") {
         static int nextId = 1000; // Use high IDs to avoid conflicts
         return std::make_unique<PieceCard>(nextId++, name, "Test piece card", cost, pieceType);
     }
@@ -59,13 +59,13 @@ struct CardTestFixture {
 TEST_CASE_METHOD(CardTestFixture, "Card Base Class Functionality", "[card][base]") {
     
     SECTION("Card Creation and Basic Properties") {
-        auto pieceCard = createTestPieceCard("Knight Card", 3, PieceType::KNIGHT);
+        auto pieceCard = createTestPieceCard("Knight Card", 3, "Knight");
         
         REQUIRE(pieceCard->getName() == "Knight Card");
         REQUIRE(pieceCard->getSteamCost() == 3);
         REQUIRE(pieceCard->getDescription() == "Test piece card");
         REQUIRE(pieceCard->getCardType() == CardType::PIECE_CARD);
-        REQUIRE(pieceCard->getPieceType() == PieceType::KNIGHT);
+        REQUIRE(pieceCard->getPieceType() == "Knight");
     }
     
     SECTION("Card Type Identification") {
@@ -78,7 +78,7 @@ TEST_CASE_METHOD(CardTestFixture, "Card Base Class Functionality", "[card][base]
     
     SECTION("Card Polymorphism") {
         std::vector<std::unique_ptr<Card>> cards;
-        cards.push_back(createTestPieceCard("Rook Card", 4, PieceType::ROOK));
+        cards.push_back(createTestPieceCard("Rook Card", 4, "Rook"));
         cards.push_back(createTestEffectCard("Damage Spell", 2, EffectType::DAMAGE, 3));
         
         REQUIRE(cards.size() == 2);
@@ -96,16 +96,16 @@ TEST_CASE_METHOD(CardTestFixture, "Card Base Class Functionality", "[card][base]
 TEST_CASE_METHOD(CardTestFixture, "PieceCard Functionality", "[card][piece]") {
     
     SECTION("PieceCard Creation") {
-        auto pawnCard = createTestPieceCard("Pawn Summon", 1, PieceType::PAWN);
+        auto pawnCard = createTestPieceCard("Pawn Summon", 1, "Pawn");
         
         REQUIRE(pawnCard->getName() == "Pawn Summon");
         REQUIRE(pawnCard->getSteamCost() == 1);
-        REQUIRE(pawnCard->getPieceType() == PieceType::PAWN);
+        REQUIRE(pawnCard->getPieceType() == "Pawn");
         REQUIRE(pawnCard->getCardType() == CardType::PIECE_CARD);
     }
     
     SECTION("PieceCard Valid Placement Detection") {
-        auto pawnCard = createTestPieceCard("Pawn Summon", 1, PieceType::PAWN);
+        auto pawnCard = createTestPieceCard("Pawn Summon", 1, "Pawn");
         
         // Test valid placements for Player One (should be on their side)
         auto validPlacements = pawnCard->getValidPlacements(gameState, PlayerSide::PLAYER_ONE);
@@ -121,7 +121,7 @@ TEST_CASE_METHOD(CardTestFixture, "PieceCard Functionality", "[card][piece]") {
     }
     
     SECTION("PieceCard Placement Validation") {
-        auto rookCard = createTestPieceCard("Rook Summon", 5, PieceType::ROOK);
+        auto rookCard = createTestPieceCard("Rook Summon", 5, "Rook");
         
         // Test valid placement
         Position validPos{0, 7}; // Player One's back rank
@@ -137,7 +137,7 @@ TEST_CASE_METHOD(CardTestFixture, "PieceCard Functionality", "[card][piece]") {
     }
     
     SECTION("PieceCard Play Functionality") {
-        auto knightCard = createTestPieceCard("Knight Summon", 3, PieceType::KNIGHT);
+        auto knightCard = createTestPieceCard("Knight Summon", 3, "Knight");
         
         // Give player enough steam
         gameState.addSteam(PlayerSide::PLAYER_ONE, 5);
@@ -172,7 +172,7 @@ TEST_CASE_METHOD(CardTestFixture, "EffectCard Functionality", "[card][effect]") 
         auto damageCard = std::make_unique<EffectCard>(3002, "Lightning Bolt", "Damages a piece", 3, damageEffect);
         
         // Place a piece to target using CardFactory
-        auto testPiece = CardFactory::createPieceCard(PieceType::PAWN);
+        auto testPiece = CardFactory::createPieceCard("Pawn");
         Position piecePos{3, 3};
         
         // We need to actually place a piece on the board for testing
@@ -204,9 +204,9 @@ TEST_CASE_METHOD(CardTestFixture, "EffectCard Functionality", "[card][effect]") 
 TEST_CASE_METHOD(CardTestFixture, "CardFactory Functionality", "[card][factory]") {
     
     SECTION("Card Creation by Type") {
-        auto pawnCard = CardFactory::createPieceCard(PieceType::PAWN);
+        auto pawnCard = CardFactory::createPieceCard("Pawn");
         REQUIRE(pawnCard != nullptr);
-        REQUIRE(pawnCard->getPieceType() == PieceType::PAWN);
+        REQUIRE(pawnCard->getPieceType() == "Pawn");
         
         auto healCard = CardFactory::createEffectCard(EffectType::HEAL, 1, TargetType::SINGLE_PIECE, 1);
         REQUIRE(healCard != nullptr);
@@ -344,7 +344,7 @@ TEST_CASE_METHOD(CardTestFixture, "CardPlayValidator Functionality", "[card][val
     SECTION("Basic Card Play Validation") {
         // Add a card to player's hand
         Hand& hand = gameState.getHand(PlayerSide::PLAYER_ONE);
-        auto testCard = createTestPieceCard("Test Pawn", 2, PieceType::PAWN);
+        auto testCard = createTestPieceCard("Test Pawn", 2, "Pawn");
         hand.addCard(std::move(testCard));
         
         // Give player enough steam
@@ -371,7 +371,7 @@ TEST_CASE_METHOD(CardTestFixture, "CardPlayValidator Functionality", "[card][val
         // Clear hand and add a specific piece card
         Hand& hand = gameState.getHand(PlayerSide::PLAYER_ONE);
         hand.clear();
-        auto pieceCard = createTestPieceCard("Knight Summon", 3, PieceType::KNIGHT);
+        auto pieceCard = createTestPieceCard("Knight Summon", 3, "Knight");
         hand.addCard(std::move(pieceCard));
         
         gameState.addSteam(PlayerSide::PLAYER_ONE, 5);
@@ -392,7 +392,7 @@ TEST_CASE_METHOD(CardTestFixture, "CardPlayValidator Functionality", "[card][val
         // Clear hand and add a specific test card
         Hand& hand = gameState.getHand(PlayerSide::PLAYER_ONE);
         hand.clear();
-        auto testCard = createTestPieceCard("Test Pawn", 2, PieceType::PAWN);
+        auto testCard = createTestPieceCard("Test Pawn", 2, "Pawn");
         hand.addCard(std::move(testCard));
         
         gameState.addSteam(PlayerSide::PLAYER_ONE, 5); // Give more steam to be safe

@@ -4,7 +4,6 @@
 #include <memory>
 #include <vector>
 #include "PlayerSide.h"
-#include "Piece.h" // For PieceType
 #include <SFML/Network/Packet.hpp>
 
 namespace BayouBonanza {

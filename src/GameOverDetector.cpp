@@ -76,7 +76,7 @@ bool GameOverDetector::hasKing(const GameState& gameState, PlayerSide side) cons
                 Piece* piece = square.getPiece();
                 
                 // Check if the piece is a king of the specified side
-                if (piece->getSide() == side && piece->getPieceType() == PieceType::KING) {
+                if (piece->getSide() == side && piece->isVictoryPiece()) {
                     return true;
                 }
             }

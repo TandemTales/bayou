@@ -32,8 +32,8 @@ bool PieceRemovalHandler::removePiece(GameBoard& board, const Position& position
         // Fire the defeated event before removing the piece
         fireRemovalEvent(position, piecePtr, RemovalEvent::PIECE_DEFEATED);
         
-        // Check if the piece is a king (for win condition)
-        if (piece->getPieceType() == PieceType::KING) {
+        // Check if the piece triggers victory condition
+        if (piece->isVictoryPiece()) {
             fireRemovalEvent(position, piecePtr, RemovalEvent::KING_DEFEATED);
         }
         
@@ -75,7 +75,7 @@ bool PieceRemovalHandler::isKingDefeated(const GameBoard& board, const Position&
     auto& square = board.getSquare(position.x, position.y);
     auto piece = square.getPiece();
     
-    if (piece && piece->getPieceType() == PieceType::KING) {
+    if (piece && piece->isVictoryPiece()) {
         // Create a temporary shared_ptr wrapper for HealthTracker compatibility
         std::shared_ptr<Piece> piecePtr(piece, [](Piece*){});  // No-op deleter
         return HealthTracker::isDefeated(piecePtr);
@@ -93,7 +93,7 @@ bool PieceRemovalHandler::checkForDefeatedKings(const GameBoard& board, PlayerSi
             auto& square = board.getSquare(x, y);
             auto piece = square.getPiece();
             
-            if (piece && piece->getPieceType() == PieceType::KING) {
+            if (piece && piece->isVictoryPiece()) {
                 // Create a temporary shared_ptr wrapper for HealthTracker compatibility
                 std::shared_ptr<Piece> piecePtr(piece, [](Piece*){});  // No-op deleter
                 if (HealthTracker::isDefeated(piecePtr)) {

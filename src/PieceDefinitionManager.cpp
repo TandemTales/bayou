@@ -46,9 +46,7 @@ bool PieceDefinitionManager::loadDefinitions(const std::string& filePath) {
             stats.health = pieceJson.at("health").get<int>();
 
             stats.isRanged = pieceJson.value("isRanged", false);
-            
-            // PieceType enum mapping
-            stats.pieceType = static_cast<PieceType>(pieceJson.at("pieceType").get<int>());
+            stats.isVictoryPiece = pieceJson.value("victoryPiece", false);
 
             // Parse movementRules
             if (pieceJson.contains("movementRules") && pieceJson.at("movementRules").is_array()) {

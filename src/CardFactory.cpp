@@ -59,7 +59,7 @@ std::unique_ptr<Card> CardFactory::createCard(const std::string& cardName) {
     return createCard(it->second);
 }
 
-std::unique_ptr<PieceCard> CardFactory::createPieceCard(PieceType pieceType) {
+std::unique_ptr<PieceCard> CardFactory::createPieceCard(const std::string& pieceType) {
     if (!initialized) {
         initialize();
     }
@@ -72,51 +72,13 @@ std::unique_ptr<PieceCard> CardFactory::createPieceCard(PieceType pieceType) {
                                                def.steamCost, def.pieceType, def.rarity);
         }
     }
-    
+
     // If no definition found, create a basic one
     int id = getNextCardId();
-    std::string name;
-    std::string description;
-    int steamCost;
-    
-    switch (pieceType) {
-        case PieceType::PAWN:
-            name = "Summon Pawn";
-            description = "Summon a Pawn piece to the battlefield";
-            steamCost = 2;
-            break;
-        case PieceType::ROOK:
-            name = "Summon Rook";
-            description = "Summon a Rook piece to the battlefield";
-            steamCost = 5;
-            break;
-        case PieceType::KNIGHT:
-            name = "Summon Knight";
-            description = "Summon a Knight piece to the battlefield";
-            steamCost = 4;
-            break;
-        case PieceType::BISHOP:
-            name = "Summon Bishop";
-            description = "Summon a Bishop piece to the battlefield";
-            steamCost = 4;
-            break;
-        case PieceType::QUEEN:
-            name = "Summon Queen";
-            description = "Summon a Queen piece to the battlefield";
-            steamCost = 8;
-            break;
-        case PieceType::KING:
-            name = "Summon King";
-            description = "Summon a King piece to the battlefield";
-            steamCost = 10;
-            break;
-        default:
-            name = "Unknown Piece";
-            description = "Summon an unknown piece";
-            steamCost = 3;
-            break;
-    }
-    
+    std::string name = "Summon " + pieceType;
+    std::string description = "Summon a " + pieceType + " piece to the battlefield";
+    int steamCost = 3;
+
     return std::make_unique<PieceCard>(id, name, description, steamCost, pieceType);
 }
 
@@ -164,27 +126,27 @@ std::vector<std::unique_ptr<Card>> CardFactory::createStarterDeck() {
     // Create a balanced starter deck with 20 cards
     // 8 Pawn cards (2 copies each of 4 different pawn cards)
     for (int i = 0; i < 2; i++) {
-        deck.push_back(createPieceCard(PieceType::PAWN));
-        deck.push_back(createPieceCard(PieceType::PAWN));
-        deck.push_back(createPieceCard(PieceType::PAWN));
-        deck.push_back(createPieceCard(PieceType::PAWN));
+        deck.push_back(createPieceCard("Pawn"));
+        deck.push_back(createPieceCard("Pawn"));
+        deck.push_back(createPieceCard("Pawn"));
+        deck.push_back(createPieceCard("Pawn"));
     }
     
     // 4 Rook cards (2 copies each of 2 different rook cards)
     for (int i = 0; i < 2; i++) {
-        deck.push_back(createPieceCard(PieceType::ROOK));
-        deck.push_back(createPieceCard(PieceType::ROOK));
+        deck.push_back(createPieceCard("Rook"));
+        deck.push_back(createPieceCard("Rook"));
     }
     
     // 4 Knight cards
     for (int i = 0; i < 2; i++) {
-        deck.push_back(createPieceCard(PieceType::KNIGHT));
-        deck.push_back(createPieceCard(PieceType::KNIGHT));
+        deck.push_back(createPieceCard("Knight"));
+        deck.push_back(createPieceCard("Knight"));
     }
     
     // 2 Bishop cards
-    deck.push_back(createPieceCard(PieceType::BISHOP));
-    deck.push_back(createPieceCard(PieceType::BISHOP));
+    deck.push_back(createPieceCard("Bishop"));
+    deck.push_back(createPieceCard("Bishop"));
     
     // 2 Effect cards (healing)
     deck.push_back(createEffectCard(EffectType::HEAL, 25, TargetType::SINGLE_PIECE, 3));
@@ -317,29 +279,29 @@ void CardFactory::createDefaultDefinitions() {
     cardDefinitions.clear();
     
     // Create default piece cards
-    CardDefinition pawnCard(1, "Summon Pawn", "Summon a Pawn piece to the battlefield", 
+    CardDefinition pawnCard(1, "Summon Pawn", "Summon a Pawn piece to the battlefield",
                            2, CardType::PIECE_CARD, CardRarity::COMMON);
-    pawnCard.pieceType = PieceType::PAWN;
+    pawnCard.pieceType = "Pawn";
     cardDefinitions[1] = pawnCard;
     
-    CardDefinition rookCard(2, "Summon Rook", "Summon a Rook piece to the battlefield", 
+    CardDefinition rookCard(2, "Summon Rook", "Summon a Rook piece to the battlefield",
                            5, CardType::PIECE_CARD, CardRarity::UNCOMMON);
-    rookCard.pieceType = PieceType::ROOK;
+    rookCard.pieceType = "Rook";
     cardDefinitions[2] = rookCard;
     
-    CardDefinition knightCard(3, "Summon Knight", "Summon a Knight piece to the battlefield", 
+    CardDefinition knightCard(3, "Summon Knight", "Summon a Knight piece to the battlefield",
                              4, CardType::PIECE_CARD, CardRarity::UNCOMMON);
-    knightCard.pieceType = PieceType::KNIGHT;
+    knightCard.pieceType = "Knight";
     cardDefinitions[3] = knightCard;
     
-    CardDefinition bishopCard(4, "Summon Bishop", "Summon a Bishop piece to the battlefield", 
+    CardDefinition bishopCard(4, "Summon Bishop", "Summon a Bishop piece to the battlefield",
                              4, CardType::PIECE_CARD, CardRarity::UNCOMMON);
-    bishopCard.pieceType = PieceType::BISHOP;
+    bishopCard.pieceType = "Bishop";
     cardDefinitions[4] = bishopCard;
     
-    CardDefinition queenCard(5, "Summon Queen", "Summon a Queen piece to the battlefield", 
+    CardDefinition queenCard(5, "Summon Queen", "Summon a Queen piece to the battlefield",
                             8, CardType::PIECE_CARD, CardRarity::RARE);
-    queenCard.pieceType = PieceType::QUEEN;
+    queenCard.pieceType = "Queen";
     cardDefinitions[5] = queenCard;
     
     // Create default effect cards

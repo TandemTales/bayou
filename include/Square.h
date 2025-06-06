@@ -2,7 +2,7 @@
 
 #include <memory>
 #include "PlayerSide.h" // PlayerSide enum
-#include "Piece.h"      // PieceType enum, Piece class
+#include "Piece.h"      // Piece class
 #include "PieceFactory.h" // For PieceFactory
 #include <SFML/Network/Packet.hpp> // For sf::Packet
 

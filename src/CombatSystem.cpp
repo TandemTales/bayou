@@ -106,7 +106,7 @@ bool CombatSystem::checkForDefeatedKings(const GameBoard& board, PlayerSide& win
             const auto& square = board.getSquare(x, y);
             if (!square.isEmpty()) {
                 auto piece = square.getPiece();
-                if (piece->getPieceType() == PieceType::KING && piece->getHealth() > 0) {
+                if (piece->isVictoryPiece() && piece->getHealth() > 0) {
                     if (piece->getSide() == PlayerSide::PLAYER_ONE) {
                         player1HasKing = true;
                     } else if (piece->getSide() == PlayerSide::PLAYER_TWO) {

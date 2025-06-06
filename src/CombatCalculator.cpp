@@ -35,29 +35,9 @@ int CombatCalculator::calculateDamage(Piece* attacker, Piece* defender) {
     
     int baseDamage = attacker->getAttack();
     int finalDamage = baseDamage;
-    
-    // Implement piece-specific damage bonuses/penalties using PieceType
-    PieceType attackerType = attacker->getPieceType();
-    PieceType defenderType = defender->getPieceType();
-    
-    // Example of type-based damage modifiers
-    if (attackerType == PieceType::QUEEN) {
-        // Queen gets bonus damage against Pawns
-        if (defenderType == PieceType::PAWN) {
-            finalDamage = static_cast<int>(baseDamage * 1.5);
-        }
-    } else if (attackerType == PieceType::KNIGHT) {
-        // Knights get bonus damage against Bishop and Rook
-        if (defenderType == PieceType::BISHOP || defenderType == PieceType::ROOK) {
-            finalDamage = static_cast<int>(baseDamage * 1.25);
-        }
-    } else if (attackerType == PieceType::PAWN) {
-        // Pawns get bonus damage against other Pawns
-        if (defenderType == PieceType::PAWN) {
-            finalDamage = static_cast<int>(baseDamage * 1.2);
-        }
-    }
-    
+
+    // Type-based bonuses removed for simplicity
+
     // Ensure damage is at least 1 if an attack happens
     return std::max(1, finalDamage);
 }

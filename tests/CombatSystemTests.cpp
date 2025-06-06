@@ -17,7 +17,6 @@ private:
         stats.health = health;
         stats.symbol = "T";
         stats.typeName = "TestPiece";
-        stats.pieceType = PieceType::PAWN;
         stats.movementRules = {};
         stats.influenceRules = {};
         return stats;

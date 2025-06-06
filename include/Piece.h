@@ -10,30 +10,6 @@
 
 namespace BayouBonanza {
 
-/**
- * @brief Enum representing different piece types
- */
-enum class PieceType {
-    KING,
-    QUEEN,
-    ROOK,
-    BISHOP,
-    KNIGHT,
-    PAWN,
-    ARCHER
-};
-
-// SFML Packet operators for PieceType
-inline sf::Packet& operator<<(sf::Packet& packet, const PieceType& type) {
-    return packet << static_cast<sf::Uint8>(type);
-}
-
-inline sf::Packet& operator>>(sf::Packet& packet, PieceType& type) {
-    sf::Uint8 type_uint8;
-    packet >> type_uint8;
-    type = static_cast<PieceType>(type_uint8);
-    return packet;
-}
 
 // Forward declarations
 class GameBoard;
@@ -137,7 +113,7 @@ public:
     virtual std::vector<Position> getInfluenceArea(const GameBoard& board) const; // Kept virtual, implementation will be in .cpp
     virtual std::string getTypeName() const;
     virtual std::string getSymbol() const;
-    virtual PieceType getPieceType() const; // Added this from previous pure virtual
+    bool isVictoryPiece() const;
     bool isRanged() const;
 
 protected:
@@ -149,17 +125,12 @@ protected:
     PieceStats stats; // Changed from const PieceStats& to PieceStats (store by value)
 
 public:
-    // virtual PieceType getPieceType() const = 0; // This was already listed above, removed from here
     void setHasMoved(bool moved) { hasMoved = moved; }
     bool getHasMoved() const { return hasMoved; }
 };
 
 // SFML Packet operators for Piece (common data)
-// Note: When serializing a Piece directly (e.g., from Square), PieceType should be written first.
-// When deserializing, PieceType should be read first, then an appropriate Piece object
-// created (e.g., via PieceFactory), and then this operator called on that object.
-
-// SFML Packet operators for Piece (common data, excluding PieceType and PlayerSide, which are handled by Square/Factory)
+// Piece type and player side are handled externally by Square/Factory
 inline sf::Packet& operator<<(sf::Packet& packet, const Piece& piece) {
     packet << piece.getSymbol(); // Using getSymbol()
     packet << piece.getPosition();
@@ -171,7 +142,7 @@ inline sf::Packet& operator<<(sf::Packet& packet, const Piece& piece) {
 
 inline sf::Packet& operator>>(sf::Packet& packet, Piece& piece) {
     // Assumes 'piece' is an already-created concrete object of the correct type and side.
-    // PlayerSide and PieceType should have been read by the caller (e.g., Square deserialization)
+    // PlayerSide and piece type name should have been read by the caller (e.g., Square deserialization)
     // and used with PieceFactory to create 'piece'. The symbol is now derived from stats.
     std::string receivedSymbol; // Renamed to avoid conflict if symbol is a member or for clarity
     Position position;

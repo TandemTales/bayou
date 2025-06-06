@@ -1,5 +1,5 @@
 #include "Move.h"
-// Piece.h (for PieceType, Position) and SFML/Network/Packet.hpp are included via Move.h
+// Piece.h (for Position) and SFML/Network/Packet.hpp are included via Move.h
 
 namespace BayouBonanza {
 
@@ -9,7 +9,7 @@ Move::Move() :
     from_(Position{0, 0}),
     to_(Position{0, 0}),
     isPromotion_(false),
-    pieceTypePromotedTo_(PieceType::PAWN) {
+    pieceTypePromotedTo_("") {
 }
 
 // Standard move constructor
@@ -18,11 +18,11 @@ Move::Move(std::shared_ptr<Piece> piece, const Position& from, const Position& t
     from_(from),
     to_(to),
     isPromotion_(false),
-    pieceTypePromotedTo_(PieceType::PAWN) { // Default, not used if not promotion
+    pieceTypePromotedTo_("") { // Default, not used if not promotion
 }
 
 // Promotion move constructor
-Move::Move(std::shared_ptr<Piece> piece, const Position& from, const Position& to, PieceType promotionType) :
+Move::Move(std::shared_ptr<Piece> piece, const Position& from, const Position& to, const std::string& promotionType) :
     piece_(piece),
     from_(from),
     to_(to),
@@ -46,7 +46,7 @@ bool Move::isPromotion() const {
     return isPromotion_;
 }
 
-PieceType Move::getPromotionType() const {
+const std::string& Move::getPromotionType() const {
     return pieceTypePromotedTo_;
 }
 
@@ -56,7 +56,7 @@ sf::Packet& operator<<(sf::Packet& packet, const Move& mv) {
     packet << mv.getTo();   // Uses Position's operator<<
     packet << mv.isPromotion();
     if (mv.isPromotion()) {
-        packet << mv.getPromotionType(); // Uses PieceType's operator<<
+        packet << mv.getPromotionType();
     }
     return packet;
 }
@@ -64,7 +64,7 @@ sf::Packet& operator<<(sf::Packet& packet, const Move& mv) {
 sf::Packet& operator>>(sf::Packet& packet, Move& mv) {
     Position from, to;
     bool isPromotion;
-    PieceType promotionType = PieceType::PAWN; // Default
+    std::string promotionType;
 
     packet >> from >> to >> isPromotion;
     if (isPromotion) {
