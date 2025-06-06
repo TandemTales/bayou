@@ -5,6 +5,9 @@
 
 namespace BayouBonanza {
 
+// Forward declarations
+class Piece;
+
 /**
  * @brief Enum representing different target types for effect cards
  */

@@ -2,6 +2,7 @@
 #include "GameState.h"
 #include "GameBoard.h"
 #include "Square.h"
+#include "Piece.h"
 #include <algorithm>
 
 namespace BayouBonanza {
