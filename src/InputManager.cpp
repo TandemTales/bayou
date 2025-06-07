@@ -236,13 +236,13 @@ int InputManager::getCardIndexAtPosition(const sf::Vector2f& gamePos) const {
     
     // Card dimensions and positioning (must match renderPlayerHand)
     float cardWidth = 120.0f;
-    float cardHeight = 160.0f;
+    float cardHeight = 120.0f; // Updated to match renderPlayerHand
     float cardSpacing = 10.0f;
     float totalHandWidth = hand.size() * cardWidth + (hand.size() - 1) * cardSpacing;
     
     // Position cards below the board, centered
     float handStartX = (GraphicsManager::BASE_WIDTH - totalHandWidth) / 2.0f;
-    float handY = boardParams.boardStartY + boardParams.boardSize + 20.0f;
+    float handY = boardParams.boardStartY + boardParams.boardSize + 10.0f; // Reduced spacing to match renderPlayerHand
     
     // Check if click is within the hand area
     if (gamePos.y < handY || gamePos.y > handY + cardHeight) {

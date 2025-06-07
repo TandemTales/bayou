@@ -299,13 +299,13 @@ void renderPlayerHand(sf::RenderWindow& window, const GameState& gameState, Play
     
     // Card dimensions and positioning
     float cardWidth = 120.0f;
-    float cardHeight = 160.0f;
+    float cardHeight = 120.0f; // Shortened card height
     float cardSpacing = 10.0f;
     float totalHandWidth = hand.size() * cardWidth + (hand.size() - 1) * cardSpacing;
     
     // Position cards below the board, centered
     float handStartX = (GraphicsManager::BASE_WIDTH - totalHandWidth) / 2.0f;
-    float handY = boardParams.boardStartY + boardParams.boardSize + 20.0f;
+    float handY = boardParams.boardStartY + boardParams.boardSize + 10.0f; // Reduced spacing to fit cards
     
     for (size_t i = 0; i < hand.size(); ++i) {
         const Card* card = hand.getCard(i);
@@ -357,7 +357,7 @@ void renderPlayerHand(sf::RenderWindow& window, const GameState& gameState, Play
         costText.setString("Steam: " + std::to_string(card->getSteamCost()));
         
         sf::FloatRect costBounds = costText.getLocalBounds();
-        costText.setPosition(cardX + (cardWidth - costBounds.width) / 2.0f, handY + cardHeight - 30.0f);
+        costText.setPosition(cardX + (cardWidth - costBounds.width) / 2.0f, handY + cardHeight - 25.0f);
         window.draw(costText);
         
         // Card type indicator
@@ -373,14 +373,7 @@ void renderPlayerHand(sf::RenderWindow& window, const GameState& gameState, Play
         typeText.setPosition(cardX + (cardWidth - typeBounds.width) / 2.0f, handY + 35.0f);
         window.draw(typeText);
         
-        // Card index for debugging/reference
-        sf::Text indexText;
-        indexText.setFont(globalFont);
-        indexText.setCharacterSize(10);
-        indexText.setFillColor(sf::Color(128, 128, 128)); // Gray
-        indexText.setString(std::to_string(i));
-        indexText.setPosition(cardX + 5.0f, handY + 5.0f);
-        window.draw(indexText);
+
     }
 }
 

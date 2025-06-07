@@ -72,9 +72,9 @@ GraphicsManager::BoardRenderParams GraphicsManager::getBoardRenderParams() const
     params.boardSize = BASE_HEIGHT * 0.8f;
     params.squareSize = params.boardSize / GameBoard::BOARD_SIZE;
     
-    // Center the board in the base resolution
+    // Position the board higher up to make room for taller cards
     params.boardStartX = (BASE_WIDTH - params.boardSize) / 2.0f;
-    params.boardStartY = (BASE_HEIGHT - params.boardSize) / 2.0f;
+    params.boardStartY = (BASE_HEIGHT - params.boardSize) / 2.0f - 60.0f; // Move board up by 60 pixels
     
     return params;
 }
