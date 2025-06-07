@@ -1,8 +1,10 @@
 #include "PieceCard.h"
 #include "GameState.h"
 #include "GameBoard.h"
+#include "Square.h"
 #include "PieceFactory.h"
 #include "PieceDefinitionManager.h"
+#include "InfluenceSystem.h"
 #include <algorithm>
 #include <iostream>
 
@@ -59,21 +61,18 @@ bool PieceCard::isValidPlacement(const GameState& gameState, PlayerSide player, 
         return false;
     }
     
-    // Check placement rules based on piece type and player
-    int defaultRow = getDefaultPlacementRow(player);
+    // Check if the square is controlled by the player
+    const Square& square = board.getSquare(position.x, position.y);
+    PlayerSide controller = InfluenceSystem::getControllingPlayer(square);
     
-    // For most pieces, allow placement on the player's back two rows
-    if (player == PlayerSide::PLAYER_ONE) {
-        // Player 1 starts at bottom (rows 6-7)
-        bool valid = position.y >= 6;
-        std::cout << "DEBUG: Player 1 placement check - row " << position.y << " >= 6: " << (valid ? "VALID" : "INVALID") << std::endl;
-        return valid;
-    } else {
-        // Player 2 starts at top (rows 0-1)
-        bool valid = position.y <= 1;
-        std::cout << "DEBUG: Player 2 placement check - row " << position.y << " <= 1: " << (valid ? "VALID" : "INVALID") << std::endl;
-        return valid;
-    }
+    bool valid = (controller == player);
+    std::cout << "DEBUG: Square control check - controlled by " 
+              << (controller == PlayerSide::PLAYER_ONE ? "Player 1" : 
+                  controller == PlayerSide::PLAYER_TWO ? "Player 2" : "Neutral")
+              << ", player is " << (player == PlayerSide::PLAYER_ONE ? "Player 1" : "Player 2")
+              << ": " << (valid ? "VALID" : "INVALID") << std::endl;
+    
+    return valid;
 }
 
 std::vector<Position> PieceCard::getValidPlacements(const GameState& gameState, PlayerSide player) const {
@@ -101,43 +100,38 @@ bool PieceCard::playAtPosition(GameState& gameState, PlayerSide player, const Po
     // Note: Steam cost is handled by the caller (CardPlayValidator::executeCardPlay)
     // Don't spend steam here to avoid double-spending
     
-    // Create the piece using the existing piece factory system
-    std::string typeName = pieceType;
-    
-    std::cout << "DEBUG: PieceCard::playAtPosition - Creating piece of type '" << typeName 
+    std::cout << "DEBUG: PieceCard::playAtPosition - Creating piece of type '" << pieceType 
               << "' for card '" << name << "'" << std::endl;
     
-    // Get the piece definition manager and factory from game state
-    // Note: This is a simplified approach - in a real implementation,
-    // the factory would be accessible through the game state
+    // Use the global piece factory to create the piece with proper stats and movement rules
+    if (!Square::globalPieceFactory) {
+        std::cout << "DEBUG: No global piece factory available" << std::endl;
+        return false;
+    }
+    
     try {
-        // For now, we'll create a basic piece manually
-        // This should be replaced with proper factory integration
+        // Create the piece using the proper factory
+        auto piece = Square::globalPieceFactory->createPiece(pieceType, player);
+        
+        if (!piece) {
+            std::cout << "DEBUG: Failed to create piece of type '" << pieceType << "'" << std::endl;
+            return false;
+        }
+        
+        // Set the piece's position
+        piece->setPosition(position);
         
         // Get the square and place the piece
         GameBoard& board = gameState.getBoard();
         Square& square = board.getSquare(position.x, position.y);
-        
-        // Create a basic piece with default stats
-        // This is a temporary implementation until proper factory integration
-        PieceStats defaultStats;
-        defaultStats.typeName = typeName;  // Set the type name for network serialization
-        defaultStats.health = 100;
-        defaultStats.attack = 50;
-        defaultStats.symbol = typeName.substr(0, 1); // First letter as symbol
-        
-        auto piece = std::make_unique<Piece>(player, defaultStats);
-        piece->setPosition(position);
-        
-        // Place the piece on the board
         square.setPiece(std::move(piece));
         
-        std::cout << "DEBUG: Successfully created and placed piece of type '" << typeName << "'" << std::endl;
+        std::cout << "DEBUG: Successfully created and placed piece of type '" << pieceType << "'" << std::endl;
         return true;
     } catch (...) {
         // If piece creation fails, return false
         // Note: Steam refund is handled by the caller if needed
-        std::cout << "DEBUG: Exception caught while creating piece of type '" << typeName << "'" << std::endl;
+        std::cout << "DEBUG: Exception caught while creating piece of type '" << pieceType << "'" << std::endl;
         return false;
     }
 }
@@ -147,7 +141,7 @@ std::string PieceCard::getDetailedDescription() const {
     
     // Add piece type information
     detail += "\nPiece Type: " + pieceType;
-    detail += "\nPlacement: Can be placed on your starting rows";
+    detail += "\nPlacement: Can be placed on empty squares controlled by you";
     
     return detail;
 }

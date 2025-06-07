@@ -15,6 +15,9 @@
 #include "PlayerSide.h"       // For PlayerSide enum (used in PlayerAssignment)
 #include "GameRules.h"        // For game logic
 #include "TurnManager.h"      // For turn management
+#include "Square.h"           // For Square::setGlobalPieceFactory
+#include "PieceFactory.h"     // For PieceFactory
+#include "PieceDefinitionManager.h" // For PieceDefinitionManager
 
 using namespace BayouBonanza;
 
@@ -38,6 +41,10 @@ GameState globalGameState; // Properly initialized by GameInitializer once game 
 GameInitializer gameInitializer; // Instance of GameInitializer
 GameRules gameRules; // Game rules for move validation and processing
 std::unique_ptr<TurnManager> turnManager; // Turn manager for game flow
+
+// Global PieceFactory for piece creation (needed for card play)
+PieceDefinitionManager globalPieceDefManager;
+std::unique_ptr<PieceFactory> globalPieceFactory;
 
 // Helper function to find piece at position and reconstruct move
 Move reconstructMoveWithPiece(const Move& clientMove, const GameState& gameState) {
@@ -68,9 +75,42 @@ Move reconstructMoveWithPiece(const Move& clientMove, const GameState& gameState
 }
 
 // Helper function to broadcast game state to all connected clients
+// Helper function to print card hands for debugging
+void printCardHands(const GameState& gameState) {
+    std::cout << "=== CARD HANDS DEBUG ===" << std::endl;
+    
+    // Player 1 hand
+    const Hand& p1Hand = gameState.getHand(PlayerSide::PLAYER_ONE);
+    std::cout << "Player 1 Hand (" << p1Hand.size() << " cards, " 
+              << gameState.getSteam(PlayerSide::PLAYER_ONE) << " steam):" << std::endl;
+    for (size_t i = 0; i < p1Hand.size(); ++i) {
+        const Card* card = p1Hand.getCard(i);
+        if (card) {
+            std::cout << "  [" << i << "] " << card->getName() 
+                      << " (Cost: " << card->getSteamCost() << ")" << std::endl;
+        }
+    }
+    
+    // Player 2 hand
+    const Hand& p2Hand = gameState.getHand(PlayerSide::PLAYER_TWO);
+    std::cout << "Player 2 Hand (" << p2Hand.size() << " cards, " 
+              << gameState.getSteam(PlayerSide::PLAYER_TWO) << " steam):" << std::endl;
+    for (size_t i = 0; i < p2Hand.size(); ++i) {
+        const Card* card = p2Hand.getCard(i);
+        if (card) {
+            std::cout << "  [" << i << "] " << card->getName() 
+                      << " (Cost: " << card->getSteamCost() << ")" << std::endl;
+        }
+    }
+    std::cout << "=========================" << std::endl;
+}
+
 void broadcastGameState(const GameState& gameState) {
     sf::Packet updatePacket;
     updatePacket << MessageType::GameStateUpdate << gameState;
+    
+    // Print card hands for debugging
+    printCardHands(gameState);
     
     std::lock_guard<std::mutex> lock(clientsMutex);
     for (auto& client : clients) {
@@ -414,6 +454,16 @@ void initialize_database() {
 int main() {
     initialize_database(); // Initialize the database at the start
 
+    // Initialize global PieceFactory for piece creation (needed for card play)
+    if (!globalPieceDefManager.loadDefinitions("assets/data/pieces.json")) {
+        std::cerr << "FATAL: Could not load piece definitions from assets/data/pieces.json" << std::endl;
+        return -1;
+    }
+    globalPieceFactory = std::make_unique<PieceFactory>(globalPieceDefManager);
+
+    // Set the global PieceFactory for Square deserialization and card play
+    Square::setGlobalPieceFactory(globalPieceFactory.get());
+
     sf::TcpListener listener;
 
     // Bind the listener to a port
@@ -553,6 +603,9 @@ int main() {
                         }
                         std::cout << "|" << std::endl;
                     }
+                    
+                    // Print initial card hands
+                    printCardHands(globalGameState);
                     
                     std::cout << "Game initialized. Broadcasting GameStart and initial state." << std::endl;
 

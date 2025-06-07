@@ -107,7 +107,7 @@ void recreatePiecesAfterDeserialization(GameState& gameState) {
 }
 
 // Function to print board state to console for debugging
-void printBoardState(const GameState& gameState) {
+void printBoardState(const GameState& gameState, PlayerSide localPlayer = PlayerSide::NEUTRAL) {
     const GameBoard& board = gameState.getBoard();
     std::cout << "Current board state:" << std::endl;
     for (int y = 0; y < GameBoard::BOARD_SIZE; ++y) {
@@ -123,6 +123,22 @@ void printBoardState(const GameState& gameState) {
         std::cout << std::endl;
     }
     std::cout << std::endl;
+    
+    // Print local player's hand if specified
+    if (localPlayer != PlayerSide::NEUTRAL) {
+        const Hand& hand = gameState.getHand(localPlayer);
+        std::cout << "=== MY HAND DEBUG ===" << std::endl;
+        std::cout << "My Hand (" << hand.size() << " cards, " 
+                  << gameState.getSteam(localPlayer) << " steam):" << std::endl;
+        for (size_t i = 0; i < hand.size(); ++i) {
+            const Card* card = hand.getCard(i);
+            if (card) {
+                std::cout << "  [" << i << "] " << card->getName() 
+                          << " (Cost: " << card->getSteamCost() << ")" << std::endl;
+            }
+        }
+        std::cout << "=====================" << std::endl;
+    }
 }
 
 // Function to render discrete health bar as a grid
@@ -564,7 +580,7 @@ int main()
 
                             if (receivedPacket >> p1_username >> p1_rating >> p2_username >> p2_rating >> gameState) {
                                 gameHasStarted = true;
-                                printBoardState(gameState); // Keep this for debugging
+                                printBoardState(gameState, myPlayerSide); // Keep this for debugging
 
                                 // Determine local and remote player data
                                 if (myPlayerSide == PlayerSide::PLAYER_ONE) {
@@ -605,7 +621,7 @@ int main()
                             if (receivedPacket >> gameState) { // Deserialize the updated GameState
                                 // uiMessage = (myPlayerSide == gameState.getActivePlayer() ? "Your turn" : "Opponent's turn");
                                 std::cout << "GameState updated. Turn: " << gameState.getTurnNumber() << std::endl;
-                                printBoardState(gameState);
+                                printBoardState(gameState, myPlayerSide);
                                 
                                 // Update local player steam display
                                 int localPlayerSteam = gameState.getSteam(myPlayerSide);
