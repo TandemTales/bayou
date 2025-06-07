@@ -2,6 +2,7 @@
 #include "GameBoard.h"
 #include "Square.h"
 #include <algorithm>
+#include <iostream>
 
 namespace BayouBonanza {
 
@@ -47,11 +48,13 @@ ValidationResult CardPlayValidator::validateTargetedCardPlay(const GameState& ga
     // First validate basic card play
     auto basicResult = validateCardPlay(gameState, player, handIndex);
     if (!basicResult.isValid) {
+        std::cout << "DEBUG: Basic card play validation failed: " << basicResult.errorMessage << std::endl;
         return basicResult;
     }
     
     // Check if target position is within bounds
     if (!isValidBoardPosition(targetPosition)) {
+        std::cout << "DEBUG: Target position out of bounds: (" << targetPosition.x << ", " << targetPosition.y << ")" << std::endl;
         return ValidationResult(false, ValidationError::INVALID_TARGET,
                               "Target position (" + std::to_string(targetPosition.x) + ", " + 
                               std::to_string(targetPosition.y) + ") is out of bounds");
@@ -61,24 +64,41 @@ ValidationResult CardPlayValidator::validateTargetedCardPlay(const GameState& ga
     const Hand& hand = gameState.getHand(player);
     const Card* card = hand.getCard(handIndex);
     
+    std::cout << "DEBUG: Validating card '" << card->getName() << "' (cost: " << card->getSteamCost() 
+              << ") at position (" << targetPosition.x << ", " << targetPosition.y << ") for player " 
+              << (player == PlayerSide::PLAYER_ONE ? "1" : "2") << std::endl;
+    std::cout << "DEBUG: Player steam: " << gameState.getSteam(player) << std::endl;
+    std::cout << "DEBUG: Card type: " << static_cast<int>(card->getCardType()) << " (0=PIECE_CARD, 1=EFFECT_CARD)" << std::endl;
+    
     switch (card->getCardType()) {
         case CardType::PIECE_CARD: {
             const PieceCard* pieceCard = dynamic_cast<const PieceCard*>(card);
             if (!pieceCard) {
+                std::cout << "DEBUG: Failed to cast to PieceCard" << std::endl;
                 return ValidationResult(false, ValidationError::UNKNOWN_CARD_TYPE,
                                       "Failed to cast to PieceCard");
             }
-            return validatePiecePlacement(gameState, player, pieceCard, targetPosition);
+            auto result = validatePiecePlacement(gameState, player, pieceCard, targetPosition);
+            if (!result.isValid) {
+                std::cout << "DEBUG: Piece placement validation failed: " << result.errorMessage << std::endl;
+            }
+            return result;
         }
         case CardType::EFFECT_CARD: {
             const EffectCard* effectCard = dynamic_cast<const EffectCard*>(card);
             if (!effectCard) {
+                std::cout << "DEBUG: Failed to cast to EffectCard" << std::endl;
                 return ValidationResult(false, ValidationError::UNKNOWN_CARD_TYPE,
                                       "Failed to cast to EffectCard");
             }
-            return validateEffectTarget(gameState, player, effectCard, targetPosition);
+            auto result = validateEffectTarget(gameState, player, effectCard, targetPosition);
+            if (!result.isValid) {
+                std::cout << "DEBUG: Effect target validation failed: " << result.errorMessage << std::endl;
+            }
+            return result;
         }
         default:
+            std::cout << "DEBUG: Unknown card type for targeted play" << std::endl;
             return ValidationResult(false, ValidationError::UNKNOWN_CARD_TYPE,
                                   "Unknown card type for targeted play");
     }

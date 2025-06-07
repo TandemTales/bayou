@@ -24,6 +24,9 @@ void GameInitializer::initializeNewGame(GameState& gameState) {
     // Set up the board with initial pieces
     setupBoard(gameState);
     
+    // Initialize the card system for both players
+    gameState.initializeCardSystem();
+    
     // Calculate initial control values
     calculateInitialControl(gameState);
 }

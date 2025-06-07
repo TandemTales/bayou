@@ -1,4 +1,6 @@
 #include "TurnManager.h"
+#include "CardPlayValidator.h" // For PlayResult
+#include <iostream>
 
 namespace BayouBonanza {
 
@@ -69,11 +71,46 @@ void TurnManager::processMoveAction(const Move& move, ActionCallback callback) {
 void TurnManager::processPlayCardAction(int cardIndex, const Position& position, ActionCallback callback) {
     ActionResult result;
     
-    // Note: Card playing functionality will be implemented in a later task
-    // This is a placeholder for the interface
+    // Check if it's the correct player's turn
+    PlayerSide activePlayer = gameState.getActivePlayer();
     
-    result.success = false;
-    result.message = "Card playing not yet implemented";
+    // Debug: Show hand information
+    const Hand& hand = gameState.getHand(activePlayer);
+    std::cout << "DEBUG: Player " << (activePlayer == PlayerSide::PLAYER_ONE ? "1" : "2") 
+              << " hand size: " << hand.size() << ", trying to play card index: " << cardIndex << std::endl;
+    
+    for (size_t i = 0; i < hand.size(); ++i) {
+        const Card* card = hand.getCard(i);
+        if (card) {
+            std::cout << "DEBUG: Hand[" << i << "]: " << card->getName() 
+                      << " (cost: " << card->getSteamCost() << ")" << std::endl;
+        } else {
+            std::cout << "DEBUG: Hand[" << i << "]: NULL CARD" << std::endl;
+        }
+    }
+    
+    // Validate card index
+    if (cardIndex < 0 || static_cast<size_t>(cardIndex) >= gameState.getHand(activePlayer).size()) {
+        std::cout << "DEBUG: Card index " << cardIndex << " is invalid for hand size " << hand.size() << std::endl;
+        result.success = false;
+        result.message = "Invalid card index";
+    } else {
+        std::cout << "DEBUG: Card index " << cardIndex << " is valid, proceeding with card play" << std::endl;
+        // Use GameState's playCardWithResult method which uses CardPlayValidator internally
+        PlayResult playResult = gameState.playCardWithResult(activePlayer, static_cast<size_t>(cardIndex), position);
+        
+        // Convert PlayResult to ActionResult
+        if (playResult.success) {
+            result.success = true;
+            result.message = "Card played successfully";
+            
+            // End the turn after a successful card play
+            gameRules.endTurn(gameState);
+        } else {
+            result.success = false;
+            result.message = playResult.errorMessage;
+        }
+    }
     
     // Update game state based on action result
     updateGameState(result);

@@ -98,6 +98,20 @@ void sendMoveRejection(std::shared_ptr<ClientConnection> client, const std::stri
               << ": " << reason << std::endl;
 }
 
+void sendCardPlayRejection(std::shared_ptr<ClientConnection> client, const std::string& reason) {
+    sf::Packet rejectPacket;
+    rejectPacket << MessageType::CardPlayRejected;
+    // Note: Could add reason string if MessageType::CardPlayRejected supports it
+    
+    if (client->socket.send(rejectPacket) != sf::Socket::Done) {
+        std::cerr << "Error sending card play rejection to client " 
+                  << client->socket.getRemoteAddress() << std::endl;
+    }
+    
+    std::cout << "Card play rejected for " << client->socket.getRemoteAddress() 
+              << ": " << reason << std::endl;
+}
+
 void handle_client(std::shared_ptr<ClientConnection> client) {
     std::cout << "Thread started for client: " << client->socket.getRemoteAddress() 
               << ":" << client->socket.getRemotePort() << std::endl;
@@ -270,6 +284,57 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                     
                 } else {
                     std::cerr << "Error deserializing move data from " 
+                              << client->socket.getRemoteAddress() << std::endl;
+                }
+            } else if (messageType == MessageType::CardPlayToServer) {
+                CardPlayData cardPlayData;
+                if (packet >> cardPlayData) {
+                    std::cout << "Card play received: card " << cardPlayData.cardIndex 
+                              << " at (" << cardPlayData.targetX << ", " << cardPlayData.targetY 
+                              << ") from " << client->socket.getRemoteAddress() << std::endl;
+                    
+                    // Verify it's the client's turn
+                    if (client->playerSide != globalGameState.getActivePlayer()) {
+                        sendCardPlayRejection(client, "Not your turn");
+                        continue;
+                    }
+                    
+                    // Process the card play using TurnManager
+                    if (turnManager) {
+                        Position targetPosition(cardPlayData.targetX, cardPlayData.targetY);
+                        bool cardPlayProcessed = false;
+                        std::string resultMessage;
+                        
+                        turnManager->processPlayCardAction(cardPlayData.cardIndex, targetPosition, 
+                            [&](const ActionResult& result) {
+                                cardPlayProcessed = true;
+                                resultMessage = result.message;
+                                
+                                if (result.success) {
+                                    std::cout << "Card play processed successfully: " << result.message << std::endl;
+                                    // Broadcast updated game state to all clients
+                                    broadcastGameState(globalGameState);
+                                    
+                                    // Check for game over (same logic as move handling)
+                                    if (gameRules.isGameOver(globalGameState)) {
+                                        std::cout << "Game Over detected after card play." << std::endl;
+                                        // Game over handling would go here (same as move handling)
+                                    }
+                                } else {
+                                    std::cout << "Card play failed: " << result.message << std::endl;
+                                    sendCardPlayRejection(client, result.message);
+                                }
+                            });
+                        
+                        // If no callback was called (shouldn't happen), handle as error
+                        if (!cardPlayProcessed) {
+                            sendCardPlayRejection(client, "Card play processing failed");
+                        }
+                    } else {
+                        sendCardPlayRejection(client, "Game not properly initialized");
+                    }
+                } else {
+                    std::cerr << "Error deserializing card play data from " 
                               << client->socket.getRemoteAddress() << std::endl;
                 }
             } else {

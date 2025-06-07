@@ -123,34 +123,30 @@ std::vector<std::unique_ptr<Card>> CardFactory::createStarterDeck() {
     
     std::vector<std::unique_ptr<Card>> deck;
     
-    // Create a balanced starter deck with 20 cards
-    // 8 Pawn cards (2 copies each of 4 different pawn cards)
-    for (int i = 0; i < 2; i++) {
-        deck.push_back(createPieceCard("Pawn"));
-        deck.push_back(createPieceCard("Pawn"));
-        deck.push_back(createPieceCard("Pawn"));
-        deck.push_back(createPieceCard("Pawn"));
+    // Create a balanced starter deck with 20 cards using predefined card definitions
+    // 8 Pawn cards (use predefined card ID 1)
+    for (int i = 0; i < 8; i++) {
+        deck.push_back(createCard(1)); // Summon Pawn
     }
     
-    // 4 Rook cards (2 copies each of 2 different rook cards)
-    for (int i = 0; i < 2; i++) {
-        deck.push_back(createPieceCard("Rook"));
-        deck.push_back(createPieceCard("Rook"));
+    // 4 Rook cards (use predefined card ID 2)
+    for (int i = 0; i < 4; i++) {
+        deck.push_back(createCard(2)); // Summon Rook
     }
     
-    // 4 Knight cards
-    for (int i = 0; i < 2; i++) {
-        deck.push_back(createPieceCard("Knight"));
-        deck.push_back(createPieceCard("Knight"));
+    // 4 Knight cards (use predefined card ID 3)
+    for (int i = 0; i < 4; i++) {
+        deck.push_back(createCard(3)); // Summon Knight
     }
     
-    // 2 Bishop cards
-    deck.push_back(createPieceCard("Bishop"));
-    deck.push_back(createPieceCard("Bishop"));
+    // 2 Bishop cards (use predefined card ID 4)
+    for (int i = 0; i < 2; i++) {
+        deck.push_back(createCard(4)); // Summon Bishop
+    }
     
-    // 2 Effect cards (healing)
-    deck.push_back(createEffectCard(EffectType::HEAL, 25, TargetType::SINGLE_PIECE, 3));
-    deck.push_back(createEffectCard(EffectType::HEAL, 25, TargetType::SINGLE_PIECE, 3));
+    // 2 Effect cards (healing) - use predefined card definitions
+    deck.push_back(createCard(10)); // Healing Light
+    deck.push_back(createCard(10)); // Healing Light
     
     return deck;
 }

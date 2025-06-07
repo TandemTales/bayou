@@ -4,6 +4,7 @@
 #include "PieceFactory.h"
 #include "PieceDefinitionManager.h"
 #include <algorithm>
+#include <iostream>
 
 namespace BayouBonanza {
 
@@ -43,13 +44,18 @@ bool PieceCard::play(GameState& gameState, PlayerSide player) const {
 bool PieceCard::isValidPlacement(const GameState& gameState, PlayerSide player, const Position& position) const {
     const GameBoard& board = gameState.getBoard();
     
+    std::cout << "DEBUG: Checking piece placement for " << pieceType << " at (" << position.x << ", " << position.y 
+              << ") for player " << (player == PlayerSide::PLAYER_ONE ? "1" : "2") << std::endl;
+    
     // Check if position is within board bounds
     if (position.x < 0 || position.x >= 8 || position.y < 0 || position.y >= 8) {
+        std::cout << "DEBUG: Position out of bounds" << std::endl;
         return false;
     }
     
     // Check if the square is empty
     if (!board.getSquare(position.x, position.y).isEmpty()) {
+        std::cout << "DEBUG: Square is not empty" << std::endl;
         return false;
     }
     
@@ -59,10 +65,14 @@ bool PieceCard::isValidPlacement(const GameState& gameState, PlayerSide player, 
     // For most pieces, allow placement on the player's back two rows
     if (player == PlayerSide::PLAYER_ONE) {
         // Player 1 starts at bottom (rows 6-7)
-        return position.y >= 6;
+        bool valid = position.y >= 6;
+        std::cout << "DEBUG: Player 1 placement check - row " << position.y << " >= 6: " << (valid ? "VALID" : "INVALID") << std::endl;
+        return valid;
     } else {
         // Player 2 starts at top (rows 0-1)
-        return position.y <= 1;
+        bool valid = position.y <= 1;
+        std::cout << "DEBUG: Player 2 placement check - row " << position.y << " <= 1: " << (valid ? "VALID" : "INVALID") << std::endl;
+        return valid;
     }
 }
 
@@ -94,6 +104,9 @@ bool PieceCard::playAtPosition(GameState& gameState, PlayerSide player, const Po
     // Create the piece using the existing piece factory system
     std::string typeName = pieceType;
     
+    std::cout << "DEBUG: PieceCard::playAtPosition - Creating piece of type '" << typeName 
+              << "' for card '" << name << "'" << std::endl;
+    
     // Get the piece definition manager and factory from game state
     // Note: This is a simplified approach - in a real implementation,
     // the factory would be accessible through the game state
@@ -108,6 +121,7 @@ bool PieceCard::playAtPosition(GameState& gameState, PlayerSide player, const Po
         // Create a basic piece with default stats
         // This is a temporary implementation until proper factory integration
         PieceStats defaultStats;
+        defaultStats.typeName = typeName;  // Set the type name for network serialization
         defaultStats.health = 100;
         defaultStats.attack = 50;
         defaultStats.symbol = typeName.substr(0, 1); // First letter as symbol
@@ -118,10 +132,12 @@ bool PieceCard::playAtPosition(GameState& gameState, PlayerSide player, const Po
         // Place the piece on the board
         square.setPiece(std::move(piece));
         
+        std::cout << "DEBUG: Successfully created and placed piece of type '" << typeName << "'" << std::endl;
         return true;
     } catch (...) {
         // If piece creation fails, return false
         // Note: Steam refund is handled by the caller if needed
+        std::cout << "DEBUG: Exception caught while creating piece of type '" << typeName << "'" << std::endl;
         return false;
     }
 }

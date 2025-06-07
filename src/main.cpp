@@ -272,6 +272,102 @@ void renderAttackValue(sf::RenderWindow& window, const Piece* piece, float squar
     window.draw(attackText);
 }
 
+// Function to render player's hand of cards
+void renderPlayerHand(sf::RenderWindow& window, const GameState& gameState, PlayerSide player, 
+                     const GraphicsManager& graphicsManager, int selectedCardIndex = -1) {
+    const Hand& hand = gameState.getHand(player);
+    if (hand.size() == 0) return;
+    
+    auto boardParams = graphicsManager.getBoardRenderParams();
+    int playerSteam = gameState.getSteam(player);
+    
+    // Card dimensions and positioning
+    float cardWidth = 120.0f;
+    float cardHeight = 160.0f;
+    float cardSpacing = 10.0f;
+    float totalHandWidth = hand.size() * cardWidth + (hand.size() - 1) * cardSpacing;
+    
+    // Position cards below the board, centered
+    float handStartX = (GraphicsManager::BASE_WIDTH - totalHandWidth) / 2.0f;
+    float handY = boardParams.boardStartY + boardParams.boardSize + 20.0f;
+    
+    for (size_t i = 0; i < hand.size(); ++i) {
+        const Card* card = hand.getCard(i);
+        if (!card) continue;
+        
+        float cardX = handStartX + i * (cardWidth + cardSpacing);
+        
+        // Card background
+        sf::RectangleShape cardRect(sf::Vector2f(cardWidth, cardHeight));
+        cardRect.setPosition(cardX, handY);
+        
+        // Color based on playability and selection
+        bool canAfford = playerSteam >= card->getSteamCost();
+        bool isSelected = static_cast<int>(i) == selectedCardIndex;
+        
+        if (isSelected) {
+            cardRect.setFillColor(sf::Color(100, 150, 255, 200)); // Bright blue for selected
+            cardRect.setOutlineColor(sf::Color::Yellow);
+            cardRect.setOutlineThickness(3.0f);
+        } else if (canAfford) {
+            cardRect.setFillColor(sf::Color(60, 80, 60, 180)); // Green-ish for playable
+            cardRect.setOutlineColor(sf::Color::White);
+            cardRect.setOutlineThickness(1.0f);
+        } else {
+            cardRect.setFillColor(sf::Color(80, 60, 60, 180)); // Red-ish for unaffordable
+            cardRect.setOutlineColor(sf::Color(128, 128, 128)); // Gray
+            cardRect.setOutlineThickness(1.0f);
+        }
+        
+        window.draw(cardRect);
+        
+        // Card name
+        sf::Text nameText;
+        nameText.setFont(globalFont);
+        nameText.setCharacterSize(14);
+        nameText.setFillColor(sf::Color::White);
+        nameText.setString(card->getName());
+        
+        // Center the name text horizontally
+        sf::FloatRect nameBounds = nameText.getLocalBounds();
+        nameText.setPosition(cardX + (cardWidth - nameBounds.width) / 2.0f, handY + 10.0f);
+        window.draw(nameText);
+        
+        // Steam cost
+        sf::Text costText;
+        costText.setFont(globalFont);
+        costText.setCharacterSize(16);
+        costText.setFillColor(canAfford ? sf::Color::Cyan : sf::Color::Red);
+        costText.setString("Steam: " + std::to_string(card->getSteamCost()));
+        
+        sf::FloatRect costBounds = costText.getLocalBounds();
+        costText.setPosition(cardX + (cardWidth - costBounds.width) / 2.0f, handY + cardHeight - 30.0f);
+        window.draw(costText);
+        
+        // Card type indicator
+        sf::Text typeText;
+        typeText.setFont(globalFont);
+        typeText.setCharacterSize(12);
+        typeText.setFillColor(sf::Color::Yellow);
+        
+        std::string typeStr = (card->getCardType() == CardType::PIECE_CARD) ? "Piece" : "Effect";
+        typeText.setString(typeStr);
+        
+        sf::FloatRect typeBounds = typeText.getLocalBounds();
+        typeText.setPosition(cardX + (cardWidth - typeBounds.width) / 2.0f, handY + 35.0f);
+        window.draw(typeText);
+        
+        // Card index for debugging/reference
+        sf::Text indexText;
+        indexText.setFont(globalFont);
+        indexText.setCharacterSize(10);
+        indexText.setFillColor(sf::Color(128, 128, 128)); // Gray
+        indexText.setString(std::to_string(i));
+        indexText.setPosition(cardX + 5.0f, handY + 5.0f);
+        window.draw(indexText);
+    }
+}
+
 // Simple username login screen
 std::string runLoginScreen(sf::RenderWindow& window, GraphicsManager& graphicsManager) {
     std::string username;
@@ -524,6 +620,13 @@ int main()
                         // Reset input manager state
                         inputManager.resetInputState();
                         break;
+                    case MessageType::CardPlayRejected: // Optional
+                        uiMessage = "Card play rejected by server.";
+                        std::cout << uiMessage << std::endl;
+                        
+                        // Reset card selection state in input manager
+                        inputManager.resetCardSelection();
+                        break;
                     case MessageType::Error: // Example, server might send string
                         // std::string errorMessage;
                         // if (receivedPacket >> errorMessage) {
@@ -714,6 +817,13 @@ int main()
             renderAttackValue(window, draggedPiece, draggedPieceX, draggedPieceY, boardParams.squareSize);
         }
         // --- End Piece Rendering ---
+        
+        // --- Card Hand Rendering ---
+        if (gameHasStarted) {
+            int selectedCard = inputManager.isCardSelected() ? inputManager.getSelectedCardIndex() : -1;
+            renderPlayerHand(window, gameState, myPlayerSide, graphicsManager, selectedCard);
+        }
+        // --- End Card Hand Rendering ---
         
         // Update the window
         window.display();

@@ -295,9 +295,31 @@ sf::Packet& operator<<(sf::Packet& packet, const GameState& gs) {
     packet << gs.getSteam(PlayerSide::PLAYER_ONE);
     packet << gs.getSteam(PlayerSide::PLAYER_TWO);
     
-    // TODO: Add card system serialization
-    // For now, we'll skip serializing decks and hands
-    // This would need to be implemented for save/load functionality
+    // Serialize card system - hands only (decks are not synchronized)
+    const Hand& hand1 = gs.getHand(PlayerSide::PLAYER_ONE);
+    const Hand& hand2 = gs.getHand(PlayerSide::PLAYER_TWO);
+    
+    // Serialize Player 1 hand
+    packet << static_cast<sf::Uint32>(hand1.size());
+    for (size_t i = 0; i < hand1.size(); ++i) {
+        const Card* card = hand1.getCard(i);
+        if (card) {
+            packet << card->getId();
+        } else {
+            packet << static_cast<int>(-1); // Invalid card ID
+        }
+    }
+    
+    // Serialize Player 2 hand
+    packet << static_cast<sf::Uint32>(hand2.size());
+    for (size_t i = 0; i < hand2.size(); ++i) {
+        const Card* card = hand2.getCard(i);
+        if (card) {
+            packet << card->getId();
+        } else {
+            packet << static_cast<int>(-1); // Invalid card ID
+        }
+    }
     
     return packet;
 }
@@ -327,10 +349,41 @@ sf::Packet& operator>>(sf::Packet& packet, GameState& gs) {
     gs.setSteam(PlayerSide::PLAYER_ONE, steamPlayer1);
     gs.setSteam(PlayerSide::PLAYER_TWO, steamPlayer2);
     
-    // TODO: Add card system deserialization
-    // For now, we'll reinitialize the card system
-    // This is not ideal for save/load but works for basic functionality
-    gs.initializeCardSystem();
+    // Deserialize card system - hands only
+    Hand& hand1 = gs.getHand(PlayerSide::PLAYER_ONE);
+    Hand& hand2 = gs.getHand(PlayerSide::PLAYER_TWO);
+    
+    // Clear existing hands
+    hand1.clear();
+    hand2.clear();
+    
+    // Deserialize Player 1 hand
+    sf::Uint32 hand1Size;
+    packet >> hand1Size;
+    for (sf::Uint32 i = 0; i < hand1Size; ++i) {
+        int cardId;
+        packet >> cardId;
+        if (cardId != -1) {
+            auto card = CardFactory::createCard(cardId);
+            if (card) {
+                hand1.addCard(std::move(card));
+            }
+        }
+    }
+    
+    // Deserialize Player 2 hand
+    sf::Uint32 hand2Size;
+    packet >> hand2Size;
+    for (sf::Uint32 i = 0; i < hand2Size; ++i) {
+        int cardId;
+        packet >> cardId;
+        if (cardId != -1) {
+            auto card = CardFactory::createCard(cardId);
+            if (card) {
+                hand2.addCard(std::move(card));
+            }
+        }
+    }
     
     return packet;
 }

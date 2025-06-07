@@ -88,6 +88,32 @@ public:
      * @brief Reset the input state (deselect piece, clear selection)
      */
     void resetInputState();
+    
+    /**
+     * @brief Reset the card selection state
+     */
+    void resetCardSelection();
+    
+    /**
+     * @brief Get the currently selected card index
+     * 
+     * @return Index of the selected card, or -1 if none selected
+     */
+    int getSelectedCardIndex() const;
+    
+    /**
+     * @brief Check if a card is currently selected
+     * 
+     * @return true if a card is selected
+     */
+    bool isCardSelected() const;
+    
+    /**
+     * @brief Check if waiting for card target selection
+     * 
+     * @return true if waiting for target
+     */
+    bool isWaitingForCardTarget() const;
 
 private:
     // References to external objects
@@ -104,6 +130,11 @@ private:
     sf::Vector2f mouseOffset;
     bool pieceSelected;
     sf::Vector2f currentMousePosition; // In game coordinates
+    
+    // Card interaction state
+    int selectedCardIndex;
+    bool cardSelected;
+    bool waitingForCardTarget;
 
     // Helper methods
     /**
@@ -158,6 +189,37 @@ private:
      * @param move The move to send
      */
     void sendMoveToServer(const Move& move);
+    
+    /**
+     * @brief Check if a position is within the card hand area
+     * 
+     * @param gamePos Game position to check
+     * @return Card index if within a card, -1 otherwise
+     */
+    int getCardIndexAtPosition(const sf::Vector2f& gamePos) const;
+    
+    /**
+     * @brief Handle card selection
+     * 
+     * @param cardIndex Index of the card to select
+     */
+    void selectCard(int cardIndex);
+    
+    /**
+     * @brief Attempt to play the selected card at a target position
+     * 
+     * @param targetX Target board X coordinate
+     * @param targetY Target board Y coordinate
+     */
+    void attemptCardPlay(int targetX, int targetY);
+    
+    /**
+     * @brief Send a card play action to the server (placeholder for now)
+     * 
+     * @param cardIndex Index of the card to play
+     * @param targetPosition Target position for the card
+     */
+    void sendCardPlayToServer(int cardIndex, const Position& targetPosition);
 };
 
 } // namespace BayouBonanza 

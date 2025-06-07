@@ -1,6 +1,6 @@
 # Task ID: 9
 # Title: Implement Card Play Mechanics
-# Status: pending
+# Status: done
 # Dependencies: 6, 8
 # Priority: high
 # Description: Create the system for playing cards from hand, spending steam resources, and adding new pieces to the board.
@@ -61,3 +61,44 @@ bool CardPlaySystem::playCard(GameState& gameState, PlayerSide player, size_t ha
 3. Test piece placement from cards
 4. Validate card effect resolution
 5. Ensure proper hand/deck updates after card play
+
+# Subtasks:
+## 1. Implement TurnManager Card Play Processing [done]
+### Dependencies: None
+### Description: Replace the placeholder processPlayCardAction method in TurnManager with actual card play logic using the existing CardPlayValidator
+### Details:
+1. Update TurnManager::processPlayCardAction() to use CardPlayValidator::executeCardPlay()
+2. Add proper error handling and result conversion
+3. Integrate with turn switching logic
+4. Add validation for player turn and game state
+
+## 2. Add Card UI Rendering [done]
+### Dependencies: None
+### Description: Implement hand display in the main game loop showing the local player's cards with names, steam costs, and visual feedback
+### Details:
+1. Add card rendering function to main.cpp
+2. Display cards horizontally below the game board
+3. Show card name, steam cost, and type
+4. Add visual feedback for playable/unplayable cards based on steam
+5. Position cards appropriately using GraphicsManager scaling
+
+## 3. Extend InputManager for Card Interaction [done]
+### Dependencies: None
+### Description: Add card click detection and card play interaction to InputManager, implementing the click-card-then-click-target workflow
+### Details:
+1. Add card area click detection to InputManager
+2. Implement card selection state management
+3. Add target selection for card play
+4. Integrate with existing mouse handling system
+5. Add visual feedback for selected cards and valid targets
+
+## 4. Add Network Protocol for Card Play [done]
+### Dependencies: None
+### Description: Extend the network protocol to support card play messages for multiplayer synchronization
+### Details:
+1. Add CardPlayToServer message type to NetworkProtocol.h
+2. Implement sf::Packet operators for card play data
+3. Add server-side card play message handling
+4. Add client-side card play result handling
+5. Ensure proper game state synchronization
+

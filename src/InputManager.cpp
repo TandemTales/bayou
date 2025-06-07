@@ -22,6 +22,9 @@ InputManager::InputManager(sf::RenderWindow& window,
     , mouseOffset(0.f, 0.f)
     , pieceSelected(false)
     , currentMousePosition(0.f, 0.f)
+    , selectedCardIndex(-1)
+    , cardSelected(false)
+    , waitingForCardTarget(false)
 {
 }
 
@@ -70,6 +73,9 @@ void InputManager::resetInputState() {
     originalSquareCoords = sf::Vector2i(-1, -1);
     mouseOffset = sf::Vector2f(0.f, 0.f);
     currentMousePosition = sf::Vector2f(0.f, 0.f);
+    selectedCardIndex = -1;
+    cardSelected = false;
+    waitingForCardTarget = false;
 }
 
 sf::Vector2i InputManager::gamePosToBoard(const sf::Vector2f& gamePos) const {
@@ -94,8 +100,27 @@ void InputManager::handleMouseButtonPressed(const sf::Event& event) {
     // Convert screen coordinates to game coordinates
     sf::Vector2i screenMousePos(event.mouseButton.x, event.mouseButton.y);
     sf::Vector2f gameMousePos = graphicsManager.screenToGame(screenMousePos);
-    sf::Vector2i boardCoords = gamePosToBoard(gameMousePos);
     
+    // Check if waiting for card target
+    if (waitingForCardTarget) {
+        sf::Vector2i boardCoords = gamePosToBoard(gameMousePos);
+        if (boardCoords.x >= 0 && boardCoords.y >= 0) {
+            attemptCardPlay(boardCoords.x, boardCoords.y);
+        } else {
+            std::cout << "Invalid target: Click on the board to play the card." << std::endl;
+        }
+        return;
+    }
+    
+    // Check if clicking on a card
+    int cardIndex = getCardIndexAtPosition(gameMousePos);
+    if (cardIndex >= 0) {
+        selectCard(cardIndex);
+        return;
+    }
+    
+    // Check if clicking on the board for piece selection
+    sf::Vector2i boardCoords = gamePosToBoard(gameMousePos);
     if (boardCoords.x >= 0 && boardCoords.y >= 0) {
         const Square& square = gameState.getBoard().getSquare(boardCoords.x, boardCoords.y);
         if (!square.isEmpty() && square.getPiece()->getSide() == gameState.getActivePlayer()) {
@@ -189,6 +214,122 @@ void InputManager::sendMoveToServer(const Move& move) {
     } else {
         std::cerr << "Failed to send move to server." << std::endl;
     }
+}
+
+int InputManager::getSelectedCardIndex() const {
+    return selectedCardIndex;
+}
+
+bool InputManager::isCardSelected() const {
+    return cardSelected;
+}
+
+bool InputManager::isWaitingForCardTarget() const {
+    return waitingForCardTarget;
+}
+
+int InputManager::getCardIndexAtPosition(const sf::Vector2f& gamePos) const {
+    const Hand& hand = gameState.getHand(myPlayerSide);
+    if (hand.size() == 0) return -1;
+    
+    auto boardParams = graphicsManager.getBoardRenderParams();
+    
+    // Card dimensions and positioning (must match renderPlayerHand)
+    float cardWidth = 120.0f;
+    float cardHeight = 160.0f;
+    float cardSpacing = 10.0f;
+    float totalHandWidth = hand.size() * cardWidth + (hand.size() - 1) * cardSpacing;
+    
+    // Position cards below the board, centered
+    float handStartX = (GraphicsManager::BASE_WIDTH - totalHandWidth) / 2.0f;
+    float handY = boardParams.boardStartY + boardParams.boardSize + 20.0f;
+    
+    // Check if click is within the hand area
+    if (gamePos.y < handY || gamePos.y > handY + cardHeight) {
+        return -1; // Not in hand area
+    }
+    
+    // Check which card was clicked
+    for (size_t i = 0; i < hand.size(); ++i) {
+        float cardX = handStartX + i * (cardWidth + cardSpacing);
+        if (gamePos.x >= cardX && gamePos.x <= cardX + cardWidth) {
+            return static_cast<int>(i);
+        }
+    }
+    
+    return -1; // Not on any card
+}
+
+void InputManager::selectCard(int cardIndex) {
+    const Hand& hand = gameState.getHand(myPlayerSide);
+    if (cardIndex < 0 || static_cast<size_t>(cardIndex) >= hand.size()) {
+        return; // Invalid card index
+    }
+    
+    const Card* card = hand.getCard(cardIndex);
+    if (!card) {
+        return; // No card at index
+    }
+    
+    // Check if player can afford the card
+    if (gameState.getSteam(myPlayerSide) < card->getSteamCost()) {
+        std::cout << "Cannot select card: insufficient steam (" 
+                  << gameState.getSteam(myPlayerSide) << "/" << card->getSteamCost() << ")" << std::endl;
+        return;
+    }
+    
+    selectedCardIndex = cardIndex;
+    cardSelected = true;
+    waitingForCardTarget = true;
+    
+    // Clear any piece selection
+    selectedPiece = nullptr;
+    pieceSelected = false;
+    
+    std::cout << "Card selected: " << card->getName() << " (index " << cardIndex << ")" << std::endl;
+    std::cout << "Click on the board to play this card." << std::endl;
+}
+
+void InputManager::attemptCardPlay(int targetX, int targetY) {
+    if (!cardSelected || selectedCardIndex < 0) {
+        return; // No card selected
+    }
+    
+    Position targetPosition(targetX, targetY);
+    
+    std::cout << "Attempting to play card " << selectedCardIndex 
+              << " at position (" << targetX << ", " << targetY << ")" << std::endl;
+    
+    if (gameHasStarted && myPlayerSide == gameState.getActivePlayer()) {
+        sendCardPlayToServer(selectedCardIndex, targetPosition);
+    } else {
+        std::cout << "Not your turn or game not started. Card play not sent." << std::endl;
+    }
+    
+    // Reset card selection state
+    selectedCardIndex = -1;
+    cardSelected = false;
+    waitingForCardTarget = false;
+}
+
+void InputManager::sendCardPlayToServer(int cardIndex, const Position& targetPosition) {
+    CardPlayData cardPlayData(cardIndex, targetPosition.x, targetPosition.y);
+    sf::Packet cardPlayPacket;
+    cardPlayPacket << MessageType::CardPlayToServer << cardPlayData;
+    
+    if (socket.send(cardPlayPacket) == sf::Socket::Done) {
+        std::cout << "Card play sent to server: card " << cardIndex 
+                  << " at (" << targetPosition.x << ", " << targetPosition.y << ")" << std::endl;
+    } else {
+        std::cerr << "Failed to send card play to server." << std::endl;
+    }
+}
+
+void InputManager::resetCardSelection() {
+    selectedCardIndex = -1;
+    cardSelected = false;
+    waitingForCardTarget = false;
+    std::cout << "Card selection reset." << std::endl;
 }
 
 } // namespace BayouBonanza 
