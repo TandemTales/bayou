@@ -3,6 +3,7 @@
 #include "PlayerSide.h" // For PlayerSide serialization
 #include "CardFactory.h" // For card system initialization
 #include "CardPlayValidator.h" // For comprehensive card validation
+#include "TurnManager.h" // For ActionType enum
 #include <SFML/Network/Packet.hpp> // For sf::Packet
 
 // GameState.h should have already included these.
@@ -69,7 +70,7 @@ void GameState::initializeNewGame() {
     
     // Set initial game state
     activePlayer = PlayerSide::PLAYER_ONE;
-    phase = GamePhase::MAIN_GAME;
+    phase = GamePhase::DRAW; // Start with draw phase
     result = GameResult::IN_PROGRESS;
     turnNumber = 1;
     
@@ -82,6 +83,9 @@ void GameState::initializeNewGame() {
     
     // Initialize card system
     initializeCardSystem();
+    
+    // Auto-advance from draw phase to action phase
+    nextPhase();
     
     // TODO: Place initial pieces on the board (King for each player)
     // This will be implemented when we have the Piece class
@@ -162,6 +166,66 @@ void GameState::processTurnStart() {
     
     // Process card-related turn start events
     processCardTurnStart();
+}
+
+void GameState::nextPhase() {
+    switch (phase) {
+        case GamePhase::SETUP:
+            // After setup, start with draw phase
+            phase = GamePhase::DRAW;
+            // Auto-advance from draw phase immediately
+            nextPhase();
+            break;
+            
+        case GamePhase::DRAW:
+            // Auto-draw card and immediately advance to action phase (using PLAY as action phase)
+            processCardTurnStart(); // Draw card if needed
+            phase = GamePhase::PLAY; // PLAY phase now represents the action phase
+            break;
+            
+        case GamePhase::PLAY:
+            // Action phase completed, end turn and switch to next player
+            switchActivePlayer();
+            incrementTurnNumber();
+            phase = GamePhase::DRAW;
+            // Process turn start for the new active player and auto-advance
+            processTurnStart();
+            nextPhase(); // Auto-advance through draw phase
+            break;
+            
+        case GamePhase::MOVE:
+            // Legacy phase - treat same as PLAY completion
+            switchActivePlayer();
+            incrementTurnNumber();
+            phase = GamePhase::DRAW;
+            processTurnStart();
+            nextPhase(); // Auto-advance through draw phase
+            break;
+            
+        case GamePhase::GAME_OVER:
+            // Game is over, no phase transitions
+            break;
+    }
+}
+
+bool GameState::isActionAllowedInPhase(ActionType actionType) const {
+    switch (actionType) {
+        case ActionType::MOVE_PIECE:
+            // Piece movement is allowed in the action phase (PLAY) or legacy MOVE phase
+            return phase == GamePhase::PLAY || phase == GamePhase::MOVE;
+            
+        case ActionType::PLAY_CARD:
+            // Card play is allowed in the action phase (PLAY) or legacy MOVE phase
+            return phase == GamePhase::PLAY || phase == GamePhase::MOVE;
+            
+        case ActionType::END_TURN:
+            // Turn ending is not needed anymore since actions auto-end the turn
+            // But keep for compatibility
+            return phase == GamePhase::PLAY || phase == GamePhase::MOVE;
+            
+        default:
+            return false;
+    }
 }
 
 // Card System Integration Methods

@@ -21,6 +21,10 @@
 #include "PieceDefinitionManager.h"
 #include "TurnManager.h"
 #include "InfluenceSystem.h" // Added for InfluenceSystem
+#include "GameOverDetector.h"
+#include "CardPlayValidator.h"
+#include "PieceCard.h"
+#include "EffectCard.h"
 // #include "King.h" // Removed - using data-driven approach with PieceFactory
 
 
@@ -47,6 +51,23 @@ sf::Text remotePlayerRatingText;
 
 // UI Element for Local Player Steam
 sf::Text localPlayerSteamText;
+
+// UI Element for Phase Information
+sf::Text phaseText;
+
+// Global variables for game state
+GameState gameState;
+GameInitializer gameInitializer;
+GameOverDetector gameOverDetector;
+std::string winMessage = "";
+bool showWinMessage = false;
+
+// Win condition notification callback
+void onWinCondition(PlayerSide winner, const std::string& description) {
+    winMessage = description;
+    showWinMessage = true;
+    std::cout << "WIN CONDITION: " << description << std::endl;
+}
 
 // Function to recreate pieces after deserialization without resetting game state
 void recreatePiecesAfterDeserialization(GameState& gameState) {
@@ -525,8 +546,16 @@ int main()
     localPlayerSteamText.setCharacterSize(16);
     localPlayerSteamText.setFillColor(sf::Color::White);
 
+    phaseText.setFont(globalFont);
+    phaseText.setCharacterSize(20);
+    phaseText.setFillColor(sf::Color::Yellow);
+    phaseText.setPosition(10.f, 35.f); // Position below the main UI message
+
     // Initialize game state
     GameState gameState;
+    
+    // Register win condition callback
+    GameOverDetector::registerWinConditionCallback(onWinCondition);
 
     // Initialize input manager with graphics manager
     InputManager inputManager(window, socket, gameState, gameHasStarted, myPlayerSide, graphicsManager);
@@ -563,7 +592,7 @@ int main()
                         } else { std::cerr << "Error deserializing PlayerAssignment data." << std::endl; }
                         break;
                     case MessageType::WaitingForOpponent:
-                        uiMessage = "Waiting for opponent to connect...";
+                        uiMessage = "Waiting for opponent...";
                         std::cout << uiMessage << std::endl;
                         break;
                     case MessageType::GameStart:
@@ -591,7 +620,8 @@ int main()
                                 std::cout << uiMessage << " P1: " << p1_username << " (" << p1_rating << "), P2: " << p2_username << " (" << p2_rating << ")" << std::endl;
 
                                 // Set positions for username/rating texts (using base resolution coordinates)
-                                localPlayerUsernameText.setPosition(10.f, uiMessageText.getPosition().y + 30.f);
+                                // Account for phase text by adding extra spacing
+                                localPlayerUsernameText.setPosition(10.f, uiMessageText.getPosition().y + 55.f);
                                 localPlayerRatingText.setPosition(10.f, localPlayerUsernameText.getPosition().y + 20.f);
                                 localPlayerSteamText.setPosition(10.f, localPlayerRatingText.getPosition().y + 20.f);
                                 
@@ -601,7 +631,7 @@ int main()
                                 
                                 // Position remote player text on the right side
                                 float remoteTextWidthEstimate = 200.f; 
-                                remotePlayerUsernameText.setPosition(GraphicsManager::BASE_WIDTH - remoteTextWidthEstimate - 10.f, uiMessageText.getPosition().y + 30.f);
+                                remotePlayerUsernameText.setPosition(GraphicsManager::BASE_WIDTH - remoteTextWidthEstimate - 10.f, uiMessageText.getPosition().y + 55.f);
                                 remotePlayerRatingText.setPosition(GraphicsManager::BASE_WIDTH - remoteTextWidthEstimate - 10.f, remotePlayerUsernameText.getPosition().y + 20.f);
 
                             } else {
@@ -669,11 +699,32 @@ int main()
         
         // Update UI message
         if (gameHasStarted) {
+            std::string phaseStr;
+            switch (gameState.getGamePhase()) {
+                case GamePhase::SETUP: phaseStr = "Setup"; break;
+                case GamePhase::DRAW: phaseStr = "Drawing"; break;
+                case GamePhase::PLAY: phaseStr = "Action"; break;
+                case GamePhase::MOVE: phaseStr = "Action"; break; // Legacy support
+                case GamePhase::GAME_OVER: phaseStr = "Game Over"; break;
+                default: phaseStr = "Unknown"; break;
+            }
+            
+            // Update turn message (without phase)
             uiMessage = (myPlayerSide == gameState.getActivePlayer() ? "Your turn (Player " : "Opponent's turn (Player ");
-            uiMessage += (gameState.getActivePlayer() == PlayerSide::PLAYER_ONE ? "One)" : "Two)");
+            uiMessage += (gameState.getActivePlayer() == PlayerSide::PLAYER_ONE ? "One" : "Two");
+            uiMessage += ")";
+            
+            // Update phase message separately (no instructions needed since actions auto-end turns)
+            std::string phaseMessage = phaseStr + " Phase";
+            phaseText.setString(phaseMessage);
         }
         uiMessageText.setString(uiMessage);
         window.draw(uiMessageText);
+        
+        // Draw phase text if game has started
+        if (gameHasStarted) {
+            window.draw(phaseText);
+        }
 
         // Draw username/rating info if game has started
         if (gameHasStarted) {
@@ -833,6 +884,45 @@ int main()
             renderPlayerHand(window, gameState, myPlayerSide, graphicsManager, selectedCard);
         }
         // --- End Card Hand Rendering ---
+        
+        // --- Win Message Display ---
+        if (showWinMessage && !winMessage.empty()) {
+            // Create a semi-transparent overlay
+            sf::RectangleShape overlay(sf::Vector2f(GraphicsManager::BASE_WIDTH, GraphicsManager::BASE_HEIGHT));
+            overlay.setFillColor(sf::Color(0, 0, 0, 150));
+            window.draw(overlay);
+            
+            // Create win message text
+            sf::Text winText;
+            winText.setFont(globalFont);
+            winText.setString(winMessage);
+            winText.setCharacterSize(48);
+            winText.setFillColor(sf::Color::Yellow);
+            winText.setStyle(sf::Text::Bold);
+            
+            // Center the text
+            sf::FloatRect textBounds = winText.getLocalBounds();
+            winText.setOrigin(textBounds.left + textBounds.width / 2.0f,
+                             textBounds.top + textBounds.height / 2.0f);
+            winText.setPosition(GraphicsManager::BASE_WIDTH / 2.0f, GraphicsManager::BASE_HEIGHT / 2.0f);
+            
+            window.draw(winText);
+            
+            // Add instruction text
+            sf::Text instructionText;
+            instructionText.setFont(globalFont);
+            instructionText.setString("Press any key to continue...");
+            instructionText.setCharacterSize(24);
+            instructionText.setFillColor(sf::Color::White);
+            
+            sf::FloatRect instrBounds = instructionText.getLocalBounds();
+            instructionText.setOrigin(instrBounds.left + instrBounds.width / 2.0f,
+                                     instrBounds.top + instrBounds.height / 2.0f);
+            instructionText.setPosition(GraphicsManager::BASE_WIDTH / 2.0f, GraphicsManager::BASE_HEIGHT / 2.0f + 80.0f);
+            
+            window.draw(instructionText);
+        }
+        // --- End Win Message Display ---
         
         // Update the window
         window.display();

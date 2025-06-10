@@ -27,8 +27,11 @@ void GameRules::initializeGame(GameState& gameState) {
     
     // Set starting player
     gameState.setActivePlayer(PlayerSide::PLAYER_ONE);
-    gameState.setGamePhase(GamePhase::MAIN_GAME);
+    gameState.setGamePhase(GamePhase::DRAW); // Start with draw phase
     gameState.setGameResult(GameResult::IN_PROGRESS);
+    
+    // Auto-advance from draw phase to action phase
+    gameState.nextPhase();
     
     // Recalculate board control after placing pieces
     moveExecutor.recalculateBoardControl(gameState);

@@ -10,6 +10,7 @@ enum class MessageType : sf::Uint8 {
     GameStart,              // Server to Client: Indicates the game is starting and sends initial GameState
     MoveToServer,           // Client to Server: Player sends a move
     CardPlayToServer,       // Client to Server: Player plays a card
+    EndTurn,                // Client to Server: Player ends their turn/advances phase
     MoveRejected,           // Server to Client: Move was invalid (optional, or just send new state)
     CardPlayRejected,       // Server to Client: Card play was invalid (optional)
     GameStateUpdate,        // Server to Client: Sends the full updated GameState

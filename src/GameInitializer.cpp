@@ -99,8 +99,8 @@ void GameInitializer::resetGameState(GameState& gameState) {
         gameState.switchActivePlayer();
     }
     
-    // Set game phase to main game
-    gameState.setGamePhase(GamePhase::MAIN_GAME);
+    // Set game phase to draw phase
+    gameState.setGamePhase(GamePhase::DRAW);
     
     // Set game result to in progress
     gameState.setGameResult(GameResult::IN_PROGRESS);
@@ -111,6 +111,9 @@ void GameInitializer::resetGameState(GameState& gameState) {
     // Reset steam for both players
     gameState.setSteam(PlayerSide::PLAYER_ONE, 0);
     gameState.setSteam(PlayerSide::PLAYER_TWO, 0);
+    
+    // Auto-advance from draw phase to action phase
+    gameState.nextPhase();
 }
 
 void GameInitializer::calculateInitialControl(GameState& gameState) {

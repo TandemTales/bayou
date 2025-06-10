@@ -42,6 +42,10 @@ bool InputManager::handleEvent(const sf::Event& event) {
             handleMouseButtonReleased(event);
             return true;
         
+        case sf::Event::KeyPressed:
+            handleKeyPressed(event);
+            return true;
+        
         default:
             return false; // Event not handled
     }
@@ -331,5 +335,13 @@ void InputManager::resetCardSelection() {
     waitingForCardTarget = false;
     std::cout << "Card selection reset." << std::endl;
 }
+
+void InputManager::handleKeyPressed(const sf::Event& event) {
+    // Space key no longer needed - actions auto-end turns
+    // Keep method for future key handling if needed
+    (void)event; // Suppress unused parameter warning
+}
+
+// sendPhaseAdvanceToServer method removed - no longer needed since actions auto-end turns
 
 } // namespace BayouBonanza 

@@ -637,8 +637,36 @@
         6,
         9
       ],
-      "status": "pending",
-      "subtasks": []
+      "status": "done",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Verify Game State Integration",
+          "description": "Test and verify that all game state components work together correctly",
+          "details": "1. Test GameState initialization and reset functionality\\n2. Verify turn progression and player switching\\n3. Test steam generation and resource management\\n4. Verify card system integration\\n5. Test win condition detection\\n6. Ensure proper game state serialization",
+          "status": "done",
+          "dependencies": [],
+          "parentTaskId": 10
+        },
+        {
+          "id": 2,
+          "title": "Implement Game Phase System",
+          "description": "Add proper game phase transitions (draw, play, move phases) to the turn system",
+          "details": "1. Define GamePhase enum with DRAW, PLAY, MOVE phases\\n2. Update TurnManager to handle phase transitions\\n3. Implement phase-specific action validation\\n4. Add phase progression logic within turns\\n5. Update UI to display current phase\\n6. Test phase transitions and restrictions",
+          "status": "done",
+          "dependencies": [],
+          "parentTaskId": 10
+        },
+        {
+          "id": 3,
+          "title": "Enhance Win Condition System",
+          "description": "Improve and test the win condition detection system",
+          "details": "1. Test king death detection in GameRules\\n2. Verify proper game result setting\\n3. Add additional win conditions if needed\\n4. Test game over state transitions\\n5. Ensure proper cleanup when game ends\\n6. Add win condition notifications",
+          "status": "done",
+          "dependencies": [],
+          "parentTaskId": 10
+        }
+      ]
     },
     {
       "id": 11,

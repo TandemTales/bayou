@@ -377,6 +377,40 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                     std::cerr << "Error deserializing card play data from " 
                               << client->socket.getRemoteAddress() << std::endl;
                 }
+            } else if (messageType == MessageType::EndTurn) {
+                std::cout << "End turn received from " << client->socket.getRemoteAddress() << std::endl;
+                
+                // Verify it's the client's turn
+                if (client->playerSide != globalGameState.getActivePlayer()) {
+                    std::cout << "EndTurn rejected: Not your turn" << std::endl;
+                    continue;
+                }
+                
+                // Process the phase advance using TurnManager
+                if (turnManager) {
+                    bool phaseAdvanced = false;
+                    std::string resultMessage;
+                    
+                    turnManager->nextPhase([&](const ActionResult& result) {
+                        phaseAdvanced = true;
+                        resultMessage = result.message;
+                        
+                        if (result.success) {
+                            std::cout << "Phase advanced successfully: " << result.message << std::endl;
+                            // Broadcast updated game state to all clients
+                            broadcastGameState(globalGameState);
+                        } else {
+                            std::cout << "Phase advance failed: " << result.message << std::endl;
+                        }
+                    });
+                    
+                    // If no callback was called (shouldn't happen), handle as error
+                    if (!phaseAdvanced) {
+                        std::cout << "Phase advance processing failed" << std::endl;
+                    }
+                } else {
+                    std::cout << "Game not properly initialized for phase advance" << std::endl;
+                }
             } else {
                 // Handle other message types or log unexpected ones
                 std::cout << "Received unhandled message type: " << static_cast<int>(messageType) 

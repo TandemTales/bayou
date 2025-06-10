@@ -4,6 +4,8 @@
 #include <functional>
 #include "GameState.h"
 #include "GameRules.h"
+#include "GameOverDetector.h"
+#include "Move.h"
 
 namespace BayouBonanza {
 
@@ -17,18 +19,18 @@ enum class ActionType {
 };
 
 /**
- * @brief Result of a turn action
+ * @brief Result of an action performed by the TurnManager
  */
 struct ActionResult {
     bool success;
     std::string message;
     
-    ActionResult(bool success = false, const std::string& message = "") 
-        : success(success), message(message) {}
+    ActionResult() : success(false), message("") {}
+    ActionResult(bool s, const std::string& m) : success(s), message(m) {}
 };
 
 /**
- * @brief Callback for action results
+ * @brief Callback function type for action results
  */
 using ActionCallback = std::function<void(const ActionResult&)>;
 
@@ -75,6 +77,13 @@ public:
     void endCurrentTurn(ActionCallback callback = nullptr);
     
     /**
+     * @brief Advance to the next phase
+     * 
+     * @param callback Callback to receive the result
+     */
+    void nextPhase(ActionCallback callback = nullptr);
+    
+    /**
      * @brief Check if the game is over
      * 
      * @return true if the game is over
@@ -102,9 +111,16 @@ public:
      */
     int getTurnNumber() const;
 
+    /**
+     * @brief Get detailed win condition information
+     * @return String describing the current win condition or game status
+     */
+    std::string getWinConditionDescription() const;
+
 private:
     GameState& gameState;
-    GameRules& gameRules;
+    GameRules gameRules;
+    GameOverDetector gameOverDetector;
     
     /**
      * @brief Update game state after an action

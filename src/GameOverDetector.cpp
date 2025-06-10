@@ -5,6 +5,13 @@
 
 namespace BayouBonanza {
 
+// Initialize static member
+WinConditionCallback GameOverDetector::winConditionCallback = nullptr;
+
+void GameOverDetector::registerWinConditionCallback(WinConditionCallback callback) {
+    winConditionCallback = callback;
+}
+
 bool GameOverDetector::isGameOver(const GameState& gameState) const {
     // If game result is already set, the game is over
     if (gameState.getGameResult() != GameResult::IN_PROGRESS) {
@@ -52,15 +59,87 @@ bool GameOverDetector::checkAndUpdateGameOver(GameState& gameState) {
     if (!hasKing(gameState, PlayerSide::PLAYER_ONE)) {
         gameState.setGameResult(GameResult::PLAYER_TWO_WIN);
         gameState.setGamePhase(GamePhase::GAME_OVER);
+        
+        // Fire win condition notification
+        std::string description = "Player 2 wins! Player 1's king has been captured.";
+        fireWinConditionNotification(PlayerSide::PLAYER_TWO, description);
+        
         return true;
     } else if (!hasKing(gameState, PlayerSide::PLAYER_TWO)) {
         gameState.setGameResult(GameResult::PLAYER_ONE_WIN);
         gameState.setGamePhase(GamePhase::GAME_OVER);
+        
+        // Fire win condition notification
+        std::string description = "Player 1 wins! Player 2's king has been captured.";
+        fireWinConditionNotification(PlayerSide::PLAYER_ONE, description);
+        
         return true;
     }
     
     // No game-ending conditions found
     return false;
+}
+
+std::string GameOverDetector::getWinConditionDescription(const GameState& gameState) const {
+    // Check current game result
+    GameResult result = gameState.getGameResult();
+    
+    switch (result) {
+        case GameResult::PLAYER_ONE_WIN:
+            if (!hasKing(gameState, PlayerSide::PLAYER_TWO)) {
+                return "Player 1 wins! Player 2's king has been captured.";
+            } else {
+                return "Player 1 wins!";
+            }
+            
+        case GameResult::PLAYER_TWO_WIN:
+            if (!hasKing(gameState, PlayerSide::PLAYER_ONE)) {
+                return "Player 2 wins! Player 1's king has been captured.";
+            } else {
+                return "Player 2 wins!";
+            }
+            
+        case GameResult::DRAW:
+            return "Game ended in a draw.";
+            
+        case GameResult::IN_PROGRESS:
+            // Check for potential win conditions
+            bool player1HasKing = hasKing(gameState, PlayerSide::PLAYER_ONE);
+            bool player2HasKing = hasKing(gameState, PlayerSide::PLAYER_TWO);
+            
+            if (!player1HasKing && !player2HasKing) {
+                return "Both kings are missing! This should not happen in normal gameplay.";
+            } else if (!player1HasKing) {
+                return "Player 1's king is missing! Player 2 should win.";
+            } else if (!player2HasKing) {
+                return "Player 2's king is missing! Player 1 should win.";
+            } else {
+                // Game is still in progress
+                PlayerSide activePlayer = gameState.getActivePlayer();
+                std::string playerStr = (activePlayer == PlayerSide::PLAYER_ONE) ? "Player 1" : "Player 2";
+                
+                switch (gameState.getGamePhase()) {
+                    case GamePhase::DRAW:
+                        return "Game in progress. " + playerStr + "'s turn (Draw Phase).";
+                    case GamePhase::PLAY:
+                        return "Game in progress. " + playerStr + "'s turn (Play Phase).";
+                    case GamePhase::MOVE:
+                        return "Game in progress. " + playerStr + "'s turn (Move Phase).";
+                    case GamePhase::SETUP:
+                        return "Game in setup phase.";
+                    case GamePhase::GAME_OVER:
+                        return "Game is over.";
+                    default:
+                        return "Game in progress. " + playerStr + "'s turn.";
+                }
+            }
+    }
+    
+    return "Unknown game state.";
+}
+
+bool GameOverDetector::hasVictoryPieces(const GameState& gameState, PlayerSide side) const {
+    return hasKing(gameState, side);
 }
 
 bool GameOverDetector::hasKing(const GameState& gameState, PlayerSide side) const {
@@ -85,6 +164,12 @@ bool GameOverDetector::hasKing(const GameState& gameState, PlayerSide side) cons
     
     // No king found for this player
     return false;
+}
+
+void GameOverDetector::fireWinConditionNotification(PlayerSide winner, const std::string& description) {
+    if (winConditionCallback) {
+        winConditionCallback(winner, description);
+    }
 }
 
 } // namespace BayouBonanza

@@ -12,6 +12,7 @@
 namespace BayouBonanza {
     struct ValidationResult;
     struct PlayResult;
+    enum class ActionType; // Forward declaration for ActionType from TurnManager
 }
 
 // GameBoard.h brings in Square.h which includes Piece.h and PlayerSide.h.
@@ -23,7 +24,9 @@ namespace BayouBonanza {
  */
 enum class GamePhase {
     SETUP,      // Initial setup phase
-    MAIN_GAME,  // Main gameplay phase
+    DRAW,       // Draw phase - player draws cards
+    PLAY,       // Play phase - player can play cards
+    MOVE,       // Move phase - player can move pieces
     GAME_OVER   // Game has ended
 };
 
@@ -103,6 +106,21 @@ public:
      * @param phase The new game phase
      */
     void setGamePhase(GamePhase phase);
+    
+    /**
+     * @brief Advance to the next phase in the turn sequence
+     * 
+     * Progresses from DRAW -> PLAY -> MOVE -> (next player's DRAW)
+     */
+    void nextPhase();
+    
+    /**
+     * @brief Check if a specific action is allowed in the current phase
+     * 
+     * @param actionType The type of action to check
+     * @return true if the action is allowed in the current phase
+     */
+    bool isActionAllowedInPhase(ActionType actionType) const;
     
     /**
      * @brief Get the current game result

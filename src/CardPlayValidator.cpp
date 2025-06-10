@@ -281,7 +281,7 @@ ValidationResult CardPlayValidator::validateGameState(const GameState& gameState
     
     // Check if game phase allows card play
     GamePhase phase = gameState.getGamePhase();
-    if (phase != GamePhase::MAIN_GAME) {
+    if (phase != GamePhase::PLAY) {
         return ValidationResult(false, ValidationError::GAME_STATE_INVALID,
                               "Current game phase does not allow card play");
     }

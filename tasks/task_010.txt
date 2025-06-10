@@ -1,6 +1,6 @@
 # Task ID: 10
 # Title: Implement Game State Management and Turn System
-# Status: pending
+# Status: in-progress
 # Dependencies: 4, 6, 9
 # Priority: high
 # Description: Create the system for managing game state, turn progression, and win conditions.
@@ -81,3 +81,23 @@ void GameState::checkWinConditions() {
 3. Test game initialization
 4. Validate phase transitions
 5. Ensure proper game state serialization
+
+# Subtasks:
+## 1. Verify Game State Integration [done]
+### Dependencies: None
+### Description: Test and verify that all game state components work together correctly
+### Details:
+1. Test GameState initialization and reset functionality\n2. Verify turn progression and player switching\n3. Test steam generation and resource management\n4. Verify card system integration\n5. Test win condition detection\n6. Ensure proper game state serialization
+
+## 2. Implement Game Phase System [done]
+### Dependencies: None
+### Description: Add proper game phase transitions (draw, play, move phases) to the turn system
+### Details:
+1. Define GamePhase enum with DRAW, PLAY, MOVE phases\n2. Update TurnManager to handle phase transitions\n3. Implement phase-specific action validation\n4. Add phase progression logic within turns\n5. Update UI to display current phase\n6. Test phase transitions and restrictions
+
+## 3. Enhance Win Condition System [in-progress]
+### Dependencies: None
+### Description: Improve and test the win condition detection system
+### Details:
+1. Test king death detection in GameRules\n2. Verify proper game result setting\n3. Add additional win conditions if needed\n4. Test game over state transitions\n5. Ensure proper cleanup when game ends\n6. Add win condition notifications
+

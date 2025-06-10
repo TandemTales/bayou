@@ -585,8 +585,45 @@
         6,
         8
       ],
-      "status": "in-progress",
-      "subtasks": []
+      "status": "done",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement TurnManager Card Play Processing",
+          "description": "Replace the placeholder processPlayCardAction method in TurnManager with actual card play logic using the existing CardPlayValidator",
+          "details": "1. Update TurnManager::processPlayCardAction() to use CardPlayValidator::executeCardPlay()\n2. Add proper error handling and result conversion\n3. Integrate with turn switching logic\n4. Add validation for player turn and game state",
+          "status": "done",
+          "dependencies": [],
+          "parentTaskId": 9
+        },
+        {
+          "id": 2,
+          "title": "Add Card UI Rendering",
+          "description": "Implement hand display in the main game loop showing the local player's cards with names, steam costs, and visual feedback",
+          "details": "1. Add card rendering function to main.cpp\n2. Display cards horizontally below the game board\n3. Show card name, steam cost, and type\n4. Add visual feedback for playable/unplayable cards based on steam\n5. Position cards appropriately using GraphicsManager scaling",
+          "status": "done",
+          "dependencies": [],
+          "parentTaskId": 9
+        },
+        {
+          "id": 3,
+          "title": "Extend InputManager for Card Interaction",
+          "description": "Add card click detection and card play interaction to InputManager, implementing the click-card-then-click-target workflow",
+          "details": "1. Add card area click detection to InputManager\n2. Implement card selection state management\n3. Add target selection for card play\n4. Integrate with existing mouse handling system\n5. Add visual feedback for selected cards and valid targets",
+          "status": "done",
+          "dependencies": [],
+          "parentTaskId": 9
+        },
+        {
+          "id": 4,
+          "title": "Add Network Protocol for Card Play",
+          "description": "Extend the network protocol to support card play messages for multiplayer synchronization",
+          "details": "1. Add CardPlayToServer message type to NetworkProtocol.h\n2. Implement sf::Packet operators for card play data\n3. Add server-side card play message handling\n4. Add client-side card play result handling\n5. Ensure proper game state synchronization",
+          "status": "done",
+          "dependencies": [],
+          "parentTaskId": 9
+        }
+      ]
     },
     {
       "id": 10,
@@ -600,7 +637,7 @@
         6,
         9
       ],
-      "status": "pending",
+      "status": "in-progress",
       "subtasks": []
     },
     {

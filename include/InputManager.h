@@ -167,6 +167,13 @@ private:
     void handleMouseButtonReleased(const sf::Event& event);
 
     /**
+     * @brief Handle keyboard key press events
+     * 
+     * @param event The key press event
+     */
+    void handleKeyPressed(const sf::Event& event);
+
+    /**
      * @brief Handle piece selection
      * 
      * @param boardX Board X coordinate
@@ -220,6 +227,8 @@ private:
      * @param targetPosition Target position for the card
      */
     void sendCardPlayToServer(int cardIndex, const Position& targetPosition);
+    
+    // sendPhaseAdvanceToServer method removed - no longer needed since actions auto-end turns
 };
 
 } // namespace BayouBonanza 
