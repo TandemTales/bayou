@@ -25,6 +25,7 @@ InputManager::InputManager(sf::RenderWindow& window,
     , selectedCardIndex(-1)
     , cardSelected(false)
     , waitingForCardTarget(false)
+    , cardDragging(false)
 {
 }
 
@@ -76,6 +77,7 @@ void InputManager::resetInputState() {
     selectedCardIndex = -1;
     cardSelected = false;
     waitingForCardTarget = false;
+    cardDragging = false;
 }
 
 sf::Vector2i InputManager::gamePosToBoard(const sf::Vector2f& gamePos) const {
@@ -101,21 +103,10 @@ void InputManager::handleMouseButtonPressed(const sf::Event& event) {
     sf::Vector2i screenMousePos(event.mouseButton.x, event.mouseButton.y);
     sf::Vector2f gameMousePos = graphicsManager.screenToGame(screenMousePos);
     
-    // Check if waiting for card target
-    if (waitingForCardTarget) {
-        sf::Vector2i boardCoords = gamePosToBoard(gameMousePos);
-        if (boardCoords.x >= 0 && boardCoords.y >= 0) {
-            attemptCardPlay(boardCoords.x, boardCoords.y);
-        } else {
-            std::cout << "Invalid target: Click on the board to play the card." << std::endl;
-        }
-        return;
-    }
-    
     // Check if clicking on a card
     int cardIndex = getCardIndexAtPosition(gameMousePos);
     if (cardIndex >= 0) {
-        selectCard(cardIndex);
+        startCardDrag(cardIndex, gameMousePos);
         return;
     }
     
@@ -130,7 +121,7 @@ void InputManager::handleMouseButtonPressed(const sf::Event& event) {
 }
 
 void InputManager::handleMouseMoved(const sf::Event& event) {
-    if (pieceSelected) {
+    if (pieceSelected || cardDragging) {
         // Convert current screen mouse position to game coordinates
         sf::Vector2i screenMousePos = sf::Mouse::getPosition(window);
         currentMousePosition = graphicsManager.screenToGame(screenMousePos);
@@ -138,21 +129,38 @@ void InputManager::handleMouseMoved(const sf::Event& event) {
 }
 
 void InputManager::handleMouseButtonReleased(const sf::Event& event) {
-    if (event.mouseButton.button != sf::Mouse::Left || !pieceSelected) {
+    if (event.mouseButton.button != sf::Mouse::Left) {
         return;
     }
-    
+
     // Convert screen coordinates to game coordinates
     sf::Vector2i screenMousePos(event.mouseButton.x, event.mouseButton.y);
     sf::Vector2f gameMousePos = graphicsManager.screenToGame(screenMousePos);
+
+    if (cardDragging) {
+        sf::Vector2i targetCoords = gamePosToBoard(gameMousePos);
+        if (targetCoords.x >= 0 && targetCoords.y >= 0) {
+            attemptCardPlay(targetCoords.x, targetCoords.y);
+        } else {
+            std::cout << "Invalid card target: drop on the board." << std::endl;
+            resetCardSelection();
+        }
+        cardDragging = false;
+        return;
+    }
+
+    if (!pieceSelected) {
+        return;
+    }
+
     sf::Vector2i targetCoords = gamePosToBoard(gameMousePos);
-    
+
     if (targetCoords.x >= 0 && targetCoords.y >= 0) {
         attemptMove(targetCoords.x, targetCoords.y);
     } else {
         std::cout << "Invalid move: Target square is off-board." << std::endl;
     }
-    
+
     // Deselect piece regardless of move outcome
     resetInputState();
 }
@@ -225,7 +233,7 @@ bool InputManager::isCardSelected() const {
 }
 
 bool InputManager::isWaitingForCardTarget() const {
-    return waitingForCardTarget;
+    return cardDragging;
 }
 
 int InputManager::getCardIndexAtPosition(const sf::Vector2f& gamePos) const {
@@ -260,7 +268,7 @@ int InputManager::getCardIndexAtPosition(const sf::Vector2f& gamePos) const {
     return -1; // Not on any card
 }
 
-void InputManager::selectCard(int cardIndex) {
+void InputManager::startCardDrag(int cardIndex, const sf::Vector2f& gameMousePos) {
     const Hand& hand = gameState.getHand(myPlayerSide);
     if (cardIndex < 0 || static_cast<size_t>(cardIndex) >= hand.size()) {
         return; // Invalid card index
@@ -273,21 +281,35 @@ void InputManager::selectCard(int cardIndex) {
     
     // Check if player can afford the card
     if (gameState.getSteam(myPlayerSide) < card->getSteamCost()) {
-        std::cout << "Cannot select card: insufficient steam (" 
+        std::cout << "Cannot select card: insufficient steam ("
                   << gameState.getSteam(myPlayerSide) << "/" << card->getSteamCost() << ")" << std::endl;
         return;
     }
-    
+
+    auto boardParams = graphicsManager.getBoardRenderParams();
+    float cardWidth = 120.0f;
+    float cardHeight = 120.0f;
+    float cardSpacing = 10.0f;
+    float totalHandWidth = hand.size() * cardWidth + (hand.size() - 1) * cardSpacing;
+    float handStartX = (GraphicsManager::BASE_WIDTH - totalHandWidth) / 2.0f;
+    float handY = boardParams.boardStartY + boardParams.boardSize + 10.0f;
+    float cardX = handStartX + cardIndex * (cardWidth + cardSpacing);
+    float cardY = handY;
+
     selectedCardIndex = cardIndex;
     cardSelected = true;
-    waitingForCardTarget = true;
-    
+    cardDragging = true;
+    waitingForCardTarget = false;
+
+    // For drag offset
+    mouseOffset = sf::Vector2f(gameMousePos.x - cardX, gameMousePos.y - cardY);
+    currentMousePosition = gameMousePos;
+
     // Clear any piece selection
     selectedPiece = nullptr;
     pieceSelected = false;
-    
-    std::cout << "Card selected: " << card->getName() << " (index " << cardIndex << ")" << std::endl;
-    std::cout << "Click on the board to play this card." << std::endl;
+
+    std::cout << "Card drag started: " << card->getName() << " (index " << cardIndex << ")" << std::endl;
 }
 
 void InputManager::attemptCardPlay(int targetX, int targetY) {
@@ -309,6 +331,7 @@ void InputManager::attemptCardPlay(int targetX, int targetY) {
     // Reset card selection state
     selectedCardIndex = -1;
     cardSelected = false;
+    cardDragging = false;
     waitingForCardTarget = false;
 }
 
@@ -329,6 +352,7 @@ void InputManager::resetCardSelection() {
     selectedCardIndex = -1;
     cardSelected = false;
     waitingForCardTarget = false;
+    cardDragging = false;
     std::cout << "Card selection reset." << std::endl;
 }
 

@@ -831,6 +831,46 @@ int main()
         if (gameHasStarted) {
             int selectedCard = inputManager.isCardSelected() ? inputManager.getSelectedCardIndex() : -1;
             renderPlayerHand(window, gameState, myPlayerSide, graphicsManager, selectedCard);
+
+            // Draw dragged card on top of everything
+            if (inputManager.isCardSelected() && inputManager.isWaitingForCardTarget()) {
+                const Hand& hand = gameState.getHand(myPlayerSide);
+                const Card* card = hand.getCard(inputManager.getSelectedCardIndex());
+                if (card) {
+                    sf::Vector2f mouseOffset = inputManager.getMouseOffset();
+                    sf::Vector2f currentMousePosition = inputManager.getCurrentMousePosition();
+                    float cardX = currentMousePosition.x - mouseOffset.x;
+                    float cardY = currentMousePosition.y - mouseOffset.y;
+
+                    float cardWidth = 120.f;
+                    float cardHeight = 120.f;
+
+                    sf::RectangleShape cardRect(sf::Vector2f(cardWidth, cardHeight));
+                    cardRect.setPosition(cardX, cardY);
+                    cardRect.setFillColor(sf::Color(60, 80, 60, 200));
+                    cardRect.setOutlineColor(sf::Color::Yellow);
+                    cardRect.setOutlineThickness(2.f);
+                    window.draw(cardRect);
+
+                    sf::Text nameText;
+                    nameText.setFont(globalFont);
+                    nameText.setCharacterSize(14);
+                    nameText.setFillColor(sf::Color::White);
+                    nameText.setString(card->getName());
+                    sf::FloatRect nameBounds = nameText.getLocalBounds();
+                    nameText.setPosition(cardX + (cardWidth - nameBounds.width) / 2.f, cardY + 10.f);
+                    window.draw(nameText);
+
+                    sf::Text costText;
+                    costText.setFont(globalFont);
+                    costText.setCharacterSize(16);
+                    costText.setFillColor(sf::Color::Cyan);
+                    costText.setString("Steam: " + std::to_string(card->getSteamCost()));
+                    sf::FloatRect costBounds = costText.getLocalBounds();
+                    costText.setPosition(cardX + (cardWidth - costBounds.width) / 2.f, cardY + cardHeight - 25.f);
+                    window.draw(costText);
+                }
+            }
         }
         // --- End Card Hand Rendering ---
         

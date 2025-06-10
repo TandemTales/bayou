@@ -109,9 +109,9 @@ public:
     bool isCardSelected() const;
     
     /**
-     * @brief Check if waiting for card target selection
-     * 
-     * @return true if waiting for target
+     * @brief Check if a card drag is in progress
+     *
+     * @return true if dragging a card
      */
     bool isWaitingForCardTarget() const;
 
@@ -134,7 +134,8 @@ private:
     // Card interaction state
     int selectedCardIndex;
     bool cardSelected;
-    bool waitingForCardTarget;
+    bool waitingForCardTarget; // deprecated
+    bool cardDragging;         ///< true while a card is being dragged
 
     // Helper methods
     /**
@@ -199,11 +200,12 @@ private:
     int getCardIndexAtPosition(const sf::Vector2f& gamePos) const;
     
     /**
-     * @brief Handle card selection
-     * 
-     * @param cardIndex Index of the card to select
+     * @brief Begin dragging a card from the player's hand
+     *
+     * @param cardIndex Index of the card to drag
+     * @param gameMousePos Position of the mouse in game coordinates
      */
-    void selectCard(int cardIndex);
+    void startCardDrag(int cardIndex, const sf::Vector2f& gameMousePos);
     
     /**
      * @brief Attempt to play the selected card at a target position
