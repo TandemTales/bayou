@@ -42,6 +42,9 @@ bool PieceDefinitionManager::loadDefinitions(const std::string& filePath) {
         try {
             stats.typeName = pieceJson.at("typeName").get<std::string>();
             stats.symbol = pieceJson.at("symbol").get<std::string>();
+            stats.spritePath = pieceJson.value("sprite", std::string());
+            stats.spritesheetPath = pieceJson.value("spritesheet", std::string());
+            stats.cardArtPath = pieceJson.value("cardArt", std::string());
             stats.attack = pieceJson.at("attack").get<int>();
             stats.health = pieceJson.at("health").get<int>();
 
