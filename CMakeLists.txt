@@ -119,10 +119,11 @@ if(SFML_FOUND OR DOWNLOAD_SFML)
 endif()
 
 # Source files for executables
-set(CLIENT_SOURCES 
+set(CLIENT_SOURCES
     src/main.cpp
     src/InputManager.cpp
     src/GraphicsManager.cpp
+    src/Animation.cpp
 )
 set(SERVER_SOURCES src/server_main.cpp)
 

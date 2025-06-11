@@ -2,6 +2,9 @@
   {
     "typeName": "King",
     "symbol": "K",
+    "sprite": "sprites/king.png",
+    "spritesheet": "spritesheets/king_sheet.png",
+    "cardArt": "sprites/king.png",
     "attack": 3,
     "health": 10,
     "movementRules": [
@@ -35,6 +38,9 @@
   {
     "typeName": "Queen",
     "symbol": "Q",
+    "sprite": "sprites/queen.png",
+    "spritesheet": "spritesheets/queen_sheet.png",
+    "cardArt": "sprites/queen.png",
     "attack": 9,
     "health": 9,
     "movementRules": [
@@ -67,6 +73,9 @@
   {
     "typeName": "Rook",
     "symbol": "R",
+    "sprite": "sprites/rook.png",
+    "spritesheet": "spritesheets/rook_sheet.png",
+    "cardArt": "sprites/rook.png",
     "attack": 5,
     "health": 5,
     "movementRules": [
@@ -99,6 +108,9 @@
   {
     "typeName": "Bishop",
     "symbol": "B",
+    "sprite": "sprites/bishop.png",
+    "spritesheet": "spritesheets/bishop_sheet.png",
+    "cardArt": "sprites/bishop.png",
     "attack": 3,
     "health": 3,
     "movementRules": [
@@ -129,6 +141,9 @@
   {
     "typeName": "Knight",
     "symbol": "N",
+    "sprite": "sprites/knight.png",
+    "spritesheet": "spritesheets/knight_sheet.png",
+    "cardArt": "sprites/knight.png",
     "attack": 3,
     "health": 3,
     "movementRules": [
@@ -163,6 +178,9 @@
   {
     "typeName": "Pawn",
     "symbol": "P",
+    "sprite": "sprites/pawn.png",
+    "spritesheet": "spritesheets/pawn_sheet.png",
+    "cardArt": "sprites/pawn.png",
     "attack": 1,
     "health": 1,
     "movementRules": [
@@ -194,6 +212,9 @@
   {
     "typeName": "Archer",
     "symbol": "A",
+    "sprite": "sprites/archer.png",
+    "spritesheet": "spritesheets/archer_sheet.png",
+    "cardArt": "sprites/archer.png",
     "attack": 2,
     "health": 2,
     "movementRules": [
