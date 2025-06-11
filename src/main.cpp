@@ -25,6 +25,8 @@
 #include "CardPlayValidator.h"
 #include "PieceCard.h"
 #include "EffectCard.h"
+#include "Animation.h"
+#include <map>
 // #include "King.h" // Removed - using data-driven approach with PieceFactory
 
 
@@ -68,6 +70,9 @@ GameInitializer gameInitializer;
 GameOverDetector gameOverDetector;
 std::string winMessage = "";
 bool showWinMessage = false;
+
+std::map<std::string, sf::Texture> pieceTextures;
+std::map<std::string, Animation> pieceAnimations;
 
 // Win condition notification callback
 void onWinCondition(PlayerSide winner, const std::string& description) {
@@ -582,6 +587,23 @@ int main()
     }
     globalPieceFactory = std::make_unique<PieceFactory>(globalPieceDefManager);
 
+    // Load piece textures and animations
+    for (const auto& typeName : globalPieceDefManager.getAllPieceTypeNames()) {
+        const PieceStats* stats = globalPieceDefManager.getPieceStats(typeName);
+        if (!stats) continue;
+        if (!stats->spritePath.empty()) {
+            sf::Texture tex;
+            if (tex.loadFromFile(std::string("assets/") + stats->spritePath)) {
+                pieceTextures[typeName] = tex;
+            }
+        }
+        if (!stats->spritesheetPath.empty()) {
+            Animation anim;
+            anim.load(std::string("assets/") + stats->spritesheetPath, 64, 64, 3, 0.2f);
+            pieceAnimations[typeName] = anim;
+        }
+    }
+
     // Set the global PieceFactory for Square deserialization
     Square::setGlobalPieceFactory(globalPieceFactory.get());
 
@@ -673,8 +695,11 @@ int main()
     // Initialize input manager with graphics manager
     InputManager inputManager(window, socket, gameState, gameHasStarted, myPlayerSide, graphicsManager);
 
+    sf::Clock frameClock;
+
     // Main game loop
     while (window.isOpen()) {
+        float dt = frameClock.restart().asSeconds();
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
@@ -910,26 +935,26 @@ int main()
                 const Square& square = board.getSquare(x, y);
                 if (!square.isEmpty()) {
                     Piece* piece = square.getPiece();
-                    std::string symbol = piece->getSymbol();
-
-                    sf::Text pieceText;
-                    pieceText.setFont(globalFont); // Use globalFont
-                    pieceText.setString(symbol);
-                    pieceText.setCharacterSize(static_cast<unsigned int>(boardParams.squareSize * 0.6f)); // Adjust size as needed
-
-                    if (piece->getSide() == PlayerSide::PLAYER_ONE) {
-                        pieceText.setFillColor(sf::Color::Blue);
+                    auto animIt = pieceAnimations.find(piece->getTypeName());
+                    if (animIt != pieceAnimations.end()) {
+                        animIt->second.update(dt);
+                        sf::Sprite spr = animIt->second.getSprite();
+                        spr.setPosition(boardParams.boardStartX + x * boardParams.squareSize,
+                                        boardParams.boardStartY + y * boardParams.squareSize);
+                        float scale = boardParams.squareSize / 64.f;
+                        spr.setScale(scale, scale);
+                        window.draw(spr);
                     } else {
-                        pieceText.setFillColor(sf::Color::Red);
+                        auto texIt = pieceTextures.find(piece->getTypeName());
+                        if (texIt != pieceTextures.end()) {
+                            sf::Sprite spr(texIt->second);
+                            spr.setPosition(boardParams.boardStartX + x * boardParams.squareSize,
+                                            boardParams.boardStartY + y * boardParams.squareSize);
+                            float scale = boardParams.squareSize / 64.f;
+                            spr.setScale(scale, scale);
+                            window.draw(spr);
+                        }
                     }
-
-                    sf::FloatRect textBounds = pieceText.getLocalBounds();
-                    pieceText.setOrigin(textBounds.left + textBounds.width / 2.0f,
-                                        textBounds.top + textBounds.height / 2.0f);
-                    pieceText.setPosition(boardParams.boardStartX + x * boardParams.squareSize + boardParams.squareSize / 2.0f,
-                                          boardParams.boardStartY + y * boardParams.squareSize + boardParams.squareSize / 2.0f);
-
-                    window.draw(pieceText);
 
                     // Render health bar
                     renderHealthBar(window, piece,
@@ -948,40 +973,30 @@ int main()
 
         // Draw the selected piece at the mouse cursor position if it's being dragged
         if (inputManager.isPieceSelected() && inputManager.getSelectedPiece()) {
-            sf::RectangleShape selectedPieceShape(sf::Vector2f(boardParams.squareSize, boardParams.squareSize));
-            // Adjust position using mouseOffset so the piece is grabbed correctly
             sf::Vector2f mouseOffset = inputManager.getMouseOffset();
             sf::Vector2f currentMousePosition = inputManager.getCurrentMousePosition();
             float draggedPieceX = currentMousePosition.x - mouseOffset.x;
             float draggedPieceY = currentMousePosition.y - mouseOffset.y;
-            selectedPieceShape.setPosition(draggedPieceX, draggedPieceY);
-            
-            if (inputManager.getSelectedPiece()->getSide() == PlayerSide::PLAYER_ONE) {
-                selectedPieceShape.setFillColor(sf::Color(0, 0, 255, 180)); // Blue with some transparency
-            } else {
-                selectedPieceShape.setFillColor(sf::Color(255, 0, 0, 180)); // Red with some transparency
-            }
-            window.draw(selectedPieceShape);
-            
-            // Draw the piece symbol on the dragged piece
+
             Piece* draggedPiece = inputManager.getSelectedPiece();
-            sf::Text draggedPieceText;
-            draggedPieceText.setFont(globalFont);
-            draggedPieceText.setString(draggedPiece->getSymbol());
-            draggedPieceText.setCharacterSize(static_cast<unsigned int>(boardParams.squareSize * 0.6f));
-            
-            if (draggedPiece->getSide() == PlayerSide::PLAYER_ONE) {
-                draggedPieceText.setFillColor(sf::Color::Blue);
+            auto animIt = pieceAnimations.find(draggedPiece->getTypeName());
+            if (animIt != pieceAnimations.end()) {
+                animIt->second.update(dt);
+                sf::Sprite spr = animIt->second.getSprite();
+                spr.setPosition(draggedPieceX, draggedPieceY);
+                float scale = boardParams.squareSize / 64.f;
+                spr.setScale(scale, scale);
+                window.draw(spr);
             } else {
-                draggedPieceText.setFillColor(sf::Color::Red);
+                auto texIt = pieceTextures.find(draggedPiece->getTypeName());
+                if (texIt != pieceTextures.end()) {
+                    sf::Sprite spr(texIt->second);
+                    spr.setPosition(draggedPieceX, draggedPieceY);
+                    float scale = boardParams.squareSize / 64.f;
+                    spr.setScale(scale, scale);
+                    window.draw(spr);
+                }
             }
-            
-            sf::FloatRect draggedTextBounds = draggedPieceText.getLocalBounds();
-            draggedPieceText.setOrigin(draggedTextBounds.left + draggedTextBounds.width / 2.0f,
-                                      draggedTextBounds.top + draggedTextBounds.height / 2.0f);
-            draggedPieceText.setPosition(draggedPieceX + boardParams.squareSize / 2.0f,
-                                        draggedPieceY + boardParams.squareSize / 2.0f);
-            window.draw(draggedPieceText);
             
             // Render health bar for the dragged piece
             renderHealthBar(window, draggedPiece, draggedPieceX, draggedPieceY, boardParams.squareSize);

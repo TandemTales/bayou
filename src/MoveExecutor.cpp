@@ -109,6 +109,7 @@ MoveResult MoveExecutor::executeMove(GameState& gameState, const Move& move) {
 
                 // Move the attacking piece to the target square
                 movingPiece->setPosition(to);
+                movingPiece->setHasMoved(true);
                 toSquare.setPiece(std::move(movingPiece));
 
                 return MoveResult::KING_CAPTURED;
@@ -127,6 +128,7 @@ MoveResult MoveExecutor::executeMove(GameState& gameState, const Move& move) {
     
     // Move the piece to the target square
     movingPiece->setPosition(to);
+    movingPiece->setHasMoved(true);
     toSquare.setPiece(std::move(movingPiece));
     
     // Recalculate board control after the move

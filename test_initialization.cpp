@@ -77,7 +77,7 @@ int main() {
                     std::cout << "Position (" << x << "," << y << "): ";
                     std::cout << "Symbol='" << piece->getSymbol() << "' ";
                     std::cout << "Side=" << (piece->getSide() == PlayerSide::PLAYER_ONE ? "P1" : "P2") << " ";
-                    std::cout << "Type=" << static_cast<int>(piece->getPieceType()) << std::endl;
+                    std::cout << "Type=" << piece->getTypeName() << std::endl;
                     
                     if (piece->getSide() == PlayerSide::PLAYER_ONE) {
                         player1Pieces++;
