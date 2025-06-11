@@ -32,6 +32,13 @@
 
 using namespace BayouBonanza;
 
+enum class MainMenuOption {
+    DECK_EDITOR,
+    PLAY_HUMAN,
+    PLAY_AI,
+    NONE
+};
+
 // Client-specific global variables
 PlayerSide myPlayerSide = PlayerSide::NEUTRAL; // Default, will be assigned by server
 bool gameHasStarted = false;
@@ -461,6 +468,98 @@ std::string runLoginScreen(sf::RenderWindow& window, GraphicsManager& graphicsMa
     return username;
 }
 
+void showPlaceholderScreen(sf::RenderWindow& window, GraphicsManager& graphicsManager, const std::string& message) {
+    while (window.isOpen()) {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                window.close();
+                return;
+            } else if (event.type == sf::Event::KeyPressed || event.type == sf::Event::MouseButtonPressed) {
+                return;
+            } else if (event.type == sf::Event::Resized) {
+                graphicsManager.updateView();
+            }
+        }
+
+        graphicsManager.applyView();
+        window.clear(sf::Color(10, 50, 20));
+
+        sf::Text text;
+        text.setFont(globalFont);
+        text.setString(message + "\n(Press any key)");
+        text.setCharacterSize(32);
+        text.setFillColor(sf::Color::White);
+
+        sf::FloatRect bounds = text.getLocalBounds();
+        text.setOrigin(bounds.left + bounds.width / 2.f, bounds.top + bounds.height / 2.f);
+        text.setPosition(GraphicsManager::BASE_WIDTH / 2.f, GraphicsManager::BASE_HEIGHT / 2.f);
+
+        window.draw(text);
+        window.display();
+    }
+}
+
+MainMenuOption runMainMenu(sf::RenderWindow& window, GraphicsManager& graphicsManager) {
+    int selected = 0;
+    const char* optionTexts[] = {"Deck Editor", "Play Against Human", "Play Against AI"};
+    const int optionCount = 3;
+
+    while (window.isOpen()) {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                window.close();
+                return MainMenuOption::NONE;
+            } else if (event.type == sf::Event::KeyPressed) {
+                if (event.key.code == sf::Keyboard::Up) {
+                    selected = (selected + optionCount - 1) % optionCount;
+                } else if (event.key.code == sf::Keyboard::Down) {
+                    selected = (selected + 1) % optionCount;
+                } else if (event.key.code == sf::Keyboard::Enter || event.key.code == sf::Keyboard::Return) {
+                    switch (selected) {
+                        case 0: return MainMenuOption::DECK_EDITOR;
+                        case 1: return MainMenuOption::PLAY_HUMAN;
+                        case 2: return MainMenuOption::PLAY_AI;
+                    }
+                }
+            } else if (event.type == sf::Event::Resized) {
+                graphicsManager.updateView();
+            }
+        }
+
+        graphicsManager.applyView();
+        window.clear(sf::Color(10, 50, 20));
+
+        sf::Text title;
+        title.setFont(globalFont);
+        title.setString("Main Menu");
+        title.setCharacterSize(40);
+        title.setFillColor(sf::Color::White);
+        sf::FloatRect titleBounds = title.getLocalBounds();
+        title.setOrigin(titleBounds.left + titleBounds.width / 2.f, titleBounds.top + titleBounds.height / 2.f);
+        title.setPosition(GraphicsManager::BASE_WIDTH / 2.f, GraphicsManager::BASE_HEIGHT / 2.f - 120.f);
+        window.draw(title);
+
+        for (int i = 0; i < optionCount; ++i) {
+            sf::Text option;
+            option.setFont(globalFont);
+            option.setString(optionTexts[i]);
+            option.setCharacterSize(28);
+            option.setFillColor(i == selected ? sf::Color::Yellow : sf::Color::White);
+
+            sf::FloatRect b = option.getLocalBounds();
+            option.setOrigin(b.left + b.width / 2.f, b.top + b.height / 2.f);
+            option.setPosition(GraphicsManager::BASE_WIDTH / 2.f, GraphicsManager::BASE_HEIGHT / 2.f - 20.f + i * 50.f);
+            window.draw(option);
+        }
+
+        window.display();
+    }
+
+    return MainMenuOption::NONE;
+}
+
 int main()
 {
     // Create the main window with a default size - GraphicsManager will handle scaling
@@ -490,6 +589,20 @@ int main()
     std::string username = runLoginScreen(window, graphicsManager);
     if (username.empty()) {
         return 0; // Window closed before entering username
+    }
+
+    // Show main menu
+    MainMenuOption menuChoice = MainMenuOption::NONE;
+    do {
+        menuChoice = runMainMenu(window, graphicsManager);
+        if (menuChoice == MainMenuOption::DECK_EDITOR) {
+            showPlaceholderScreen(window, graphicsManager, "Deck Editor Coming Soon");
+        } else if (menuChoice == MainMenuOption::PLAY_AI) {
+            showPlaceholderScreen(window, graphicsManager, "Play vs AI Coming Soon");
+        }
+    } while (window.isOpen() && menuChoice != MainMenuOption::PLAY_HUMAN);
+    if (!window.isOpen()) {
+        return 0;
     }
 
     // Network Socket
