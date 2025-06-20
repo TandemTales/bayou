@@ -1,11 +1,6 @@
 // #include "King.h" // Removed - using data-driven approach
 #include "GameRules.h"
 #include "GameBoard.h"
-// #include "Queen.h" // Removed - using data-driven approach
-// #include "Rook.h" // Removed - using data-driven approach  
-// #include "Bishop.h" // Removed - using data-driven approach
-// #include "Knight.h" // Removed - using data-driven approach
-// #include "Pawn.h" // Removed - using data-driven approach
 #include "Square.h"
 #include "PieceFactory.h"
 #include "PieceDefinitionManager.h"

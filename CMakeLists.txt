@@ -78,12 +78,6 @@ set(GAMELOGIC_SOURCES
     src/GameBoard.cpp
     src/Square.cpp
     src/Piece.cpp
-    # src/King.cpp # Removed
-    # src/Queen.cpp # Removed
-    # src/Rook.cpp # Removed
-    # src/Bishop.cpp # Removed
-    # src/Knight.cpp # Removed
-    # src/Pawn.cpp # Removed
     src/PieceFactory.cpp
     src/GameState.cpp
     src/Move.cpp
@@ -123,7 +117,6 @@ set(CLIENT_SOURCES
     src/main.cpp
     src/InputManager.cpp
     src/GraphicsManager.cpp
-    src/Animation.cpp
 )
 set(SERVER_SOURCES src/server_main.cpp)
 

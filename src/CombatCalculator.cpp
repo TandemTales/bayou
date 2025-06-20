@@ -1,6 +1,6 @@
 #include "CombatCalculator.h"
 // #include "../include/Queen.h" // Removed - using data-driven approach
-// #include "../include/Rook.h" // Removed - using data-driven approach
+// #include "../include/Sweetykins.h" // Removed - using data-driven approach
 // #include "../include/Bishop.h" // Removed - using data-driven approach
 // #include "../include/Knight.h" // Removed - using data-driven approach
 // #include "../include/Pawn.h" // Removed - using data-driven approach

@@ -1,10 +1,9 @@
 [
   {
-    "typeName": "King",
-    "symbol": "K",
-    "sprite": "sprites/king.png",
-    "spritesheet": "spritesheets/king_sheet.png",
-    "cardArt": "sprites/king.png",
+    "typeName": "TinkeringTom",
+    "symbol": "T",
+    "sprite": "sprites/tinkeringTom.png",
+    "cardArt": "sprites/tinkeringTom.png",
     "attack": 3,
     "health": 10,
     "movementRules": [
@@ -36,11 +35,10 @@
     "victoryPiece": true
   },
   {
-    "typeName": "Queen",
-    "symbol": "Q",
-    "sprite": "sprites/queen.png",
-    "spritesheet": "spritesheets/queen_sheet.png",
-    "cardArt": "sprites/queen.png",
+    "typeName": "ScarlettGlumpkin",
+    "symbol": "G",
+    "sprite": "sprites/scarlettGlumpkin.png",
+    "cardArt": "sprites/scarlettGlumpkin.png",
     "attack": 9,
     "health": 9,
     "movementRules": [
@@ -71,11 +69,10 @@
     ]
     },
   {
-    "typeName": "Rook",
-    "symbol": "R",
-    "sprite": "sprites/rook.png",
-    "spritesheet": "spritesheets/rook_sheet.png",
-    "cardArt": "sprites/rook.png",
+    "typeName": "Sweetykins",
+    "symbol": "S",
+    "sprite": "sprites/sweetykins.png",
+    "cardArt": "sprites/sweetykins.png",
     "attack": 5,
     "health": 5,
     "movementRules": [
@@ -106,11 +103,10 @@
     ]
     },
   {
-    "typeName": "Bishop",
-    "symbol": "B",
-    "sprite": "sprites/bishop.png",
-    "spritesheet": "spritesheets/bishop_sheet.png",
-    "cardArt": "sprites/bishop.png",
+    "typeName": "Sidewinder",
+    "symbol": "W",
+    "sprite": "sprites/sidewinder.png",
+    "cardArt": "sprites/sidewinder.png",
     "attack": 3,
     "health": 3,
     "movementRules": [
@@ -139,11 +135,10 @@
     ]
     },
   {
-    "typeName": "Knight",
-    "symbol": "N",
-    "sprite": "sprites/knight.png",
-    "spritesheet": "spritesheets/knight_sheet.png",
-    "cardArt": "sprites/knight.png",
+    "typeName": "Automatick",
+    "symbol": "A",
+    "sprite": "sprites/automatick.png",
+    "cardArt": "sprites/automatick.png",
     "attack": 3,
     "health": 3,
     "movementRules": [
@@ -176,11 +171,10 @@
     ]
     },
   {
-    "typeName": "Pawn",
-    "symbol": "P",
-    "sprite": "sprites/pawn.png",
-    "spritesheet": "spritesheets/pawn_sheet.png",
-    "cardArt": "sprites/pawn.png",
+    "typeName": "Sentroid",
+    "symbol": "E",
+    "sprite": "sprites/sentroid.png",
+    "cardArt": "sprites/sentroid.png",
     "attack": 1,
     "health": 1,
     "movementRules": [
@@ -210,11 +204,10 @@
     ]
     },
   {
-    "typeName": "Archer",
-    "symbol": "A",
-    "sprite": "sprites/archer.png",
-    "spritesheet": "spritesheets/archer_sheet.png",
-    "cardArt": "sprites/archer.png",
+    "typeName": "Rustbucket",
+    "symbol": "R",
+    "sprite": "sprites/rustbucket.png",
+    "cardArt": "sprites/rustbucket.png",
     "attack": 2,
     "health": 2,
     "movementRules": [

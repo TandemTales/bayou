@@ -135,8 +135,8 @@ TEST_CASE("GameRules Win Condition System", "[gamerules][winconditions]") {
         REQUIRE(loaded);
         PieceFactory factory(pdm);
         
-        // Create a powerful attacking piece (Queen with 9 attack)
-        std::unique_ptr<Piece> attackingQueen = factory.createPiece("Queen", PlayerSide::PLAYER_ONE);
+        // Create a powerful attacking piece (ScarlettGlumpkin with 9 attack)
+        std::unique_ptr<Piece> attackingQueen = factory.createPiece("ScarlettGlumpkin", PlayerSide::PLAYER_ONE);
         REQUIRE(attackingQueen != nullptr);
         
         // Place the attacking queen adjacent to the target king

@@ -37,8 +37,6 @@ struct PieceStats {
     std::string symbol;
     // Path to static sprite image (optional)
     std::string spritePath;
-    // Path to sprite sheet for animations (optional)
-    std::string spritesheetPath;
     // Card art used when rendering piece cards (optional)
     std::string cardArtPath;
     int attack;

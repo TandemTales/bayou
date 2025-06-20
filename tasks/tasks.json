@@ -198,7 +198,7 @@
           "dependencies": [
             1
           ],
-          "details": "Implement classes for Pawn, Rook, Knight, Bishop, Queen, and King. Each class should override the movement validation methods with piece-specific logic. Include special rules like castling for King, en passant for Pawn, and diagonal/straight line movement for Bishop/Rook. Ensure each piece correctly calculates its possible moves based on the current board state.",
+                      "details": "Implement classes for Pawn, Sweetykins, Knight, Bishop, Queen, and King. Each class should override the movement validation methods with piece-specific logic. Include special rules like castling for King, en passant for Pawn, and diagonal/straight line movement for Bishop/Sweetykins. Ensure each piece correctly calculates its possible moves based on the current board state.",
           "status": "done"
         },
         {
@@ -209,7 +209,7 @@
             1,
             2
           ],
-          "details": "Implement algorithms for: straight line movement (Rook, Queen), diagonal movement (Bishop, Queen), L-shaped movement (Knight), single square movement plus castling (King), and forward movement plus diagonal capture (Pawn). Include obstacle detection to prevent pieces from moving through other pieces and boundary checking to keep pieces on the board.",
+            "details": "Implement algorithms for: straight line movement (Sweetykins, Queen), diagonal movement (Bishop, Queen), L-shaped movement (Knight), single square movement plus castling (King), and forward movement plus diagonal capture (Pawn). Include obstacle detection to prevent pieces from moving through other pieces and boundary checking to keep pieces on the board.",
           "status": "done"
         },
         {

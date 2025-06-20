@@ -45,28 +45,28 @@ struct TestFixture {
 
 TEST_CASE_METHOD(TestFixture, "Piece Data-Driven Functionality", "[piece]") {
 
-    SECTION("King Functionality") {
-        auto king = factory.createPiece("King", BayouBonanza::PlayerSide::PLAYER_ONE);
+        SECTION("TinkeringTom Functionality") {
+        auto king = factory.createPiece("TinkeringTom", BayouBonanza::PlayerSide::PLAYER_ONE);
         REQUIRE(king != nullptr);
-        
-        REQUIRE(king->getTypeName() == "King");
-        REQUIRE(king->getSymbol() == "K");
+
+        REQUIRE(king->getTypeName() == "TinkeringTom");
+        REQUIRE(king->getSymbol() == "T");
         REQUIRE(king->getAttack() == 3); // Based on sample JSON
         REQUIRE(king->getHealth() == 10); // Based on sample JSON
 
-        board.getSquare(4, 7).setPiece(std::move(king)); // Place King
+        board.getSquare(4, 7).setPiece(std::move(king)); // Place TinkeringTom
         BayouBonanza::Piece* kingPtr = board.getSquare(4,7).getPiece();
         REQUIRE(kingPtr != nullptr);
         kingPtr->setPosition({3,3});
 
 
         auto validMoves = kingPtr->getValidMoves(board); 
-        // King moves one step in all 8 directions
+        // TinkeringTom moves one step in all 8 directions
         REQUIRE(validMoves.size() == 8); // Assuming edge of board limits some moves for a typical 4,7 start
                                         // For a 3,3 start, it's 8. For 4,7 on 8x8, it's 5 moves.
                                         // Let's place at 3,3 for full 8 moves.
         board.getSquare(4,7).setPiece(nullptr); // remove old king
-        auto king2 = factory.createPiece("King", BayouBonanza::PlayerSide::PLAYER_ONE);
+        auto king2 = factory.createPiece("TinkeringTom", BayouBonanza::PlayerSide::PLAYER_ONE);
         board.getSquare(3,3).setPiece(std::move(king2));
         BayouBonanza::Piece* king2Ptr = board.getSquare(3,3).getPiece();
         king2Ptr->setPosition({3,3});
@@ -84,18 +84,18 @@ TEST_CASE_METHOD(TestFixture, "Piece Data-Driven Functionality", "[piece]") {
         REQUIRE(TestFixture::containsMove(validMoves, {4,4}));
         
         auto influence = king2Ptr->getInfluenceArea(board);
-        REQUIRE(influence.size() == 8); // Same as moves for King
+        REQUIRE(influence.size() == 8); // Same as moves for TinkeringTom
     }
 
-    SECTION("Pawn Functionality - Player One") {
-        auto pawn = factory.createPiece("Pawn", BayouBonanza::PlayerSide::PLAYER_ONE);
+    SECTION("Sentroid Functionality - Player One") {
+        auto pawn = factory.createPiece("Sentroid", BayouBonanza::PlayerSide::PLAYER_ONE);
         REQUIRE(pawn != nullptr);
-        REQUIRE(pawn->getTypeName() == "Pawn");
-        REQUIRE(pawn->getSymbol() == "P");
+        REQUIRE(pawn->getTypeName() == "Sentroid");
+        REQUIRE(pawn->getSymbol() == "E");
         REQUIRE(pawn->getAttack() == 1);
         REQUIRE(pawn->getHealth() == 1);
 
-        board.getSquare(3, 6).setPiece(std::move(pawn)); // Place Pawn for Player One
+        board.getSquare(3, 6).setPiece(std::move(pawn)); // Place Sentroid for Player One
         BayouBonanza::Piece* pawnPtr = board.getSquare(3,6).getPiece();
         REQUIRE(pawnPtr != nullptr);
         pawnPtr->setPosition({3,6});
@@ -106,11 +106,11 @@ TEST_CASE_METHOD(TestFixture, "Piece Data-Driven Functionality", "[piece]") {
         REQUIRE(TestFixture::containsMove(validMoves, {3,5})); // Player ONE moves Y-
 
         // Test capture
-        auto enemyPawn = factory.createPiece("Pawn", BayouBonanza::PlayerSide::PLAYER_TWO);
+        auto enemyPawn = factory.createPiece("Sentroid", BayouBonanza::PlayerSide::PLAYER_TWO);
         board.getSquare(2,5).setPiece(std::move(enemyPawn));
         board.getSquare(2,5).getPiece()->setPosition({2,5});
 
-        auto enemyPawn2 = factory.createPiece("Pawn", BayouBonanza::PlayerSide::PLAYER_TWO);
+        auto enemyPawn2 = factory.createPiece("Sentroid", BayouBonanza::PlayerSide::PLAYER_TWO);
         board.getSquare(4,5).setPiece(std::move(enemyPawn2));
         board.getSquare(4,5).getPiece()->setPosition({4,5});
 
@@ -127,9 +127,9 @@ TEST_CASE_METHOD(TestFixture, "Piece Data-Driven Functionality", "[piece]") {
         REQUIRE(TestFixture::containsMove(influence, {4,5}));
     }
     
-    SECTION("Pawn Functionality - Player Two") {
-        auto pawn = factory.createPiece("Pawn", BayouBonanza::PlayerSide::PLAYER_TWO);
-        board.getSquare(3, 1).setPiece(std::move(pawn)); // Place Pawn for Player Two
+    SECTION("Sentroid Functionality - Player Two") {
+        auto pawn = factory.createPiece("Sentroid", BayouBonanza::PlayerSide::PLAYER_TWO);
+        board.getSquare(3, 1).setPiece(std::move(pawn)); // Place Sentroid for Player Two
         BayouBonanza::Piece* pawnPtr = board.getSquare(3,1).getPiece();
         REQUIRE(pawnPtr != nullptr);
         pawnPtr->setPosition({3,1});
@@ -139,36 +139,36 @@ TEST_CASE_METHOD(TestFixture, "Piece Data-Driven Functionality", "[piece]") {
         REQUIRE(TestFixture::containsMove(validMoves, {3,2})); // Player TWO moves Y+
     }
 
-    SECTION("Rook Functionality - Sliding Piece") {
-        auto rook = factory.createPiece("Rook", BayouBonanza::PlayerSide::PLAYER_ONE);
-        board.getSquare(0,0).setPiece(std::move(rook));
-        BayouBonanza::Piece* rookPtr = board.getSquare(0,0).getPiece();
-        rookPtr->setPosition({0,0});
+    SECTION("Sweetykins Functionality - Sliding Piece") {
+        auto sweetykins = factory.createPiece("Sweetykins", BayouBonanza::PlayerSide::PLAYER_ONE);
+        board.getSquare(0,0).setPiece(std::move(sweetykins));
+        BayouBonanza::Piece* sweetykinsPtr = board.getSquare(0,0).getPiece();
+        sweetykinsPtr->setPosition({0,0});
 
-        auto validMoves = rookPtr->getValidMoves(board);
+        auto validMoves = sweetykinsPtr->getValidMoves(board);
         REQUIRE(validMoves.size() == 14); // 7 horizontal, 7 vertical
 
         // Place a friendly piece to block
-        auto friendlyPawn = factory.createPiece("Pawn", BayouBonanza::PlayerSide::PLAYER_ONE);
+        auto friendlyPawn = factory.createPiece("Sentroid", BayouBonanza::PlayerSide::PLAYER_ONE);
         board.getSquare(0,3).setPiece(std::move(friendlyPawn));
         board.getSquare(0,3).getPiece()->setPosition({0,3});
         
-        validMoves = rookPtr->getValidMoves(board);
+        validMoves = sweetykinsPtr->getValidMoves(board);
         REQUIRE(validMoves.size() == 7 + 2); // 7 horizontal, 2 vertical (0,1), (0,2)
         
         // Place an enemy piece to capture
-        auto enemyPawn = factory.createPiece("Pawn", BayouBonanza::PlayerSide::PLAYER_TWO);
+        auto enemyPawn = factory.createPiece("Sentroid", BayouBonanza::PlayerSide::PLAYER_TWO);
         board.getSquare(3,0).setPiece(std::move(enemyPawn));
         board.getSquare(3,0).getPiece()->setPosition({3,0});
 
-        validMoves = rookPtr->getValidMoves(board);
+        validMoves = sweetykinsPtr->getValidMoves(board);
          // 2 vertical, 2 horizontal before enemy, 1 for enemy capture square
         REQUIRE(validMoves.size() == 2 + 3);
         REQUIRE(TestFixture::containsMove(validMoves, {3,0})); // Can move to capture
     }
     
-    SECTION("Knight Functionality - Jumping Piece") {
-        auto knight = factory.createPiece("Knight", BayouBonanza::PlayerSide::PLAYER_ONE);
+    SECTION("Automatick Functionality - Jumping Piece") {
+        auto knight = factory.createPiece("Automatick", BayouBonanza::PlayerSide::PLAYER_ONE);
         board.getSquare(1,0).setPiece(std::move(knight));
         BayouBonanza::Piece* knightPtr = board.getSquare(1,0).getPiece();
         knightPtr->setPosition({1,0});
@@ -177,11 +177,11 @@ TEST_CASE_METHOD(TestFixture, "Piece Data-Driven Functionality", "[piece]") {
         REQUIRE(validMoves.size() == 3); // From (1,0) on 8x8 board: (0,2), (2,2), (3,1)
 
         // Place pieces around it, should not affect moves
-        auto friendlyPawn = factory.createPiece("Pawn", BayouBonanza::PlayerSide::PLAYER_ONE);
+        auto friendlyPawn = factory.createPiece("Sentroid", BayouBonanza::PlayerSide::PLAYER_ONE);
         board.getSquare(1,1).setPiece(std::move(friendlyPawn));
         board.getSquare(1,1).getPiece()->setPosition({1,1});
         
-        auto enemyPawn = factory.createPiece("Pawn", BayouBonanza::PlayerSide::PLAYER_TWO);
+        auto enemyPawn = factory.createPiece("Sentroid", BayouBonanza::PlayerSide::PLAYER_TWO);
         board.getSquare(0,1).setPiece(std::move(enemyPawn));
         board.getSquare(0,1).getPiece()->setPosition({0,1});
 
@@ -189,16 +189,16 @@ TEST_CASE_METHOD(TestFixture, "Piece Data-Driven Functionality", "[piece]") {
         REQUIRE(validMoves.size() == 3);
     }
 
-    SECTION("Archer Ranged Attack") {
+    SECTION("Rustbucket Ranged Attack") {
         GameState gameState;
         MoveExecutor executor;
 
-        auto archer = factory.createPiece("Archer", BayouBonanza::PlayerSide::PLAYER_ONE);
+        auto archer = factory.createPiece("Rustbucket", BayouBonanza::PlayerSide::PLAYER_ONE);
         gameState.getBoard().getSquare(3,3).setPiece(std::move(archer));
         BayouBonanza::Piece* archerPtr = gameState.getBoard().getSquare(3,3).getPiece();
         archerPtr->setPosition({3,3});
 
-        auto enemyPawn = factory.createPiece("Pawn", BayouBonanza::PlayerSide::PLAYER_TWO);
+        auto enemyPawn = factory.createPiece("Sentroid", BayouBonanza::PlayerSide::PLAYER_TWO);
         gameState.getBoard().getSquare(3,5).setPiece(std::move(enemyPawn));
         gameState.getBoard().getSquare(3,5).getPiece()->setPosition({3,5});
 

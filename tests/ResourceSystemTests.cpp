@@ -233,8 +233,8 @@ TEST_CASE_METHOD(ResourceSystemTestFixture, "ResourceSystem steam generation cal
     
     SECTION("calculateSteamGeneration with pieces and influence system") {
         // Place pieces and let InfluenceSystem calculate control
-        placePiece("Pawn", PlayerSide::PLAYER_ONE, 2, 2);
-        placePiece("Pawn", PlayerSide::PLAYER_TWO, 5, 5);
+        placePiece("Sentroid", PlayerSide::PLAYER_ONE, 2, 2);
+        placePiece("Sentroid", PlayerSide::PLAYER_TWO, 5, 5);
         
         InfluenceSystem::calculateBoardInfluence(board);
         

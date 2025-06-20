@@ -33,8 +33,8 @@ TEST_CASE("TurnManager functionality", "[turnmanager]") {
         REQUIRE(gameState.getActivePlayer() == PlayerSide::PLAYER_ONE);
         REQUIRE(gameState.getTurnNumber() == 1);
         
-        // Use a pawn move instead of king move since king can't move to occupied square
-        Position startPos(0, 6); // Player One Pawn position
+        // Use a sentroid move instead of TinkeringTom move since TinkeringTom can't move to occupied square
+        Position startPos(0, 6); // Player One Sentroid position
         Position endPos(0, 5);   // Move forward one square
 
         Piece* pawnToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
@@ -62,7 +62,7 @@ TEST_CASE("TurnManager functionality", "[turnmanager]") {
         int initialTurnNumber = gameState.getTurnNumber();
         REQUIRE(initialPlayer == PlayerSide::PLAYER_ONE);
         
-        Position startPos(4, 0); // Player Two King position
+        Position startPos(4, 0); // Player Two TinkeringTom position
         Position endPos(4, 2);   // Move to empty square (not occupied by pawn)
 
         Piece* opponentKing = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
@@ -88,7 +88,7 @@ TEST_CASE("TurnManager functionality", "[turnmanager]") {
         int initialTurnNumber = gameState.getTurnNumber();
         REQUIRE(initialPlayer == PlayerSide::PLAYER_ONE);
         
-        Position startPos(4, 7);     // Player One King position
+        Position startPos(4, 7);     // Player One TinkeringTom position
         Position invalidEndPos(4, 4); // Invalid move - too far
 
         Piece* kingToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
@@ -107,14 +107,14 @@ TEST_CASE("TurnManager functionality", "[turnmanager]") {
         REQUIRE(gameState.getTurnNumber() == initialTurnNumber); 
     }
 
-    SECTION("Valid move: P1 Pawn forward one step") {
+    SECTION("Valid move: P1 Sentroid forward one step") {
         setupInitialState(gameState, initializer);
         TurnManager turnManager(gameState, gameRules);
 
         REQUIRE(gameState.getActivePlayer() == PlayerSide::PLAYER_ONE);
         REQUIRE(gameState.getTurnNumber() == 1);
 
-        Position startPos(0, 6); // Player One Pawn position
+        Position startPos(0, 6); // Player One Sentroid position
         Position endPos(0, 5);   // Move forward one square
         
         Piece* pawnToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
@@ -134,7 +134,7 @@ TEST_CASE("TurnManager functionality", "[turnmanager]") {
         REQUIRE(gameState.getTurnNumber() == 2);
     }
     
-    SECTION("Invalid move: P1 Pawn attempting to move backwards") {
+    SECTION("Invalid move: P1 Sentroid attempting to move backwards") {
         setupInitialState(gameState, initializer);
         TurnManager turnManager(gameState, gameRules);
 
@@ -142,7 +142,7 @@ TEST_CASE("TurnManager functionality", "[turnmanager]") {
         int initialTurnNumber = gameState.getTurnNumber();
         REQUIRE(initialPlayer == PlayerSide::PLAYER_ONE);
 
-        Position startPos(0, 6);     // Player One Pawn position
+        Position startPos(0, 6);     // Player One Sentroid position
         Position invalidEndPos(0, 7); // Invalid move - backwards
 
         Piece* pawnToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();

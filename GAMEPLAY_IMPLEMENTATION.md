@@ -23,7 +23,7 @@ The complete gameplay loop has been successfully implemented, providing a fully 
 ### 2. Enhanced Game Setup
 
 **Complete Piece Set:**
-- Kings, Queens, Rooks, Bishops, Knights, Pawns
+- Kings, Queens, Sweetykins, Bishops, Knights, Pawns
 - Standard chess-like starting formation
 - Proper piece positioning for both players
 

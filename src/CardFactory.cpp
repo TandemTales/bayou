@@ -124,20 +124,20 @@ std::vector<std::unique_ptr<Card>> CardFactory::createStarterDeck() {
     std::vector<std::unique_ptr<Card>> deck;
     
     // Create a balanced starter deck with 20 cards using predefined card definitions
-    // 8 Pawn cards (use predefined card ID 1)
-    for (int i = 0; i < 8; i++) {
-        deck.push_back(createCard(1)); // Summon Pawn
+            // 8 Sentroid cards (use predefined card ID 1)
+        for (int i = 0; i < 8; i++) {
+            deck.push_back(createCard(1)); // Summon Sentroid
+        }
+    
+            // 4 Sweetykins cards (use predefined card ID 2)
+        for (int i = 0; i < 4; i++) {
+            deck.push_back(createCard(2)); // Summon Sweetykins
     }
     
-    // 4 Rook cards (use predefined card ID 2)
-    for (int i = 0; i < 4; i++) {
-        deck.push_back(createCard(2)); // Summon Rook
-    }
-    
-    // 4 Knight cards (use predefined card ID 3)
-    for (int i = 0; i < 4; i++) {
-        deck.push_back(createCard(3)); // Summon Knight
-    }
+            // 4 Automatick cards (use predefined card ID 3)
+        for (int i = 0; i < 4; i++) {
+            deck.push_back(createCard(3)); // Summon Automatick
+        }
     
     // 2 Bishop cards (use predefined card ID 4)
     for (int i = 0; i < 2; i++) {
@@ -275,29 +275,29 @@ void CardFactory::createDefaultDefinitions() {
     cardDefinitions.clear();
     
     // Create default piece cards
-    CardDefinition pawnCard(1, "Summon Pawn", "Summon a Pawn piece to the battlefield",
+    CardDefinition pawnCard(1, "Summon Sentroid", "Summon a Sentroid piece to the battlefield",
                            2, CardType::PIECE_CARD, CardRarity::COMMON);
-    pawnCard.pieceType = "Pawn";
+    pawnCard.pieceType = "Sentroid";
     cardDefinitions[1] = pawnCard;
     
-    CardDefinition rookCard(2, "Summon Rook", "Summon a Rook piece to the battlefield",
+    CardDefinition sweetykinsCard(2, "Summon Sweetykins", "Summon a Sweetykins piece to the battlefield",
                            5, CardType::PIECE_CARD, CardRarity::UNCOMMON);
-    rookCard.pieceType = "Rook";
-    cardDefinitions[2] = rookCard;
+    sweetykinsCard.pieceType = "Sweetykins";
+    cardDefinitions[2] = sweetykinsCard;
     
-    CardDefinition knightCard(3, "Summon Knight", "Summon a Knight piece to the battlefield",
+    CardDefinition knightCard(3, "Summon Automatick", "Summon an Automatick piece to the battlefield",
                              4, CardType::PIECE_CARD, CardRarity::UNCOMMON);
-    knightCard.pieceType = "Knight";
+    knightCard.pieceType = "Automatick";
     cardDefinitions[3] = knightCard;
     
-    CardDefinition bishopCard(4, "Summon Bishop", "Summon a Bishop piece to the battlefield",
+    CardDefinition bishopCard(4, "Summon Sidewinder", "Summon a Sidewinder piece to the battlefield",
                              4, CardType::PIECE_CARD, CardRarity::UNCOMMON);
-    bishopCard.pieceType = "Bishop";
+    bishopCard.pieceType = "Sidewinder";
     cardDefinitions[4] = bishopCard;
     
-    CardDefinition queenCard(5, "Summon Queen", "Summon a Queen piece to the battlefield",
+    CardDefinition queenCard(5, "Summon ScarlettGlumpkin", "Summon a ScarlettGlumpkin piece to the battlefield",
                             8, CardType::PIECE_CARD, CardRarity::RARE);
-    queenCard.pieceType = "Queen";
+    queenCard.pieceType = "ScarlettGlumpkin";
     cardDefinitions[5] = queenCard;
     
     // Create default effect cards

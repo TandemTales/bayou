@@ -25,7 +25,6 @@
 #include "CardPlayValidator.h"
 #include "PieceCard.h"
 #include "EffectCard.h"
-#include "Animation.h"
 #include <map>
 // #include "King.h" // Removed - using data-driven approach with PieceFactory
 
@@ -72,7 +71,6 @@ std::string winMessage = "";
 bool showWinMessage = false;
 
 std::map<std::string, sf::Texture> pieceTextures;
-std::map<std::string, Animation> pieceAnimations;
 
 // Win condition notification callback
 void onWinCondition(PlayerSide winner, const std::string& description) {
@@ -96,34 +94,34 @@ void recreatePiecesAfterDeserialization(GameState& gameState) {
     if (globalPieceFactory) {
         // Player 1 pieces (bottom of board)
         // Back row
-        board.getSquare(0, 7).setPiece(globalPieceFactory->createPiece("Rook", PlayerSide::PLAYER_ONE));
-        board.getSquare(1, 7).setPiece(globalPieceFactory->createPiece("Knight", PlayerSide::PLAYER_ONE));
-        board.getSquare(2, 7).setPiece(globalPieceFactory->createPiece("Bishop", PlayerSide::PLAYER_ONE));
-        board.getSquare(3, 7).setPiece(globalPieceFactory->createPiece("Queen", PlayerSide::PLAYER_ONE));
-        board.getSquare(4, 7).setPiece(globalPieceFactory->createPiece("King", PlayerSide::PLAYER_ONE));
-        board.getSquare(5, 7).setPiece(globalPieceFactory->createPiece("Archer", PlayerSide::PLAYER_ONE));
-        board.getSquare(6, 7).setPiece(globalPieceFactory->createPiece("Knight", PlayerSide::PLAYER_ONE));
-        board.getSquare(7, 7).setPiece(globalPieceFactory->createPiece("Rook", PlayerSide::PLAYER_ONE));
+        board.getSquare(0, 7).setPiece(globalPieceFactory->createPiece("Sweetykins", PlayerSide::PLAYER_ONE));
+        board.getSquare(1, 7).setPiece(globalPieceFactory->createPiece("Automatick", PlayerSide::PLAYER_ONE));
+        board.getSquare(2, 7).setPiece(globalPieceFactory->createPiece("Sidewinder", PlayerSide::PLAYER_ONE));
+        board.getSquare(3, 7).setPiece(globalPieceFactory->createPiece("ScarlettGlumpkin", PlayerSide::PLAYER_ONE));
+        board.getSquare(4, 7).setPiece(globalPieceFactory->createPiece("TinkeringTom", PlayerSide::PLAYER_ONE));
+        board.getSquare(5, 7).setPiece(globalPieceFactory->createPiece("Rustbucket", PlayerSide::PLAYER_ONE));
+        board.getSquare(6, 7).setPiece(globalPieceFactory->createPiece("Automatick", PlayerSide::PLAYER_ONE));
+        board.getSquare(7, 7).setPiece(globalPieceFactory->createPiece("Sweetykins", PlayerSide::PLAYER_ONE));
         
         // Pawn row
         for (int x = 0; x < 8; x++) {
-            board.getSquare(x, 6).setPiece(globalPieceFactory->createPiece("Pawn", PlayerSide::PLAYER_ONE));
+            board.getSquare(x, 6).setPiece(globalPieceFactory->createPiece("Sentroid", PlayerSide::PLAYER_ONE));
         }
         
         // Player 2 pieces (top of board)
         // Back row
-        board.getSquare(0, 0).setPiece(globalPieceFactory->createPiece("Rook", PlayerSide::PLAYER_TWO));
-        board.getSquare(1, 0).setPiece(globalPieceFactory->createPiece("Knight", PlayerSide::PLAYER_TWO));
-        board.getSquare(2, 0).setPiece(globalPieceFactory->createPiece("Archer", PlayerSide::PLAYER_TWO));
-        board.getSquare(3, 0).setPiece(globalPieceFactory->createPiece("Queen", PlayerSide::PLAYER_TWO));
-        board.getSquare(4, 0).setPiece(globalPieceFactory->createPiece("King", PlayerSide::PLAYER_TWO));
-        board.getSquare(5, 0).setPiece(globalPieceFactory->createPiece("Bishop", PlayerSide::PLAYER_TWO));
-        board.getSquare(6, 0).setPiece(globalPieceFactory->createPiece("Knight", PlayerSide::PLAYER_TWO));
-        board.getSquare(7, 0).setPiece(globalPieceFactory->createPiece("Rook", PlayerSide::PLAYER_TWO));
+        board.getSquare(0, 0).setPiece(globalPieceFactory->createPiece("Sweetykins", PlayerSide::PLAYER_TWO));
+        board.getSquare(1, 0).setPiece(globalPieceFactory->createPiece("Automatick", PlayerSide::PLAYER_TWO));
+        board.getSquare(2, 0).setPiece(globalPieceFactory->createPiece("Rustbucket", PlayerSide::PLAYER_TWO));
+        board.getSquare(3, 0).setPiece(globalPieceFactory->createPiece("ScarlettGlumpkin", PlayerSide::PLAYER_TWO));
+        board.getSquare(4, 0).setPiece(globalPieceFactory->createPiece("TinkeringTom", PlayerSide::PLAYER_TWO));
+        board.getSquare(5, 0).setPiece(globalPieceFactory->createPiece("Sidewinder", PlayerSide::PLAYER_TWO));
+        board.getSquare(6, 0).setPiece(globalPieceFactory->createPiece("Automatick", PlayerSide::PLAYER_TWO));
+        board.getSquare(7, 0).setPiece(globalPieceFactory->createPiece("Sweetykins", PlayerSide::PLAYER_TWO));
         
         // Pawn row
         for (int x = 0; x < 8; x++) {
-            board.getSquare(x, 1).setPiece(globalPieceFactory->createPiece("Pawn", PlayerSide::PLAYER_TWO));
+            board.getSquare(x, 1).setPiece(globalPieceFactory->createPiece("Sentroid", PlayerSide::PLAYER_TWO));
         }
         
         // Set piece positions
@@ -587,7 +585,7 @@ int main()
     }
     globalPieceFactory = std::make_unique<PieceFactory>(globalPieceDefManager);
 
-    // Load piece textures and animations
+    // Load piece textures
     for (const auto& typeName : globalPieceDefManager.getAllPieceTypeNames()) {
         const PieceStats* stats = globalPieceDefManager.getPieceStats(typeName);
         if (!stats) continue;
@@ -596,11 +594,6 @@ int main()
             if (tex.loadFromFile(std::string("assets/") + stats->spritePath)) {
                 pieceTextures[typeName] = tex;
             }
-        }
-        if (!stats->spritesheetPath.empty()) {
-            Animation anim;
-            anim.load(std::string("assets/") + stats->spritesheetPath, 64, 64, 3, 0.2f);
-            pieceAnimations[typeName] = anim;
         }
     }
 
@@ -935,25 +928,18 @@ int main()
                 const Square& square = board.getSquare(x, y);
                 if (!square.isEmpty()) {
                     Piece* piece = square.getPiece();
-                    auto animIt = pieceAnimations.find(piece->getTypeName());
-                    if (animIt != pieceAnimations.end()) {
-                        animIt->second.update(dt);
-                        sf::Sprite spr = animIt->second.getSprite();
+                    auto texIt = pieceTextures.find(piece->getTypeName());
+                    if (texIt != pieceTextures.end()) {
+                        sf::Sprite spr(texIt->second);
                         spr.setPosition(boardParams.boardStartX + x * boardParams.squareSize,
                                         boardParams.boardStartY + y * boardParams.squareSize);
-                        float scale = boardParams.squareSize / 64.f;
-                        spr.setScale(scale, scale);
+                        
+                        // Scale based on actual texture dimensions
+                        sf::Vector2u textureSize = texIt->second.getSize();
+                        float scaleX = boardParams.squareSize / static_cast<float>(textureSize.x);
+                        float scaleY = boardParams.squareSize / static_cast<float>(textureSize.y);
+                        spr.setScale(scaleX, scaleY);
                         window.draw(spr);
-                    } else {
-                        auto texIt = pieceTextures.find(piece->getTypeName());
-                        if (texIt != pieceTextures.end()) {
-                            sf::Sprite spr(texIt->second);
-                            spr.setPosition(boardParams.boardStartX + x * boardParams.squareSize,
-                                            boardParams.boardStartY + y * boardParams.squareSize);
-                            float scale = boardParams.squareSize / 64.f;
-                            spr.setScale(scale, scale);
-                            window.draw(spr);
-                        }
                     }
 
                     // Render health bar
@@ -979,23 +965,17 @@ int main()
             float draggedPieceY = currentMousePosition.y - mouseOffset.y;
 
             Piece* draggedPiece = inputManager.getSelectedPiece();
-            auto animIt = pieceAnimations.find(draggedPiece->getTypeName());
-            if (animIt != pieceAnimations.end()) {
-                animIt->second.update(dt);
-                sf::Sprite spr = animIt->second.getSprite();
+            auto texIt = pieceTextures.find(draggedPiece->getTypeName());
+            if (texIt != pieceTextures.end()) {
+                sf::Sprite spr(texIt->second);
                 spr.setPosition(draggedPieceX, draggedPieceY);
-                float scale = boardParams.squareSize / 64.f;
-                spr.setScale(scale, scale);
+                
+                // Scale based on actual texture dimensions
+                sf::Vector2u textureSize = texIt->second.getSize();
+                float scaleX = boardParams.squareSize / static_cast<float>(textureSize.x);
+                float scaleY = boardParams.squareSize / static_cast<float>(textureSize.y);
+                spr.setScale(scaleX, scaleY);
                 window.draw(spr);
-            } else {
-                auto texIt = pieceTextures.find(draggedPiece->getTypeName());
-                if (texIt != pieceTextures.end()) {
-                    sf::Sprite spr(texIt->second);
-                    spr.setPosition(draggedPieceX, draggedPieceY);
-                    float scale = boardParams.squareSize / 64.f;
-                    spr.setScale(scale, scale);
-                    window.draw(spr);
-                }
             }
             
             // Render health bar for the dragged piece

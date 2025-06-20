@@ -59,7 +59,7 @@ TEST_CASE_METHOD(InfluenceSystemTestFixture, "InfluenceSystem basic functionalit
     
     SECTION("Single piece controls its own square and influences adjacent squares") {
         // Place a piece in the center of the board
-        auto piece = factory->createPiece("Pawn", PlayerSide::PLAYER_ONE);
+        auto piece = factory->createPiece("Sentroid", PlayerSide::PLAYER_ONE);
         board.getSquare(4, 4).setPiece(std::move(piece));
         
         InfluenceSystem::calculateBoardInfluence(board);
@@ -92,7 +92,7 @@ TEST_CASE_METHOD(InfluenceSystemTestFixture, "InfluenceSystem basic functionalit
 TEST_CASE_METHOD(InfluenceSystemTestFixture, "InfluenceSystem sticky control behavior", "[InfluenceSystem]") {
     SECTION("Control persists when piece moves away") {
         // Place a piece, establish control, then remove it
-        auto piece = factory->createPiece("Pawn", PlayerSide::PLAYER_ONE);
+        auto piece = factory->createPiece("Sentroid", PlayerSide::PLAYER_ONE);
         board.getSquare(4, 4).setPiece(std::move(piece));
         
         InfluenceSystem::calculateBoardInfluence(board);
@@ -126,7 +126,7 @@ TEST_CASE_METHOD(InfluenceSystemTestFixture, "InfluenceSystem sticky control beh
         }
         
         // Player One establishes control
-        auto piece1 = factory->createPiece("Pawn", PlayerSide::PLAYER_ONE);
+        auto piece1 = factory->createPiece("Sentroid", PlayerSide::PLAYER_ONE);
         board.getSquare(4, 4).setPiece(std::move(piece1));
         
         InfluenceSystem::calculateBoardInfluence(board);
@@ -136,7 +136,7 @@ TEST_CASE_METHOD(InfluenceSystemTestFixture, "InfluenceSystem sticky control beh
         board.getSquare(4, 4).extractPiece();
         
         // Player Two places a piece with equal influence (1 point)
-        auto piece2 = factory->createPiece("Pawn", PlayerSide::PLAYER_TWO);
+        auto piece2 = factory->createPiece("Sentroid", PlayerSide::PLAYER_TWO);
         board.getSquare(4, 6).setPiece(std::move(piece2)); // Adjacent to (4,5)
         
         InfluenceSystem::calculateBoardInfluence(board);
@@ -147,7 +147,7 @@ TEST_CASE_METHOD(InfluenceSystemTestFixture, "InfluenceSystem sticky control beh
         REQUIRE(board.getSquare(4, 5).getControlValue(PlayerSide::PLAYER_TWO) == 1);
         
         // Add another Player Two piece to give them MORE influence
-        auto piece3 = factory->createPiece("Pawn", PlayerSide::PLAYER_TWO);
+        auto piece3 = factory->createPiece("Sentroid", PlayerSide::PLAYER_TWO);
         board.getSquare(3, 5).setPiece(std::move(piece3)); // Also adjacent to (4,5)
         
         InfluenceSystem::calculateBoardInfluence(board);
@@ -162,7 +162,7 @@ TEST_CASE_METHOD(InfluenceSystemTestFixture, "InfluenceSystem sticky control beh
 TEST_CASE_METHOD(InfluenceSystemTestFixture, "InfluenceSystem piece type independence", "[InfluenceSystem]") {
     SECTION("Different piece types have same influence pattern") {
         // Test that different piece types all influence the same way
-        std::vector<std::string> pieceTypes = {"Pawn", "Rook", "Bishop", "Knight", "Queen", "King", "Archer"};
+        std::vector<std::string> pieceTypes = {"Sentroid", "Sweetykins", "Sidewinder", "Automatick", "ScarlettGlumpkin", "TinkeringTom", "Rustbucket"};
         
         for (const std::string& pieceType : pieceTypes) {
             // Clear pieces but preserve control state (don't call resetBoard())
@@ -214,8 +214,8 @@ TEST_CASE_METHOD(InfluenceSystemTestFixture, "InfluenceSystem piece type indepen
 TEST_CASE_METHOD(InfluenceSystemTestFixture, "InfluenceSystem contested squares", "[InfluenceSystem]") {
     SECTION("Adjacent pieces contest control") {
         // Place two opposing pieces next to each other
-        auto piece1 = factory->createPiece("Pawn", PlayerSide::PLAYER_ONE);
-        auto piece2 = factory->createPiece("Pawn", PlayerSide::PLAYER_TWO);
+        auto piece1 = factory->createPiece("Sentroid", PlayerSide::PLAYER_ONE);
+        auto piece2 = factory->createPiece("Sentroid", PlayerSide::PLAYER_TWO);
         
         board.getSquare(3, 3).setPiece(std::move(piece1));
         board.getSquare(5, 3).setPiece(std::move(piece2));
@@ -236,8 +236,8 @@ TEST_CASE_METHOD(InfluenceSystemTestFixture, "InfluenceSystem contested squares"
     
     SECTION("Multiple pieces can influence same square") {
         // Place multiple pieces that influence the same square
-        auto piece1 = factory->createPiece("Pawn", PlayerSide::PLAYER_ONE);
-        auto piece2 = factory->createPiece("Rook", PlayerSide::PLAYER_ONE);
+        auto piece1 = factory->createPiece("Sentroid", PlayerSide::PLAYER_ONE);
+        auto piece2 = factory->createPiece("Sweetykins", PlayerSide::PLAYER_ONE);
         
         // Both pieces will influence square (4,4)
         board.getSquare(3, 3).setPiece(std::move(piece1)); // Influences (4,4)
@@ -256,7 +256,7 @@ TEST_CASE_METHOD(InfluenceSystemTestFixture, "InfluenceSystem contested squares"
 TEST_CASE_METHOD(InfluenceSystemTestFixture, "InfluenceSystem edge cases", "[InfluenceSystem]") {
     SECTION("Pieces on board edges") {
         // Place piece on corner
-        auto piece = factory->createPiece("Pawn", PlayerSide::PLAYER_ONE);
+        auto piece = factory->createPiece("Sentroid", PlayerSide::PLAYER_ONE);
         board.getSquare(0, 0).setPiece(std::move(piece));
         
         InfluenceSystem::calculateBoardInfluence(board);
@@ -275,7 +275,7 @@ TEST_CASE_METHOD(InfluenceSystemTestFixture, "InfluenceSystem edge cases", "[Inf
     
     SECTION("Reset influence values preserves control") {
         // Set up some influence and control
-        auto piece = factory->createPiece("Pawn", PlayerSide::PLAYER_ONE);
+        auto piece = factory->createPiece("Sentroid", PlayerSide::PLAYER_ONE);
         board.getSquare(4, 4).setPiece(std::move(piece));
         InfluenceSystem::calculateBoardInfluence(board);
         

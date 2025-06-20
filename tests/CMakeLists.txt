@@ -17,7 +17,7 @@ add_executable(BayouBonanzaTests
   PieceTests.cpp
   # KingTests.cpp # Removed
   # QueenTests.cpp # Removed
-  # RookTests.cpp # Removed
+      # SweetykinsTests.cpp # Removed
   # BishopTests.cpp # Removed
   # KnightTests.cpp # Removed
   # PawnTests.cpp # Removed

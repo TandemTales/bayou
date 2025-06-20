@@ -78,7 +78,7 @@ TEST_CASE_METHOD(CardTestFixture, "Card Base Class Functionality", "[card][base]
     
     SECTION("Card Polymorphism") {
         std::vector<std::unique_ptr<Card>> cards;
-        cards.push_back(createTestPieceCard("Rook Card", 4, "Rook"));
+        cards.push_back(createTestPieceCard("Sweetykins Card", 4, "Sweetykins"));
         cards.push_back(createTestEffectCard("Damage Spell", 2, EffectType::DAMAGE, 3));
         
         REQUIRE(cards.size() == 2);
@@ -121,19 +121,19 @@ TEST_CASE_METHOD(CardTestFixture, "PieceCard Functionality", "[card][piece]") {
     }
     
     SECTION("PieceCard Placement Validation") {
-        auto rookCard = createTestPieceCard("Rook Summon", 5, "Rook");
+        auto sweetykinsCard = createTestPieceCard("Sweetykins Summon", 5, "Sweetykins");
         
         // Test valid placement
         Position validPos{0, 7}; // Player One's back rank
-        REQUIRE(rookCard->isValidPlacement(gameState, PlayerSide::PLAYER_ONE, validPos));
+        REQUIRE(sweetykinsCard->isValidPlacement(gameState, PlayerSide::PLAYER_ONE, validPos));
         
         // Test invalid placement (enemy territory)
         Position invalidPos{0, 0}; // Player Two's back rank
-        REQUIRE_FALSE(rookCard->isValidPlacement(gameState, PlayerSide::PLAYER_ONE, invalidPos));
+        REQUIRE_FALSE(sweetykinsCard->isValidPlacement(gameState, PlayerSide::PLAYER_ONE, invalidPos));
         
         // Test out of bounds
         Position outOfBounds{-1, 5};
-        REQUIRE_FALSE(rookCard->isValidPlacement(gameState, PlayerSide::PLAYER_ONE, outOfBounds));
+        REQUIRE_FALSE(sweetykinsCard->isValidPlacement(gameState, PlayerSide::PLAYER_ONE, outOfBounds));
     }
     
     SECTION("PieceCard Play Functionality") {
