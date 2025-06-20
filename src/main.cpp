@@ -23,6 +23,7 @@
 #include "InfluenceSystem.h" // Added for InfluenceSystem
 #include "GameOverDetector.h"
 #include "CardPlayValidator.h"
+#include "PieceData.h" // For Position
 #include "PieceCard.h"
 #include "EffectCard.h"
 // #include "King.h" // Removed - using data-driven approach with PieceFactory
@@ -783,6 +784,36 @@ int main()
             }
         }
         // --- End Control Visualization ---
+
+        // --- Move Highlighting ---
+        std::vector<Position> highlightSquares;
+        const Piece* highlightPiece = nullptr;
+        if (inputManager.isPieceSelected() && inputManager.getSelectedPiece()) {
+            highlightPiece = inputManager.getSelectedPiece();
+        } else {
+            sf::Vector2i mouseScreen = sf::Mouse::getPosition(window);
+            sf::Vector2f mouseGame = graphicsManager.screenToGame(mouseScreen);
+            sf::Vector2i boardCoords = graphicsManager.gameToBoard(mouseGame);
+            if (boardCoords.x >= 0 && boardCoords.y >= 0) {
+                const Square& hovered = board.getSquare(boardCoords.x, boardCoords.y);
+                if (!hovered.isEmpty()) {
+                    highlightPiece = hovered.getPiece();
+                }
+            }
+        }
+
+        if (highlightPiece) {
+            highlightSquares = highlightPiece->getValidMoves(board);
+        }
+
+        for (const Position& pos : highlightSquares) {
+            sf::RectangleShape highlightRect(sf::Vector2f(boardParams.squareSize, boardParams.squareSize));
+            highlightRect.setPosition(boardParams.boardStartX + pos.x * boardParams.squareSize,
+                                      boardParams.boardStartY + pos.y * boardParams.squareSize);
+            highlightRect.setFillColor(sf::Color(255, 255, 0, 120));
+            window.draw(highlightRect);
+        }
+        // --- End Move Highlighting ---
 
         // --- Piece Rendering ---
         for (int y = 0; y < GameBoard::BOARD_SIZE; ++y) {
