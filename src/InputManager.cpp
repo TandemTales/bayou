@@ -45,7 +45,7 @@ bool InputManager::handleEvent(const sf::Event& event) {
         
         case sf::Event::KeyPressed:
             handleKeyPressed(event);
-            return true;
+            return false; // Don't claim to handle keyboard events
         
         default:
             return false; // Event not handled

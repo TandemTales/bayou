@@ -25,8 +25,8 @@ void GameRules::initializeGame(GameState& gameState) {
     gameState.setGamePhase(GamePhase::DRAW); // Start with draw phase
     gameState.setGameResult(GameResult::IN_PROGRESS);
     
-    // Auto-advance from draw phase to action phase
-    gameState.nextPhase();
+    // Don't auto-advance from draw phase - let the game flow handle this
+    // gameState.nextPhase(); // Commented out to allow proper phase testing
     
     // Recalculate board control after placing pieces
     moveExecutor.recalculateBoardControl(gameState);

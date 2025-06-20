@@ -61,18 +61,22 @@ bool PieceCard::isValidPlacement(const GameState& gameState, PlayerSide player, 
         return false;
     }
     
-    // Check if the square is controlled by the player
-    const Square& square = board.getSquare(position.x, position.y);
-    PlayerSide controller = InfluenceSystem::getControllingPlayer(square);
+    // Use territorial rules for card placement:
+    // Player One can place pieces on their half (rows 4-7)
+    // Player Two can place pieces on their half (rows 0-3)
+    bool validTerritory = false;
+    if (player == PlayerSide::PLAYER_ONE) {
+        validTerritory = (position.y >= 4 && position.y <= 7);
+    } else if (player == PlayerSide::PLAYER_TWO) {
+        validTerritory = (position.y >= 0 && position.y <= 3);
+    }
     
-    bool valid = (controller == player);
-    std::cout << "DEBUG: Square control check - controlled by " 
-              << (controller == PlayerSide::PLAYER_ONE ? "Player 1" : 
-                  controller == PlayerSide::PLAYER_TWO ? "Player 2" : "Neutral")
-              << ", player is " << (player == PlayerSide::PLAYER_ONE ? "Player 1" : "Player 2")
-              << ": " << (valid ? "VALID" : "INVALID") << std::endl;
+    std::cout << "DEBUG: Territorial check - player " 
+              << (player == PlayerSide::PLAYER_ONE ? "1" : "2")
+              << " placing at row " << position.y
+              << ": " << (validTerritory ? "VALID" : "INVALID") << std::endl;
     
-    return valid;
+    return validTerritory;
 }
 
 std::vector<Position> PieceCard::getValidPlacements(const GameState& gameState, PlayerSide player) const {
