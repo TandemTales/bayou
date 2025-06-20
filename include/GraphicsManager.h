@@ -27,6 +27,9 @@ public:
     
     // Convert game coordinates to screen coordinates
     sf::Vector2i gameToScreen(const sf::Vector2f& gamePos) const;
+
+    // Convert game coordinates to board coordinates
+    sf::Vector2i gameToBoard(const sf::Vector2f& gamePos) const;
     
     // Get the game board rendering parameters
     struct BoardRenderParams {
