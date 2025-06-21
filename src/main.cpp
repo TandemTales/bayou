@@ -18,6 +18,8 @@
 #include "GraphicsManager.h" // New graphics manager
 #include "GameInitializer.h"
 #include "PieceFactory.h"
+#include "CardCollection.h"
+#include "CardFactory.h"
 #include "PieceDefinitionManager.h"
 #include "TurnManager.h"
 #include "InfluenceSystem.h" // Added for InfluenceSystem
@@ -72,6 +74,10 @@ std::string winMessage = "";
 bool showWinMessage = false;
 
 std::map<std::string, sf::Texture> pieceTextures;
+
+// Player collection and deck
+CardCollection myCollection;
+Deck myDeck;
 
 // Win condition notification callback
 void onWinCondition(PlayerSide winner, const std::string& description) {
@@ -504,6 +510,88 @@ void showPlaceholderScreen(sf::RenderWindow& window, GraphicsManager& graphicsMa
     }
 }
 
+void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, sf::TcpSocket& socket) {
+    size_t selectedCollection = 0;
+    size_t selectedDeck = 0;
+    bool editingDeck = false; // false=select from collection, true=deck
+
+    while (window.isOpen()) {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                window.close();
+                return;
+            } else if (event.type == sf::Event::KeyPressed) {
+                if (event.key.code == sf::Keyboard::Escape) {
+                    sf::Packet pkt;
+                    pkt << MessageType::SaveDeck << myDeck.serialize();
+                    socket.send(pkt);
+                    return;
+                } else if (event.key.code == sf::Keyboard::Tab) {
+                    editingDeck = !editingDeck;
+                } else if (event.key.code == sf::Keyboard::Up) {
+                    if (editingDeck && selectedDeck > 0) --selectedDeck;
+                    if (!editingDeck && selectedCollection > 0) --selectedCollection;
+                } else if (event.key.code == sf::Keyboard::Down) {
+                    if (editingDeck && selectedDeck + 1 < myDeck.size()) ++selectedDeck;
+                    if (!editingDeck && selectedCollection + 1 < myCollection.size()) ++selectedCollection;
+                } else if (event.key.code == sf::Keyboard::Enter) {
+                    if (editingDeck) {
+                        if (selectedDeck < myDeck.size()) {
+                            myDeck.removeCardAt(selectedDeck);
+                        }
+                    } else {
+                        if (myDeck.size() < Deck::DECK_SIZE && selectedCollection < myCollection.size()) {
+                            const Card* c = myCollection.getCard(selectedCollection);
+                            if (c) myDeck.addCard(c->clone());
+                        }
+                    }
+                }
+            } else if (event.type == sf::Event::Resized) {
+                graphicsManager.updateView();
+            }
+        }
+
+        graphicsManager.applyView();
+        window.clear(sf::Color(10, 50, 20));
+
+        float y = 50.f;
+        sf::Text header;
+        header.setFont(globalFont);
+        header.setCharacterSize(28);
+        header.setFillColor(sf::Color::Yellow);
+        header.setString("Collection (TAB to switch)");
+        header.setPosition(40.f, y);
+        window.draw(header);
+        y += 30.f;
+        for (size_t i=0;i<myCollection.size();++i) {
+            sf::Text t; t.setFont(globalFont); t.setCharacterSize(20);
+            const Card* c = myCollection.getCard(i);
+            t.setString(c?c->getName():"?");
+            t.setFillColor(!editingDeck && i==selectedCollection?sf::Color::Cyan:sf::Color::White);
+            t.setPosition(40.f, y+i*22.f);
+            window.draw(t);
+        }
+
+        float x2 = GraphicsManager::BASE_WIDTH/2.f + 40.f;
+        y = 50.f;
+        header.setString("Deck (Enter to remove)");
+        header.setPosition(x2, y);
+        window.draw(header);
+        y += 30.f;
+        for (size_t i=0;i<myDeck.size();++i) {
+            sf::Text t; t.setFont(globalFont); t.setCharacterSize(20);
+            const Card* c = myDeck.getCard(i);
+            t.setString(c?c->getName():"?");
+            t.setFillColor(editingDeck && i==selectedDeck?sf::Color::Cyan:sf::Color::White);
+            t.setPosition(x2, y+i*22.f);
+            window.draw(t);
+        }
+
+        window.display();
+    }
+}
+
 MainMenuOption runMainMenu(sf::RenderWindow& window, GraphicsManager& graphicsManager) {
     int selected = 0;
     const char* optionTexts[] = {"Deck Editor", "Play Against Human", "Play Against AI"};
@@ -607,20 +695,6 @@ int main()
         return 0; // Window closed before entering username
     }
 
-    // Show main menu
-    MainMenuOption menuChoice = MainMenuOption::NONE;
-    do {
-        menuChoice = runMainMenu(window, graphicsManager);
-        if (menuChoice == MainMenuOption::DECK_EDITOR) {
-            showPlaceholderScreen(window, graphicsManager, "Deck Editor Coming Soon");
-        } else if (menuChoice == MainMenuOption::PLAY_AI) {
-            showPlaceholderScreen(window, graphicsManager, "Play vs AI Coming Soon");
-        }
-    } while (window.isOpen() && menuChoice != MainMenuOption::PLAY_HUMAN);
-    if (!window.isOpen()) {
-        return 0;
-    }
-
     // Network Socket
     sf::TcpSocket socket;
     const unsigned short PORT = 50000;
@@ -647,6 +721,20 @@ int main()
         }
     }
     socket.setBlocking(false); // Use non-blocking mode for game loop
+
+    // Show main menu
+    MainMenuOption menuChoice = MainMenuOption::NONE;
+    do {
+        menuChoice = runMainMenu(window, graphicsManager);
+        if (menuChoice == MainMenuOption::DECK_EDITOR) {
+            runDeckEditor(window, graphicsManager, socket);
+        } else if (menuChoice == MainMenuOption::PLAY_AI) {
+            showPlaceholderScreen(window, graphicsManager, "Play vs AI Coming Soon");
+        }
+    } while (window.isOpen() && menuChoice != MainMenuOption::PLAY_HUMAN);
+    if (!window.isOpen()) {
+        return 0;
+    }
 
     // Initialize UI text elements
     uiMessageText.setFont(globalFont);
@@ -722,6 +810,24 @@ int main()
                             uiMessage += (myPlayerSide == PlayerSide::PLAYER_ONE ? "One" : "Two");
                             std::cout << uiMessage << std::endl;
                         } else { std::cerr << "Error deserializing PlayerAssignment data." << std::endl; }
+                        break;
+                    case MessageType::CardCollectionData:
+                        {
+                            std::string data;
+                            if (receivedPacket >> data) {
+                                myCollection.deserialize(data);
+                                std::cout << "Collection received with " << myCollection.size() << " cards" << std::endl;
+                            }
+                        }
+                        break;
+                    case MessageType::DeckData:
+                        {
+                            std::string data;
+                            if (receivedPacket >> data) {
+                                myDeck.deserialize(data);
+                                std::cout << "Deck received with " << myDeck.size() << " cards" << std::endl;
+                            }
+                        }
                         break;
                     case MessageType::WaitingForOpponent:
                         uiMessage = "Waiting for opponent...";

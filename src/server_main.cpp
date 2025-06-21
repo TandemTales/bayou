@@ -18,6 +18,8 @@
 #include "Square.h"           // For Square::setGlobalPieceFactory
 #include "PieceFactory.h"     // For PieceFactory
 #include "PieceDefinitionManager.h" // For PieceDefinitionManager
+#include "CardCollection.h"  // For Deck and CardCollection
+#include "CardFactory.h"     // For creating cards from IDs
 
 using namespace BayouBonanza;
 
@@ -30,6 +32,8 @@ struct ClientConnection {
     std::string username;  // Player's username
     int rating = 1000;     // Player's rating, default to 1000
     bool connected = false;
+    CardCollection collection; // Player's owned cards
+    Deck deck;                 // Player's current deck
 };
 
 // Global vector to store client connections (needs thread safety if accessed by multiple threads)
@@ -377,6 +381,27 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                     std::cerr << "Error deserializing card play data from " 
                               << client->socket.getRemoteAddress() << std::endl;
                 }
+            } else if (messageType == MessageType::SaveDeck) {
+                std::string deckStr;
+                if (packet >> deckStr) {
+                    Deck newDeck;
+                    if (newDeck.deserialize(deckStr) && newDeck.isValid()) {
+                        client->deck = std::move(newDeck);
+
+                        sqlite3* db;
+                        if (sqlite3_open("bayou_bonanza.db", &db) == SQLITE_OK) {
+                            const char* sql_upd = "REPLACE INTO decks (username, deck) VALUES (?, ?);";
+                            sqlite3_stmt* stmt;
+                            if (sqlite3_prepare_v2(db, sql_upd, -1, &stmt, 0) == SQLITE_OK) {
+                                sqlite3_bind_text(stmt, 1, client->username.c_str(), -1, SQLITE_STATIC);
+                                sqlite3_bind_text(stmt, 2, deckStr.c_str(), -1, SQLITE_STATIC);
+                                sqlite3_step(stmt);
+                                sqlite3_finalize(stmt);
+                            }
+                            sqlite3_close(db);
+                        }
+                    }
+                }
             } else if (messageType == MessageType::EndTurn) {
                 std::cout << "End turn received from " << client->socket.getRemoteAddress() << std::endl;
                 
@@ -467,19 +492,43 @@ void initialize_database() {
         std::cout << "Opened database successfully at: " << db_path << std::endl;
     }
 
-    const char* sql_create_table = 
+    const char* sql_create_users =
         "CREATE TABLE IF NOT EXISTS users ("
         "username TEXT PRIMARY KEY NOT NULL,"
         "rating INTEGER NOT NULL DEFAULT 1000"
         ");";
 
-    rc = sqlite3_exec(db, sql_create_table, 0, 0, &err_msg);
+    const char* sql_create_collections =
+        "CREATE TABLE IF NOT EXISTS collections ("
+        "username TEXT PRIMARY KEY NOT NULL,"
+        "cards TEXT"
+        ");";
 
+    const char* sql_create_decks =
+        "CREATE TABLE IF NOT EXISTS decks ("
+        "username TEXT PRIMARY KEY NOT NULL,"
+        "deck TEXT"
+        ");";
+
+    rc = sqlite3_exec(db, sql_create_users, 0, 0, &err_msg);
+    
     if (rc != SQLITE_OK) {
         std::cerr << "SQL error: " << err_msg << std::endl;
         sqlite3_free(err_msg); // Free error message
     } else {
         std::cout << "Table 'users' created successfully or already exists" << std::endl;
+    }
+
+    rc = sqlite3_exec(db, sql_create_collections, 0, 0, &err_msg);
+    if (rc != SQLITE_OK) {
+        std::cerr << "SQL error: " << err_msg << std::endl;
+        sqlite3_free(err_msg);
+    }
+
+    rc = sqlite3_exec(db, sql_create_decks, 0, 0, &err_msg);
+    if (rc != SQLITE_OK) {
+        std::cerr << "SQL error: " << err_msg << std::endl;
+        sqlite3_free(err_msg);
     }
 
     sqlite3_close(db);
@@ -568,6 +617,64 @@ int main() {
                                 } else {
                                     std::cerr << "Failed to prepare select statement: " << sqlite3_errmsg(db) << std::endl;
                                 }
+                                // Load or create card collection and deck
+                                const char* sql_select_collection = "SELECT cards FROM collections WHERE username = ?;";
+                                const char* sql_insert_collection = "INSERT INTO collections (username, cards) VALUES (?, ?);";
+                                const char* sql_select_deck = "SELECT deck FROM decks WHERE username = ?;";
+                                const char* sql_insert_deck = "INSERT INTO decks (username, deck) VALUES (?, ?);";
+
+                                std::string collectionStr;
+                                std::string deckStr;
+
+                                sqlite3_stmt* stmt_coll;
+                                if (sqlite3_prepare_v2(db, sql_select_collection, -1, &stmt_coll, 0) == SQLITE_OK) {
+                                    sqlite3_bind_text(stmt_coll, 1, received_username.c_str(), -1, SQLITE_STATIC);
+                                    if (sqlite3_step(stmt_coll) == SQLITE_ROW) {
+                                        const unsigned char* text = sqlite3_column_text(stmt_coll, 0);
+                                        if (text) collectionStr = reinterpret_cast<const char*>(text);
+                                    }
+                                    sqlite3_finalize(stmt_coll);
+                                }
+
+                                if (collectionStr.empty()) {
+                                    auto starter = CardFactory::createStarterDeck();
+                                    CardCollection cc(starter);
+                                    collectionStr = cc.serialize();
+                                    sqlite3_stmt* stmt_ins;
+                                    if (sqlite3_prepare_v2(db, sql_insert_collection, -1, &stmt_ins, 0) == SQLITE_OK) {
+                                        sqlite3_bind_text(stmt_ins, 1, received_username.c_str(), -1, SQLITE_STATIC);
+                                        sqlite3_bind_text(stmt_ins, 2, collectionStr.c_str(), -1, SQLITE_STATIC);
+                                        sqlite3_step(stmt_ins);
+                                        sqlite3_finalize(stmt_ins);
+                                    }
+                                }
+
+                                sqlite3_stmt* stmt_deck;
+                                if (sqlite3_prepare_v2(db, sql_select_deck, -1, &stmt_deck, 0) == SQLITE_OK) {
+                                    sqlite3_bind_text(stmt_deck, 1, received_username.c_str(), -1, SQLITE_STATIC);
+                                    if (sqlite3_step(stmt_deck) == SQLITE_ROW) {
+                                        const unsigned char* text = sqlite3_column_text(stmt_deck, 0);
+                                        if (text) deckStr = reinterpret_cast<const char*>(text);
+                                    }
+                                    sqlite3_finalize(stmt_deck);
+                                }
+
+                                if (deckStr.empty()) {
+                                    auto starter = CardFactory::createStarterDeck();
+                                    Deck d(std::move(starter));
+                                    deckStr = d.serialize();
+                                    sqlite3_stmt* stmt_ins;
+                                    if (sqlite3_prepare_v2(db, sql_insert_deck, -1, &stmt_ins, 0) == SQLITE_OK) {
+                                        sqlite3_bind_text(stmt_ins, 1, received_username.c_str(), -1, SQLITE_STATIC);
+                                        sqlite3_bind_text(stmt_ins, 2, deckStr.c_str(), -1, SQLITE_STATIC);
+                                        sqlite3_step(stmt_ins);
+                                        sqlite3_finalize(stmt_ins);
+                                    }
+                                }
+
+                                new_client_conn->collection.deserialize(collectionStr);
+                                new_client_conn->deck.deserialize(deckStr);
+
                                 sqlite3_close(db);
                                 new_client_conn->username = received_username;
                                 login_successful = true;
@@ -604,6 +711,15 @@ int main() {
                 assignmentPacket << MessageType::PlayerAssignment << new_client_conn->playerSide;
                 new_client_conn->socket.send(assignmentPacket);
 
+                // Send player collection and deck
+                sf::Packet collectionPacket;
+                collectionPacket << MessageType::CardCollectionData << new_client_conn->collection.serialize();
+                new_client_conn->socket.send(collectionPacket);
+
+                sf::Packet deckPacket;
+                deckPacket << MessageType::DeckData << new_client_conn->deck.serialize();
+                new_client_conn->socket.send(deckPacket);
+
                 if (clients.size() == 1) {
                     // First client connected, send WaitingForOpponent
                     sf::Packet waitingPacket;
@@ -613,8 +729,10 @@ int main() {
                 } else if (clients.size() == REQUIRED_PLAYERS) {
                     std::cout << "All players connected. Initializing and starting game..." << std::endl;
                     
-                    // Initialize the game state and create turn manager
-                    gameInitializer.initializeNewGame(globalGameState);
+                    // Initialize the game state and create turn manager using player decks
+                    Deck deck1 = clients[0]->deck;
+                    Deck deck2 = clients[1]->deck;
+                    gameInitializer.initializeNewGame(globalGameState, deck1, deck2);
                     turnManager = std::make_unique<TurnManager>(globalGameState, gameRules);
                     
                     // Debug: Print board state after initialization

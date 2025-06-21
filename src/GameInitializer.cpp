@@ -31,6 +31,13 @@ void GameInitializer::initializeNewGame(GameState& gameState) {
     calculateInitialControl(gameState);
 }
 
+void GameInitializer::initializeNewGame(GameState& gameState, const Deck& deck1, const Deck& deck2) {
+    resetGameState(gameState);
+    setupBoard(gameState);
+    gameState.initializeCardSystem(deck1, deck2);
+    calculateInitialControl(gameState);
+}
+
 void GameInitializer::setupBoard(GameState& gameState) {
     // Clear the board
     gameState.getBoard().resetBoard();

@@ -32,6 +32,11 @@ public:
      * @param gameState Game state to initialize
      */
     void initializeNewGame(GameState& gameState);
+
+    /**
+     * @brief Initialize a new game state with custom decks
+     */
+    void initializeNewGame(GameState& gameState, const Deck& deck1, const Deck& deck2);
     
     /**
      * @brief Set up the initial board configuration

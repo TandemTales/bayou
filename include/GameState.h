@@ -293,6 +293,11 @@ public:
      * Creates starter decks and draws initial hands.
      */
     void initializeCardSystem();
+
+    /**
+     * @brief Initialize card system with custom decks
+     */
+    void initializeCardSystem(const Deck& deck1, const Deck& deck2);
     
     /**
      * @brief Process card-related turn start events

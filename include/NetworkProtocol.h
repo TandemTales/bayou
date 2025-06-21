@@ -18,7 +18,10 @@ enum class MessageType : sf::Uint8 {
     Error,                  // Server to Client or Client to Server: Generic error message
     Ping,                   // Client to Server (optional, for keep-alive)
     Pong,                   // Server to Client (optional, for keep-alive)
-    UserLogin               // Client to Server: Sends username for login/registration
+    UserLogin,              // Client to Server: Sends username for login/registration
+    CardCollectionData,     // Server to Client: Sends player's full card collection
+    DeckData,               // Server to Client: Sends the player's deck
+    SaveDeck                // Client to Server: Save deck changes
 };
 
 /**
