@@ -49,6 +49,10 @@ The Bayou Bonanza server is configured to automatically initialize the database 
    * `username` (TEXT, PRIMARY KEY, NOT NULL): The player's unique username.
    * `rating` (INTEGER, NOT NULL, DEFAULT 1000): The player's Elo rating, defaulting to 1000 for new players.
 
+4. **`collections` Table:** Stores each player's owned cards as a serialized list.
+
+5. **`decks` Table:** Stores the player's current deck in serialized form. Only one deck per user is supported.
+
 No manual schema creation is required.
 
 ## Troubleshooting

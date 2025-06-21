@@ -315,6 +315,26 @@ void GameState::initializeCardSystem() {
     }
 }
 
+void GameState::initializeCardSystem(const Deck& deck1, const Deck& deck2) {
+    CardFactory::initialize();
+
+    deckPlayer1.clear();
+    deckPlayer1.copyFrom(deck1);
+    deckPlayer2.clear();
+    deckPlayer2.copyFrom(deck2);
+
+    deckPlayer1.shuffle();
+    deckPlayer2.shuffle();
+
+    handPlayer1.clear();
+    handPlayer2.clear();
+
+    for (int i = 0; i < Hand::MAX_HAND_SIZE; i++) {
+        drawCard(PlayerSide::PLAYER_ONE);
+        drawCard(PlayerSide::PLAYER_TWO);
+    }
+}
+
 void GameState::processCardTurnStart() {
     // Draw a card for the active player if their hand isn't full
     if (!getHand(activePlayer).isFull()) {
