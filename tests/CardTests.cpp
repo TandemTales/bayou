@@ -15,6 +15,7 @@
 #include <vector>
 #include <iostream>
 #include <typeinfo>
+#include <map>
 
 using namespace BayouBonanza;
 
@@ -240,6 +241,8 @@ TEST_CASE_METHOD(CardTestFixture, "CardFactory Functionality", "[card][factory]"
             REQUIRE(card->getSteamCost() >= 0);
         }
     }
+    
+
 }
 
 TEST_CASE_METHOD(CardTestFixture, "CardCollection Functionality", "[card][collection]") {
@@ -527,6 +530,59 @@ TEST_CASE("Debug EffectCard Issue", "[debug]") {
     // Test canPlay
     bool canPlay = healCard->canPlay(gameState, PlayerSide::PLAYER_ONE);
     REQUIRE(canPlay);
+}
+
+TEST_CASE_METHOD(CardTestFixture, "Starter Deck Contains All Piece Types", "[card][factory][starter]")
+{
+    SECTION("Starter Deck Creation and Content Verification") {
+        auto starterDeck = CardFactory::createStarterDeck();
+        REQUIRE(!starterDeck.empty());
+        REQUIRE(starterDeck.size() == 20); // Exact deck size
+        
+        // Count cards by piece type
+        std::map<std::string, int> pieceTypeCounts;
+        int effectCardCount = 0;
+        
+        for (const auto& card : starterDeck) {
+            REQUIRE(card != nullptr);
+            REQUIRE(!card->getName().empty());
+            REQUIRE(card->getSteamCost() >= 0);
+            
+            if (card->getCardType() == CardType::PIECE_CARD) {
+                auto pieceCard = dynamic_cast<const PieceCard*>(card.get());
+                REQUIRE(pieceCard != nullptr);
+                pieceTypeCounts[pieceCard->getPieceType()]++;
+            } else if (card->getCardType() == CardType::EFFECT_CARD) {
+                effectCardCount++;
+            }
+        }
+        
+        // Verify all requested piece types are present
+        REQUIRE(pieceTypeCounts["TinkeringTom"] >= 1);
+        REQUIRE(pieceTypeCounts["ScarlettGlumpkin"] >= 1);
+        REQUIRE(pieceTypeCounts["Sweetykins"] >= 1);
+        REQUIRE(pieceTypeCounts["Sidewinder"] >= 1);
+        REQUIRE(pieceTypeCounts["Automatick"] >= 1);
+        REQUIRE(pieceTypeCounts["Sentroid"] >= 1);
+        REQUIRE(pieceTypeCounts["Rustbucket"] >= 1);
+        
+        // Verify expected counts
+        REQUIRE(pieceTypeCounts["Sentroid"] == 6);
+        REQUIRE(pieceTypeCounts["Rustbucket"] == 3);
+        REQUIRE(pieceTypeCounts["Sweetykins"] == 2);
+        REQUIRE(pieceTypeCounts["Automatick"] == 2);
+        REQUIRE(pieceTypeCounts["Sidewinder"] == 2);
+        REQUIRE(pieceTypeCounts["ScarlettGlumpkin"] == 1);
+        REQUIRE(pieceTypeCounts["TinkeringTom"] == 1);
+        REQUIRE(effectCardCount == 3);
+        
+        // Verify total adds up to 20
+        int totalPieceCards = 0;
+        for (const auto& pair : pieceTypeCounts) {
+            totalPieceCards += pair.second;
+        }
+        REQUIRE(totalPieceCards + effectCardCount == 20);
+    }
 }
 
  

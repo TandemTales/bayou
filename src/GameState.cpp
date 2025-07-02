@@ -318,10 +318,8 @@ void GameState::initializeCardSystem() {
 void GameState::initializeCardSystem(const Deck& deck1, const Deck& deck2) {
     CardFactory::initialize();
 
-    deckPlayer1.clear();
-    deckPlayer1.copyFrom(deck1);
-    deckPlayer2.clear();
-    deckPlayer2.copyFrom(deck2);
+    deckPlayer1 = deck1;  // Use copy assignment operator
+    deckPlayer2 = deck2;  // Use copy assignment operator
 
     deckPlayer1.shuffle();
     deckPlayer2.shuffle();

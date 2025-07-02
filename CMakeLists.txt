@@ -141,6 +141,11 @@ target_link_libraries(GameplayTest GameLogic)
 add_executable(TestInitialization test_initialization.cpp)
 target_link_libraries(TestInitialization GameLogic)
 
+# Add deck validation test executable
+add_executable(DeckValidationTest test_deck_validation.cpp)
+target_link_libraries(DeckValidationTest PRIVATE GameLogic)
+target_include_directories(DeckValidationTest PRIVATE include)
+
 # Set Visual Studio debugger working directory to project root for client
 set_target_properties(BayouBonanzaClient PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 

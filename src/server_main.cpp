@@ -32,6 +32,7 @@ struct ClientConnection {
     std::string username;  // Player's username
     int rating = 1000;     // Player's rating, default to 1000
     bool connected = false;
+    bool lookingForMatch = false; // Whether the player is actively looking for a match
     CardCollection collection; // Player's owned cards
     Deck deck;                 // Player's current deck
 };
@@ -154,6 +155,88 @@ void sendCardPlayRejection(std::shared_ptr<ClientConnection> client, const std::
     
     std::cout << "Card play rejected for " << client->socket.getRemoteAddress() 
               << ": " << reason << std::endl;
+}
+
+void tryStartMatchmaking() {
+    std::lock_guard<std::mutex> lock(clientsMutex);
+    
+    // Find two players who are looking for a match
+    std::vector<std::shared_ptr<ClientConnection>> matchmakers;
+    for (auto& client : clients) {
+        if (client->lookingForMatch && client->connected) {
+            matchmakers.push_back(client);
+            if (matchmakers.size() == 2) break;
+        }
+    }
+    
+    if (matchmakers.size() == 2) {
+        std::cout << "Found two players looking for a match. Starting game..." << std::endl;
+        
+        // Assign player sides
+        matchmakers[0]->playerSide = PlayerSide::PLAYER_ONE;
+        matchmakers[1]->playerSide = PlayerSide::PLAYER_TWO;
+        
+        // Clear their matchmaking flags
+        matchmakers[0]->lookingForMatch = false;
+        matchmakers[1]->lookingForMatch = false;
+        
+        // Initialize the game state and create turn manager using player decks
+        gameInitializer.initializeNewGame(globalGameState, matchmakers[0]->deck, matchmakers[1]->deck);
+        turnManager = std::make_unique<TurnManager>(globalGameState, gameRules);
+        
+        // Debug: Print board state after initialization
+        std::cout << "DEBUG: Board state after initialization:" << std::endl;
+        const GameBoard& board = globalGameState.getBoard();
+        for (int y = 0; y < GameBoard::BOARD_SIZE; y++) {
+            std::cout << y << " | ";
+            for (int x = 0; x < GameBoard::BOARD_SIZE; x++) {
+                const Square& square = board.getSquare(x, y);
+                char symbol = '.';
+                if (!square.isEmpty()) {
+                    Piece* piece = square.getPiece();
+                    std::string symbol_str = piece->getSymbol();
+                    symbol = symbol_str.empty() ? '.' : symbol_str[0];
+                    if (piece->getSide() == PlayerSide::PLAYER_TWO) {
+                        symbol = std::tolower(symbol);
+                    }
+                }
+                std::cout << symbol << ' ';
+            }
+            std::cout << "|" << std::endl;
+        }
+        
+        // Print initial card hands
+        printCardHands(globalGameState);
+        
+        std::cout << "Game initialized. Broadcasting GameStart and initial state." << std::endl;
+
+        // Prepare extended GameStart message data
+        std::string p1_username = matchmakers[0]->username;
+        int p1_rating = matchmakers[0]->rating;
+        std::string p2_username = matchmakers[1]->username;
+        int p2_rating = matchmakers[1]->rating;
+
+        std::cout << "P1: " << p1_username << " (" << p1_rating << "), P2: " << p2_username << " (" << p2_rating << ")" << std::endl;
+
+        // Send GameStart, usernames, ratings, and initial GameState to both players
+        sf::Packet gameStartPacket; // Create one packet for both
+        gameStartPacket << MessageType::GameStart 
+                        << p1_username << p1_rating 
+                        << p2_username << p2_rating 
+                        << globalGameState; 
+
+        if (matchmakers[0]->socket.send(gameStartPacket) != sf::Socket::Done) {
+            std::cerr << "Error sending GameStart packet to " << matchmakers[0]->username << std::endl;
+        } else {
+            std::cout << "GameStart packet sent to " << matchmakers[0]->username << std::endl;
+        }
+        
+        if (matchmakers[1]->socket.send(gameStartPacket) != sf::Socket::Done) {
+            std::cerr << "Error sending GameStart packet to " << matchmakers[1]->username << std::endl;
+        } else {
+            std::cout << "GameStart packet sent to " << matchmakers[1]->username << std::endl;
+        }
+    }
 }
 
 void handle_client(std::shared_ptr<ClientConnection> client) {
@@ -385,8 +468,12 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                 std::string deckStr;
                 if (packet >> deckStr) {
                     Deck newDeck;
-                    if (newDeck.deserialize(deckStr) && newDeck.isValid()) {
-                        client->deck = std::move(newDeck);
+                    if (newDeck.deserialize(deckStr)) {
+                        std::cout << "Deck deserialized successfully. Size: " << newDeck.size() << " cards" << std::endl;
+                        if (newDeck.isValidForEditing()) {
+                            std::cout << "Deck validation passed for editing" << std::endl;
+                            client->deck = std::move(newDeck);
+                            bool saveSuccessful = false;
 
                         sqlite3* db;
                         if (sqlite3_open("bayou_bonanza.db", &db) == SQLITE_OK) {
@@ -395,12 +482,52 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                             if (sqlite3_prepare_v2(db, sql_upd, -1, &stmt, 0) == SQLITE_OK) {
                                 sqlite3_bind_text(stmt, 1, client->username.c_str(), -1, SQLITE_STATIC);
                                 sqlite3_bind_text(stmt, 2, deckStr.c_str(), -1, SQLITE_STATIC);
-                                sqlite3_step(stmt);
+                                if (sqlite3_step(stmt) == SQLITE_DONE) {
+                                    saveSuccessful = true;
+                                    std::cout << "Deck saved successfully for user: " << client->username << std::endl;
+                                } else {
+                                    std::cerr << "Failed to save deck for user: " << client->username 
+                                              << " - " << sqlite3_errmsg(db) << std::endl;
+                                }
                                 sqlite3_finalize(stmt);
+                            } else {
+                                std::cerr << "Failed to prepare deck save statement: " << sqlite3_errmsg(db) << std::endl;
                             }
                             sqlite3_close(db);
+                        } else {
+                            std::cerr << "Failed to open database for deck save" << std::endl;
                         }
+
+                        // Send confirmation message back to client
+                        sf::Packet confirmationPacket;
+                        if (saveSuccessful) {
+                            confirmationPacket << MessageType::DeckSaved;
+                            std::cout << "Sending deck save confirmation to " << client->username << std::endl;
+                        } else {
+                            confirmationPacket << MessageType::Error << std::string("Failed to save deck to database");
+                            std::cout << "Sending deck save error to " << client->username << std::endl;
+                        }
+                            client->socket.send(confirmationPacket);
+                        } else {
+                            // Validation failed
+                            sf::Packet errorPacket;
+                            errorPacket << MessageType::Error << std::string("Deck validation failed - too many copies of a card");
+                            client->socket.send(errorPacket);
+                            std::cerr << "Deck validation failed for " << client->username << " - too many copies" << std::endl;
+                        }
+                    } else {
+                        // Deserialization failed
+                        sf::Packet errorPacket;
+                        errorPacket << MessageType::Error << std::string("Failed to deserialize deck data");
+                        client->socket.send(errorPacket);
+                        std::cerr << "Failed to deserialize deck data from " << client->username << std::endl;
                     }
+                } else {
+                    // Failed to deserialize deck string
+                    sf::Packet errorPacket;
+                    errorPacket << MessageType::Error << std::string("Failed to parse deck data");
+                    client->socket.send(errorPacket);
+                    std::cerr << "Failed to parse deck data from " << client->username << std::endl;
                 }
             } else if (messageType == MessageType::EndTurn) {
                 std::cout << "End turn received from " << client->socket.getRemoteAddress() << std::endl;
@@ -436,6 +563,17 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                 } else {
                     std::cout << "Game not properly initialized for phase advance" << std::endl;
                 }
+            } else if (messageType == MessageType::RequestMatchmaking) {
+                std::cout << "Matchmaking request received from " << client->username << std::endl;
+                client->lookingForMatch = true;
+                
+                // Send WaitingForOpponent message to the client
+                sf::Packet waitingPacket;
+                waitingPacket << MessageType::WaitingForOpponent;
+                client->socket.send(waitingPacket);
+                
+                // Try to start matchmaking
+                tryStartMatchmaking();
             } else {
                 // Handle other message types or log unexpected ones
                 std::cout << "Received unhandled message type: " << static_cast<int>(messageType) 
@@ -638,7 +776,7 @@ int main() {
 
                                 if (collectionStr.empty()) {
                                     auto starter = CardFactory::createStarterDeck();
-                                    CardCollection cc(starter);
+                                    CardCollection cc(std::move(starter));
                                     collectionStr = cc.serialize();
                                     sqlite3_stmt* stmt_ins;
                                     if (sqlite3_prepare_v2(db, sql_insert_collection, -1, &stmt_ins, 0) == SQLITE_OK) {
@@ -720,82 +858,11 @@ int main() {
                 deckPacket << MessageType::DeckData << new_client_conn->deck.serialize();
                 new_client_conn->socket.send(deckPacket);
 
-                if (clients.size() == 1) {
-                    // First client connected, send WaitingForOpponent
-                    sf::Packet waitingPacket;
-                    waitingPacket << MessageType::WaitingForOpponent;
-                    clients[0]->socket.send(waitingPacket);
-                    std::cout << "Sent WaitingForOpponent to Player One." << std::endl;
-                } else if (clients.size() == REQUIRED_PLAYERS) {
-                    std::cout << "All players connected. Initializing and starting game..." << std::endl;
-                    
-                    // Initialize the game state and create turn manager using player decks
-                    Deck deck1 = clients[0]->deck;
-                    Deck deck2 = clients[1]->deck;
-                    gameInitializer.initializeNewGame(globalGameState, deck1, deck2);
-                    turnManager = std::make_unique<TurnManager>(globalGameState, gameRules);
-                    
-                    // Debug: Print board state after initialization
-                    std::cout << "DEBUG: Board state after initialization:" << std::endl;
-                    const GameBoard& board = globalGameState.getBoard();
-                    for (int y = 0; y < GameBoard::BOARD_SIZE; y++) {
-                        std::cout << y << " | ";
-                        for (int x = 0; x < GameBoard::BOARD_SIZE; x++) {
-                            const Square& square = board.getSquare(x, y);
-                            char symbol = '.';
-                            if (!square.isEmpty()) {
-                                Piece* piece = square.getPiece();
-                                std::string symbol_str = piece->getSymbol();
-                                symbol = symbol_str.empty() ? '.' : symbol_str[0];
-                                if (piece->getSide() == PlayerSide::PLAYER_TWO) {
-                                    symbol = std::tolower(symbol);
-                                }
-                            }
-                            std::cout << symbol << ' ';
-                        }
-                        std::cout << "|" << std::endl;
-                    }
-                    
-                    // Print initial card hands
-                    printCardHands(globalGameState);
-                    
-                    std::cout << "Game initialized. Broadcasting GameStart and initial state." << std::endl;
-
-                    // Prepare extended GameStart message data
-                    // Ensure clients[0] is Player One and clients[1] is Player Two as per current logic
-                    std::string p1_username = clients[0]->username;
-                    int p1_rating = clients[0]->rating;
-                    std::string p2_username = clients[1]->username;
-                    int p2_rating = clients[1]->rating;
-
-                    std::cout << "P1: " << p1_username << " (" << p1_rating << "), P2: " << p2_username << " (" << p2_rating << ")" << std::endl;
-
-                    // Send GameStart, usernames, ratings, and initial GameState to both players
-                    sf::Packet gameStartPacket; // Create one packet for both
-                    gameStartPacket << MessageType::GameStart 
-                                    << p1_username << p1_rating 
-                                    << p2_username << p2_rating 
-                                    << globalGameState; 
-
-                    if (clients[0]->socket.send(gameStartPacket) != sf::Socket::Done) {
-                        std::cerr << "Error sending GameStart packet to " << clients[0]->username << std::endl;
-                    } else {
-                        std::cout << "GameStart packet sent to " << clients[0]->username << std::endl;
-                    }
-                    
-                    if (clients[1]->socket.send(gameStartPacket) != sf::Socket::Done) {
-                        std::cerr << "Error sending GameStart packet to " << clients[1]->username << std::endl;
-                    } else {
-                        std::cout << "GameStart packet sent to " << clients[1]->username << std::endl;
-                    }
-
-                    // Start thread for the first client now that the game is starting
-                    client_threads.emplace_back(handle_client, clients[0]);
-                    // Start thread for the second client
-                    client_threads.emplace_back(handle_client, clients[1]);
-                } else if (clients.size() == 1) {
-                     std::cout << "Waiting for the second player..." << std::endl;
-                }
+                // Don't automatically start games - wait for explicit matchmaking requests
+                std::cout << "Player connected. Total players: " << clients.size() << std::endl;
+                
+                // Start thread for each client to handle their messages
+                client_threads.emplace_back(handle_client, new_client_conn);
 
             } else {
                 // Max players reached, reject new connection

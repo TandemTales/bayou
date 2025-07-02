@@ -283,6 +283,14 @@ public:
     bool isValid() const;
     
     /**
+     * @brief Check if the deck is valid for editing/saving purposes
+     * 
+     * Allows incomplete decks (< 20 cards) but still enforces max copies rule
+     * @return true if the deck is valid for editing
+     */
+    bool isValidForEditing() const;
+    
+    /**
      * @brief Get the number of cards remaining in the deck
      * 
      * @return Number of cards left to draw

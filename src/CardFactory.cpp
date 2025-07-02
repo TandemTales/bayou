@@ -123,30 +123,44 @@ std::vector<std::unique_ptr<Card>> CardFactory::createStarterDeck() {
     
     std::vector<std::unique_ptr<Card>> deck;
     
-    // Create a balanced starter deck with 20 cards using predefined card definitions
-            // 8 Sentroid cards (use predefined card ID 1)
-        for (int i = 0; i < 8; i++) {
-            deck.push_back(createCard(1)); // Summon Sentroid
-        }
+    // Create a balanced starter deck with 20 cards including all piece types
+    // Each player gets cards for all 7 piece types
     
-            // 4 Sweetykins cards (use predefined card ID 2)
-        for (int i = 0; i < 4; i++) {
-            deck.push_back(createCard(2)); // Summon Sweetykins
+    // 6 Sentroid cards (common, low cost) - ID 1
+    for (int i = 0; i < 6; i++) {
+        deck.push_back(createCard(1)); // Summon Sentroid
     }
     
-            // 4 Automatick cards (use predefined card ID 3)
-        for (int i = 0; i < 4; i++) {
-            deck.push_back(createCard(3)); // Summon Automatick
-        }
+    // 3 Rustbucket cards (common, ranged) - ID 7
+    for (int i = 0; i < 3; i++) {
+        deck.push_back(createCard(7)); // Summon Rustbucket
+    }
     
-    // 2 Bishop cards (use predefined card ID 4)
+    // 2 Sweetykins cards (uncommon, rook-like) - ID 2
     for (int i = 0; i < 2; i++) {
-        deck.push_back(createCard(4)); // Summon Bishop
+        deck.push_back(createCard(2)); // Summon Sweetykins
     }
     
-    // 2 Effect cards (healing) - use predefined card definitions
-    deck.push_back(createCard(10)); // Healing Light
-    deck.push_back(createCard(10)); // Healing Light
+    // 2 Automatick cards (uncommon, knight-like) - ID 3
+    for (int i = 0; i < 2; i++) {
+        deck.push_back(createCard(3)); // Summon Automatick
+    }
+    
+    // 2 Sidewinder cards (uncommon, bishop-like) - ID 4
+    for (int i = 0; i < 2; i++) {
+        deck.push_back(createCard(4)); // Summon Sidewinder
+    }
+    
+    // 1 ScarlettGlumpkin card (rare, queen-like) - ID 5
+    deck.push_back(createCard(5)); // Summon ScarlettGlumpkin
+    
+    // 1 TinkeringTom card (rare, king-like) - ID 6
+    deck.push_back(createCard(6)); // Summon TinkeringTom
+    
+    // 3 Effect cards (healing) - use predefined card definitions
+    for (int i = 0; i < 3; i++) {
+        deck.push_back(createCard(10)); // Healing Light
+    }
     
     return deck;
 }
@@ -299,6 +313,18 @@ void CardFactory::createDefaultDefinitions() {
                             8, CardType::PIECE_CARD, CardRarity::RARE);
     queenCard.pieceType = "ScarlettGlumpkin";
     cardDefinitions[5] = queenCard;
+    
+    // Add TinkeringTom card definition
+    CardDefinition tinkeringTomCard(6, "Summon TinkeringTom", "Summon a TinkeringTom piece to the battlefield",
+                                   7, CardType::PIECE_CARD, CardRarity::RARE);
+    tinkeringTomCard.pieceType = "TinkeringTom";
+    cardDefinitions[6] = tinkeringTomCard;
+    
+    // Add Rustbucket card definition  
+    CardDefinition rustbucketCard(7, "Summon Rustbucket", "Summon a Rustbucket piece to the battlefield",
+                                 3, CardType::PIECE_CARD, CardRarity::COMMON);
+    rustbucketCard.pieceType = "Rustbucket";
+    cardDefinitions[7] = rustbucketCard;
     
     // Create default effect cards
     CardDefinition healCard(10, "Healing Light", "Restore 25 health to target piece", 

@@ -282,6 +282,12 @@ bool Deck::isValid() const {
     return validate(DECK_SIZE, MAX_COPIES) && size() == DECK_SIZE;
 }
 
+bool Deck::isValidForEditing() const {
+    // For editing, we only check max copies rule, not the exact size requirement
+    // This allows players to save incomplete decks while building
+    return validate(0, MAX_COPIES); // 0 = no size limit, but enforce max copies
+}
+
 size_t Deck::cardsRemaining() const {
     return size();
 }

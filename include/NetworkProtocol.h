@@ -21,7 +21,9 @@ enum class MessageType : sf::Uint8 {
     UserLogin,              // Client to Server: Sends username for login/registration
     CardCollectionData,     // Server to Client: Sends player's full card collection
     DeckData,               // Server to Client: Sends the player's deck
-    SaveDeck                // Client to Server: Save deck changes
+    SaveDeck,               // Client to Server: Save deck changes
+    DeckSaved,              // Server to Client: Confirmation that deck was saved successfully
+    RequestMatchmaking      // Client to Server: Request to be matched with another player
 };
 
 /**

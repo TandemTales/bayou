@@ -79,6 +79,12 @@ std::map<std::string, sf::Texture> pieceTextures;
 CardCollection myCollection;
 Deck myDeck;
 
+// Global variables to store GameStart data received in main menu
+bool gameStartReceived = false;
+std::string gameStartP1Username, gameStartP2Username;
+int gameStartP1Rating = 0, gameStartP2Rating = 0;
+sf::Packet gameStartPacketData;
+
 // Win condition notification callback
 void onWinCondition(PlayerSide winner, const std::string& description) {
     winMessage = description;
@@ -514,8 +520,45 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
     size_t selectedCollection = 0;
     size_t selectedDeck = 0;
     bool editingDeck = false; // false=select from collection, true=deck
+    
+    // Status message system
+    std::string statusMessage = "";
+    sf::Color statusColor = sf::Color::Green;
+    sf::Clock statusClock;
+    const float STATUS_DISPLAY_TIME = 2.0f; // Show status for 2 seconds
 
     while (window.isOpen()) {
+        // Process network messages first
+        sf::Packet receivedPacket;
+        sf::Socket::Status status = socket.receive(receivedPacket);
+        if (status == sf::Socket::Done) {
+            MessageType messageType;
+            if (receivedPacket >> messageType) {
+                switch (messageType) {
+                    case MessageType::DeckSaved:
+                        std::cout << "Deck save confirmed by server" << std::endl;
+                        statusMessage = "Deck saved successfully!";
+                        statusColor = sf::Color::Green;
+                        statusClock.restart();
+                        break;
+                    case MessageType::Error:
+                        {
+                            std::string errorMsg;
+                            if (receivedPacket >> errorMsg) {
+                                std::cerr << "Server error: " << errorMsg << std::endl;
+                                statusMessage = "Error: " + errorMsg;
+                                statusColor = sf::Color::Red;
+                                statusClock.restart();
+                            }
+                        }
+                        break;
+                    default:
+                        std::cout << "Received unhandled message in deck editor: " << static_cast<int>(messageType) << std::endl;
+                        break;
+                }
+            }
+        }
+
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
@@ -523,9 +566,7 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
                 return;
             } else if (event.type == sf::Event::KeyPressed) {
                 if (event.key.code == sf::Keyboard::Escape) {
-                    sf::Packet pkt;
-                    pkt << MessageType::SaveDeck << myDeck.serialize();
-                    socket.send(pkt);
+                    // Deck changes are now auto-saved, so we can exit immediately
                     return;
                 } else if (event.key.code == sf::Keyboard::Tab) {
                     editingDeck = !editingDeck;
@@ -536,14 +577,36 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
                     if (editingDeck && selectedDeck + 1 < myDeck.size()) ++selectedDeck;
                     if (!editingDeck && selectedCollection + 1 < myCollection.size()) ++selectedCollection;
                 } else if (event.key.code == sf::Keyboard::Enter) {
+                    bool deckChanged = false;
                     if (editingDeck) {
                         if (selectedDeck < myDeck.size()) {
                             myDeck.removeCardAt(selectedDeck);
+                            deckChanged = true;
                         }
                     } else {
                         if (myDeck.size() < Deck::DECK_SIZE && selectedCollection < myCollection.size()) {
                             const Card* c = myCollection.getCard(selectedCollection);
-                            if (c) myDeck.addCard(c->clone());
+                            if (c) {
+                                myDeck.addCard(c->clone());
+                                deckChanged = true;
+                            }
+                        }
+                    }
+                    
+                    // Auto-save deck changes to database
+                    if (deckChanged) {
+                        sf::Packet pkt;
+                        pkt << MessageType::SaveDeck << myDeck.serialize();
+                        if (socket.send(pkt) == sf::Socket::Done) {
+                            std::cout << "Deck changes auto-saved to server" << std::endl;
+                            statusMessage = "Saving deck...";
+                            statusColor = sf::Color::Yellow;
+                            statusClock.restart();
+                        } else {
+                            std::cerr << "Failed to auto-save deck changes" << std::endl;
+                            statusMessage = "Failed to save deck!";
+                            statusColor = sf::Color::Red;
+                            statusClock.restart();
                         }
                     }
                 }
@@ -588,11 +651,37 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
             window.draw(t);
         }
 
+        // Draw status message if active
+        if (!statusMessage.empty() && statusClock.getElapsedTime().asSeconds() < STATUS_DISPLAY_TIME) {
+            sf::Text statusText;
+            statusText.setFont(globalFont);
+            statusText.setString(statusMessage);
+            statusText.setCharacterSize(24);
+            statusText.setFillColor(statusColor);
+            
+            // Position at top center of screen
+            sf::FloatRect textBounds = statusText.getLocalBounds();
+            statusText.setOrigin(textBounds.left + textBounds.width / 2.f, textBounds.top + textBounds.height / 2.f);
+            statusText.setPosition(GraphicsManager::BASE_WIDTH / 2.f, 20.f);
+            
+            // Draw semi-transparent background
+            sf::RectangleShape statusBg(sf::Vector2f(textBounds.width + 20.f, textBounds.height + 10.f));
+            statusBg.setFillColor(sf::Color(0, 0, 0, 150));
+            statusBg.setOrigin((textBounds.width + 20.f) / 2.f, (textBounds.height + 10.f) / 2.f);
+            statusBg.setPosition(GraphicsManager::BASE_WIDTH / 2.f, 20.f);
+            
+            window.draw(statusBg);
+            window.draw(statusText);
+        } else if (statusClock.getElapsedTime().asSeconds() >= STATUS_DISPLAY_TIME) {
+            // Clear status message after display time
+            statusMessage = "";
+        }
+
         window.display();
     }
 }
 
-MainMenuOption runMainMenu(sf::RenderWindow& window, GraphicsManager& graphicsManager) {
+MainMenuOption runMainMenu(sf::RenderWindow& window, GraphicsManager& graphicsManager, sf::TcpSocket& socket) {
     int selected = 0;
     const char* optionTexts[] = {"Deck Editor", "Play Against Human", "Play Against AI"};
     const int optionCount = 3;
@@ -611,12 +700,80 @@ MainMenuOption runMainMenu(sf::RenderWindow& window, GraphicsManager& graphicsMa
                 } else if (event.key.code == sf::Keyboard::Enter || event.key.code == sf::Keyboard::Return) {
                     switch (selected) {
                         case 0: return MainMenuOption::DECK_EDITOR;
-                        case 1: return MainMenuOption::PLAY_HUMAN;
+                        case 1: 
+                            {
+                                // Send matchmaking request to server
+                                sf::Packet matchmakingPacket;
+                                matchmakingPacket << MessageType::RequestMatchmaking;
+                                if (socket.send(matchmakingPacket) == sf::Socket::Done) {
+                                    std::cout << "Matchmaking request sent to server" << std::endl;
+                                } else {
+                                    std::cerr << "Failed to send matchmaking request" << std::endl;
+                                }
+                                // Don't return immediately - wait for server response
+                            }
+                            break;
                         case 2: return MainMenuOption::PLAY_AI;
                     }
                 }
             } else if (event.type == sf::Event::Resized) {
                 graphicsManager.updateView();
+            }
+        }
+
+        // Process network messages while in main menu
+        sf::Packet receivedPacket;
+        sf::Socket::Status status = socket.receive(receivedPacket);
+        if (status == sf::Socket::Done) {
+            std::cout << "Received packet from server in main menu" << std::endl;
+            MessageType messageType;
+            if (receivedPacket >> messageType) {
+                std::cout << "Message type: " << static_cast<int>(messageType) << std::endl;
+                switch (messageType) {
+                    case MessageType::PlayerAssignment:
+                        {
+                            uint8_t side_uint8;
+                            if (receivedPacket >> side_uint8) {
+                                myPlayerSide = static_cast<PlayerSide>(side_uint8);
+                                std::cout << "Assigned player side: Player " << (myPlayerSide == PlayerSide::PLAYER_ONE ? "One" : "Two") << std::endl;
+                            }
+                        }
+                        break;
+                    case MessageType::CardCollectionData:
+                        {
+                            std::string data;
+                            if (receivedPacket >> data) {
+                                myCollection.deserialize(data);
+                                std::cout << "Collection received with " << myCollection.size() << " cards" << std::endl;
+                            }
+                        }
+                        break;
+                    case MessageType::DeckData:
+                        {
+                            std::string data;
+                            if (receivedPacket >> data) {
+                                myDeck.deserialize(data);
+                                std::cout << "Deck received with " << myDeck.size() << " cards" << std::endl;
+                            }
+                        }
+                        break;
+                    case MessageType::WaitingForOpponent:
+                        std::cout << "Waiting for opponent..." << std::endl;
+                        break;
+                    case MessageType::GameStart:
+                        {
+                            std::cout << "Game start received in main menu - storing packet data and transitioning to game!" << std::endl;
+                            // Store the entire packet data for processing in the main game loop
+                            gameStartPacketData = receivedPacket;
+                            gameStartReceived = true;
+                            std::cout << "GameStart packet data stored for processing in main game loop" << std::endl;
+                            return MainMenuOption::PLAY_HUMAN;
+                        }
+                        break;
+                    default:
+                        std::cout << "Received unhandled message type in main menu: " << static_cast<int>(messageType) << std::endl;
+                        break;
+                }
             }
         }
 
@@ -674,6 +831,9 @@ int main()
     }
     globalPieceFactory = std::make_unique<PieceFactory>(globalPieceDefManager);
 
+    // Initialize CardFactory for card operations
+    CardFactory::initialize();
+
     // Load piece textures
     for (const auto& typeName : globalPieceDefManager.getAllPieceTypeNames()) {
         const PieceStats* stats = globalPieceDefManager.getPieceStats(typeName);
@@ -725,7 +885,7 @@ int main()
     // Show main menu
     MainMenuOption menuChoice = MainMenuOption::NONE;
     do {
-        menuChoice = runMainMenu(window, graphicsManager);
+        menuChoice = runMainMenu(window, graphicsManager, socket);
         if (menuChoice == MainMenuOption::DECK_EDITOR) {
             runDeckEditor(window, graphicsManager, socket);
         } else if (menuChoice == MainMenuOption::PLAY_AI) {
@@ -782,6 +942,57 @@ int main()
     // Main game loop
     while (window.isOpen()) {
         float dt = frameClock.restart().asSeconds();
+        
+        // Process stored GameStart data if received in main menu
+        if (gameStartReceived && !gameHasStarted) {
+            std::cout << "Processing stored GameStart packet data from main menu" << std::endl;
+            
+            // Deserialize the stored packet data
+            std::string p1_username, p2_username;
+            int p1_rating, p2_rating;
+            
+            if (gameStartPacketData >> p1_username >> p1_rating >> p2_username >> p2_rating >> gameState) {
+                gameHasStarted = true;
+                printBoardState(gameState, myPlayerSide); // Keep this for debugging
+
+                // Determine local and remote player data
+                if (myPlayerSide == PlayerSide::PLAYER_ONE) {
+                    localPlayerUsernameText.setString("You: " + p1_username);
+                    localPlayerRatingText.setString("Rating: " + std::to_string(p1_rating));
+                    remotePlayerUsernameText.setString("Opponent: " + p2_username);
+                    remotePlayerRatingText.setString("Rating: " + std::to_string(p2_rating));
+                } else if (myPlayerSide == PlayerSide::PLAYER_TWO) {
+                    localPlayerUsernameText.setString("You: " + p2_username);
+                    localPlayerRatingText.setString("Rating: " + std::to_string(p2_rating));
+                    remotePlayerUsernameText.setString("Opponent: " + p1_username);
+                    remotePlayerRatingText.setString("Rating: " + std::to_string(p1_rating));
+                }
+                uiMessage = "Game started!"; 
+                std::cout << uiMessage << " P1: " << p1_username << " (" << p1_rating << "), P2: " << p2_username << " (" << p2_rating << ")" << std::endl;
+
+                // Set positions for username/rating texts (using base resolution coordinates)
+                // Account for phase text by adding extra spacing
+                localPlayerUsernameText.setPosition(10.f, uiMessageText.getPosition().y + 55.f);
+                localPlayerRatingText.setPosition(10.f, localPlayerUsernameText.getPosition().y + 20.f);
+                localPlayerSteamText.setPosition(10.f, localPlayerRatingText.getPosition().y + 20.f);
+                
+                // Update local player steam display
+                int localPlayerSteam = gameState.getSteam(myPlayerSide);
+                localPlayerSteamText.setString("Steam: " + std::to_string(localPlayerSteam));
+                
+                // Position remote player text on the right side
+                float remoteTextWidthEstimate = 200.f; 
+                remotePlayerUsernameText.setPosition(GraphicsManager::BASE_WIDTH - remoteTextWidthEstimate - 10.f, uiMessageText.getPosition().y + 55.f);
+                remotePlayerRatingText.setPosition(GraphicsManager::BASE_WIDTH - remoteTextWidthEstimate - 10.f, remotePlayerUsernameText.getPosition().y + 20.f);
+                
+                std::cout << "Successfully processed stored GameStart data" << std::endl;
+            } else {
+                std::cerr << "Error deserializing stored GameStart packet data" << std::endl;
+            }
+            
+            // Clear the flag so we don't process it again
+            gameStartReceived = false;
+        }
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
@@ -799,8 +1010,10 @@ int main()
         sf::Packet receivedPacket;
         sf::Socket::Status status = socket.receive(receivedPacket);
         if (status == sf::Socket::Done) {
+            std::cout << "Received packet from server" << std::endl;
             MessageType messageType;
             if (receivedPacket >> messageType) {
+                std::cout << "Message type: " << static_cast<int>(messageType) << std::endl;
                 switch (messageType) {
                     case MessageType::PlayerAssignment:
                         uint8_t side_uint8;

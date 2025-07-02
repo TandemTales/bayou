@@ -53,6 +53,16 @@ The Bayou Bonanza server is configured to automatically initialize the database 
 
 5. **`decks` Table:** Stores the player's current deck in serialized form. Only one deck per user is supported.
 
+6. **Starter Collection:** New users automatically receive a starter collection of 20 cards that includes cards for all piece types:
+   - 6 Sentroid cards (common, basic pieces)
+   - 3 Rustbucket cards (common, ranged pieces)
+   - 2 Sweetykins cards (uncommon, rook-like movement)
+   - 2 Automatick cards (uncommon, knight-like movement)
+   - 2 Sidewinder cards (uncommon, bishop-like movement)
+   - 1 ScarlettGlumpkin card (rare, queen-like piece)
+   - 1 TinkeringTom card (rare, king-like piece)
+   - 3 Healing Light effect cards
+
 No manual schema creation is required.
 
 ## Troubleshooting
