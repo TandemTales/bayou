@@ -877,8 +877,8 @@ int main()
         for (int y = 0; y < GameBoard::BOARD_SIZE; ++y) {
             for (int x = 0; x < GameBoard::BOARD_SIZE; ++x) {
                 sf::RectangleShape squareShape(sf::Vector2f(boardParams.squareSize, boardParams.squareSize));
-                squareShape.setPosition(boardParams.boardStartX + x * boardParams.squareSize, 
-                                       boardParams.boardStartY + y * boardParams.squareSize);
+                sf::Vector2f pos = graphicsManager.boardToGame({x, y});
+                squareShape.setPosition(pos);
 
                 // Alternate colors for chessboard pattern
                 if ((x + y) % 2 == 0) {
@@ -899,8 +899,8 @@ int main()
                 
                 if (controller != PlayerSide::NEUTRAL) {
                     sf::RectangleShape controlIndicator(sf::Vector2f(boardParams.squareSize, boardParams.squareSize));
-                    controlIndicator.setPosition(boardParams.boardStartX + x * boardParams.squareSize, 
-                                                boardParams.boardStartY + y * boardParams.squareSize);
+                    sf::Vector2f pos = graphicsManager.boardToGame({x, y});
+                    controlIndicator.setPosition(pos);
                     
                     if (controller == PlayerSide::PLAYER_ONE) {
                         // More visible blue tint for Player One control
@@ -939,8 +939,8 @@ int main()
 
         for (const Position& pos : highlightSquares) {
             sf::RectangleShape highlightRect(sf::Vector2f(boardParams.squareSize, boardParams.squareSize));
-            highlightRect.setPosition(boardParams.boardStartX + pos.x * boardParams.squareSize,
-                                      boardParams.boardStartY + pos.y * boardParams.squareSize);
+            sf::Vector2f posGame = graphicsManager.boardToGame({pos.x, pos.y});
+            highlightRect.setPosition(posGame);
             highlightRect.setFillColor(sf::Color(255, 255, 0, 120));
             window.draw(highlightRect);
         }
@@ -960,29 +960,30 @@ int main()
                 if (!square.isEmpty()) {
                     Piece* piece = square.getPiece();
                     auto texIt = pieceTextures.find(piece->getTypeName());
+                    sf::Vector2f pos = graphicsManager.boardToGame({x, y});
                     if (texIt != pieceTextures.end()) {
                         sf::Sprite spr(texIt->second);
-                        spr.setPosition(boardParams.boardStartX + x * boardParams.squareSize,
-                                        boardParams.boardStartY + y * boardParams.squareSize);
+                        spr.setPosition(pos);
                         
                         // Scale based on actual texture dimensions
                         sf::Vector2u textureSize = texIt->second.getSize();
                         float scaleX = boardParams.squareSize / static_cast<float>(textureSize.x);
                         float scaleY = boardParams.squareSize / static_cast<float>(textureSize.y);
-                        spr.setScale(scaleX, scaleY);
+                        if (piece->getSide() == PlayerSide::PLAYER_TWO) {
+                            spr.setOrigin(static_cast<float>(textureSize.x), 0.f);
+                            spr.setScale(-scaleX, scaleY);
+                        } else {
+                            spr.setScale(scaleX, scaleY);
+                        }
                         window.draw(spr);
                     }
 
                     // Render health bar
-                    renderHealthBar(window, piece,
-                                    boardParams.boardStartX + x * boardParams.squareSize,
-                                    boardParams.boardStartY + y * boardParams.squareSize,
+                    renderHealthBar(window, piece, pos.x, pos.y,
                                     boardParams.squareSize);
 
                     // Render attack value
-                    renderAttackValue(window, piece,
-                                     boardParams.boardStartX + x * boardParams.squareSize,
-                                     boardParams.boardStartY + y * boardParams.squareSize,
+                    renderAttackValue(window, piece, pos.x, pos.y,
                                      boardParams.squareSize);
                 }
             }
@@ -1000,12 +1001,17 @@ int main()
             if (texIt != pieceTextures.end()) {
                 sf::Sprite spr(texIt->second);
                 spr.setPosition(draggedPieceX, draggedPieceY);
-                
+
                 // Scale based on actual texture dimensions
                 sf::Vector2u textureSize = texIt->second.getSize();
                 float scaleX = boardParams.squareSize / static_cast<float>(textureSize.x);
                 float scaleY = boardParams.squareSize / static_cast<float>(textureSize.y);
-                spr.setScale(scaleX, scaleY);
+                if (draggedPiece->getSide() == PlayerSide::PLAYER_TWO) {
+                    spr.setOrigin(static_cast<float>(textureSize.x), 0.f);
+                    spr.setScale(-scaleX, scaleY);
+                } else {
+                    spr.setScale(scaleX, scaleY);
+                }
                 window.draw(spr);
             }
             
