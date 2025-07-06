@@ -425,6 +425,12 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                               << " at (" << cardPlayData.targetX << ", " << cardPlayData.targetY 
                               << ") from " << client->socket.getRemoteAddress() << std::endl;
                     
+                    auto session = client->session.lock();
+                    if (!session) {
+                        sendCardPlayRejection(client, "Not in a game");
+                        continue;
+                    }
+                    
                     // Verify it's the client's turn
                     if (client->playerSide != session->gameState.getActivePlayer()) {
                         sendCardPlayRejection(client, "Not your turn");
