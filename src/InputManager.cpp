@@ -85,17 +85,7 @@ void InputManager::resetInputState() {
 }
 
 sf::Vector2i InputManager::gamePosToBoard(const sf::Vector2f& gamePos) const {
-    auto boardParams = graphicsManager.getBoardRenderParams();
-    
-    int boardX = static_cast<int>((gamePos.x - boardParams.boardStartX) / boardParams.squareSize);
-    int boardY = static_cast<int>((gamePos.y - boardParams.boardStartY) / boardParams.squareSize);
-    
-    if (boardX >= 0 && boardX < GameBoard::BOARD_SIZE && 
-        boardY >= 0 && boardY < GameBoard::BOARD_SIZE) {
-        return sf::Vector2i(boardX, boardY);
-    }
-    
-    return sf::Vector2i(-1, -1); // Invalid position
+    return graphicsManager.gameToBoard(gamePos);
 }
 
 void InputManager::handleMouseButtonPressed(const sf::Event& event) {
@@ -176,10 +166,8 @@ void InputManager::selectPiece(int boardX, int boardY, const sf::Vector2f& gameM
     pieceSelected = true;
     
     // Calculate offset in game coordinates
-    auto boardParams = graphicsManager.getBoardRenderParams();
-    float pieceGameX = boardParams.boardStartX + boardX * boardParams.squareSize;
-    float pieceGameY = boardParams.boardStartY + boardY * boardParams.squareSize;
-    mouseOffset = sf::Vector2f(gameMousePos.x - pieceGameX, gameMousePos.y - pieceGameY);
+    sf::Vector2f piecePos = graphicsManager.boardToGame(boardX, boardY);
+    mouseOffset = sf::Vector2f(gameMousePos.x - piecePos.x, gameMousePos.y - piecePos.y);
     currentMousePosition = gameMousePos;
 }
 

@@ -68,15 +68,26 @@ sf::Vector2i GraphicsManager::gameToScreen(const sf::Vector2f& gamePos) const {
 sf::Vector2i GraphicsManager::gameToBoard(const sf::Vector2f& gamePos) const {
     BoardRenderParams params = getBoardRenderParams();
 
-    int boardX = static_cast<int>((gamePos.x - params.boardStartX) / params.squareSize);
-    int boardY = static_cast<int>((gamePos.y - params.boardStartY) / params.squareSize);
+    int rotatedX = static_cast<int>((gamePos.x - params.boardStartX) / params.squareSize);
+    int rotatedY = static_cast<int>((gamePos.y - params.boardStartY) / params.squareSize);
 
-    if (boardX >= 0 && boardX < GameBoard::BOARD_SIZE &&
-        boardY >= 0 && boardY < GameBoard::BOARD_SIZE) {
+    if (rotatedX >= 0 && rotatedX < GameBoard::BOARD_SIZE &&
+        rotatedY >= 0 && rotatedY < GameBoard::BOARD_SIZE) {
+        int boardX = rotatedY;
+        int boardY = GameBoard::BOARD_SIZE - 1 - rotatedX;
         return sf::Vector2i(boardX, boardY);
     }
 
     return sf::Vector2i(-1, -1);
+}
+
+sf::Vector2f GraphicsManager::boardToGame(int boardX, int boardY) const {
+    BoardRenderParams params = getBoardRenderParams();
+    int rotatedX = GameBoard::BOARD_SIZE - 1 - boardY;
+    int rotatedY = boardX;
+    float gameX = params.boardStartX + rotatedX * params.squareSize;
+    float gameY = params.boardStartY + rotatedY * params.squareSize;
+    return sf::Vector2f(gameX, gameY);
 }
 
 GraphicsManager::BoardRenderParams GraphicsManager::getBoardRenderParams() const {

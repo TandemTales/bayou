@@ -30,6 +30,10 @@ public:
 
     // Convert game coordinates to board coordinates
     sf::Vector2i gameToBoard(const sf::Vector2f& gamePos) const;
+
+    // Convert board coordinates to game coordinates (accounting for board
+    // orientation)
+    sf::Vector2f boardToGame(int boardX, int boardY) const;
     
     // Get the game board rendering parameters
     struct BoardRenderParams {
