@@ -26,6 +26,8 @@ using namespace BayouBonanza;
 const unsigned short PORT = 50000;
 const int REQUIRED_PLAYERS = 2;
 
+struct GameSession; // Forward declaration
+
 struct ClientConnection {
     sf::TcpSocket socket;
     PlayerSide playerSide; // Assign PlayerSide to each connection
@@ -35,17 +37,25 @@ struct ClientConnection {
     bool lookingForMatch = false; // Whether the player is actively looking for a match
     CardCollection collection; // Player's owned cards
     Deck deck;                 // Player's current deck
+    std::weak_ptr<GameSession> session; // Game this client is in
 };
 
 // Global vector to store client connections (needs thread safety if accessed by multiple threads)
 std::vector<std::shared_ptr<ClientConnection>> clients;
 std::mutex clientsMutex; // To protect access to the clients vector
 
+struct GameSession {
+    GameState gameState;
+    std::unique_ptr<TurnManager> turnManager;
+    std::shared_ptr<ClientConnection> player1;
+    std::shared_ptr<ClientConnection> player2;
+};
+std::vector<std::shared_ptr<GameSession>> gameSessions;
+std::mutex gamesMutex;
+
 // Game logic components
-GameState globalGameState; // Properly initialized by GameInitializer once game starts
 GameInitializer gameInitializer; // Instance of GameInitializer
 GameRules gameRules; // Game rules for move validation and processing
-std::unique_ptr<TurnManager> turnManager; // Turn manager for game flow
 
 // Global PieceFactory for piece creation (needed for card play)
 PieceDefinitionManager globalPieceDefManager;
@@ -110,18 +120,18 @@ void printCardHands(const GameState& gameState) {
     std::cout << "=========================" << std::endl;
 }
 
-void broadcastGameState(const GameState& gameState) {
+void broadcastGameState(std::shared_ptr<GameSession> session) {
+    if (!session) return;
     sf::Packet updatePacket;
-    updatePacket << MessageType::GameStateUpdate << gameState;
-    
+    updatePacket << MessageType::GameStateUpdate << session->gameState;
+
     // Print card hands for debugging
-    printCardHands(gameState);
-    
-    std::lock_guard<std::mutex> lock(clientsMutex);
-    for (auto& client : clients) {
-        if (client->connected) {
+    printCardHands(session->gameState);
+
+    for (auto& client : {session->player1, session->player2}) {
+        if (client && client->connected) {
             if (client->socket.send(updatePacket) != sf::Socket::Done) {
-                std::cerr << "Error sending game state update to client " 
+                std::cerr << "Error sending game state update to client "
                           << client->socket.getRemoteAddress() << std::endl;
             }
         }
@@ -180,13 +190,23 @@ void tryStartMatchmaking() {
         matchmakers[0]->lookingForMatch = false;
         matchmakers[1]->lookingForMatch = false;
         
-        // Initialize the game state and create turn manager using player decks
-        gameInitializer.initializeNewGame(globalGameState, matchmakers[0]->deck, matchmakers[1]->deck);
-        turnManager = std::make_unique<TurnManager>(globalGameState, gameRules);
-        
+        // Create a new game session
+        auto session = std::make_shared<GameSession>();
+        gameInitializer.initializeNewGame(session->gameState, matchmakers[0]->deck, matchmakers[1]->deck);
+        session->turnManager = std::make_unique<TurnManager>(session->gameState, gameRules);
+        session->player1 = matchmakers[0];
+        session->player2 = matchmakers[1];
+
+        {
+            std::lock_guard<std::mutex> gamesLock(gamesMutex);
+            gameSessions.push_back(session);
+        }
+        matchmakers[0]->session = session;
+        matchmakers[1]->session = session;
+
         // Debug: Print board state after initialization
         std::cout << "DEBUG: Board state after initialization:" << std::endl;
-        const GameBoard& board = globalGameState.getBoard();
+        const GameBoard& board = session->gameState.getBoard();
         for (int y = 0; y < GameBoard::BOARD_SIZE; y++) {
             std::cout << y << " | ";
             for (int x = 0; x < GameBoard::BOARD_SIZE; x++) {
@@ -206,7 +226,7 @@ void tryStartMatchmaking() {
         }
         
         // Print initial card hands
-        printCardHands(globalGameState);
+        printCardHands(session->gameState);
         
         std::cout << "Game initialized. Broadcasting GameStart and initial state." << std::endl;
 
@@ -220,17 +240,17 @@ void tryStartMatchmaking() {
 
         // Send GameStart, usernames, ratings, and initial GameState to both players
         sf::Packet gameStartPacket; // Create one packet for both
-        gameStartPacket << MessageType::GameStart 
-                        << p1_username << p1_rating 
-                        << p2_username << p2_rating 
-                        << globalGameState; 
+        gameStartPacket << MessageType::GameStart
+                        << p1_username << p1_rating
+                        << p2_username << p2_rating
+                        << session->gameState;
 
         if (matchmakers[0]->socket.send(gameStartPacket) != sf::Socket::Done) {
             std::cerr << "Error sending GameStart packet to " << matchmakers[0]->username << std::endl;
         } else {
             std::cout << "GameStart packet sent to " << matchmakers[0]->username << std::endl;
         }
-        
+
         if (matchmakers[1]->socket.send(gameStartPacket) != sf::Socket::Done) {
             std::cerr << "Error sending GameStart packet to " << matchmakers[1]->username << std::endl;
         } else {
@@ -261,15 +281,20 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                       << " from " << client->socket.getRemoteAddress() << std::endl;
 
             if (messageType == MessageType::MoveToServer) {
+                auto session = client->session.lock();
+                if (!session) {
+                    sendMoveRejection(client, "Not in a game");
+                    continue;
+                }
                 Move clientMove;
                 if (packet >> clientMove) { // Deserialize the rest of the packet as Move
-                    std::cout << "Move received: " 
-                              << clientMove.getFrom().x << "," << clientMove.getFrom().y 
-                              << " -> " 
+                    std::cout << "Move received: "
+                              << clientMove.getFrom().x << "," << clientMove.getFrom().y
+                              << " -> "
                               << clientMove.getTo().x << "," << clientMove.getTo().y << std::endl;
 
                     // Reconstruct the move with the actual piece reference
-                    Move completeMove = reconstructMoveWithPiece(clientMove, globalGameState);
+                    Move completeMove = reconstructMoveWithPiece(clientMove, session->gameState);
                     
                     if (!completeMove.getPiece()) {
                         sendMoveRejection(client, "No piece at source position");
@@ -283,57 +308,37 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                     }
                     
                     // Verify it's the client's turn
-                    if (client->playerSide != globalGameState.getActivePlayer()) {
+                    if (client->playerSide != session->gameState.getActivePlayer()) {
                         sendMoveRejection(client, "Not your turn");
                         continue;
                     }
-                    
+
                     // Process the move using TurnManager
-                    if (turnManager) {
+                    if (session->turnManager) {
                         bool moveProcessed = false;
                         std::string resultMessage;
-                        
-                        turnManager->processMoveAction(completeMove, [&](const ActionResult& result) {
+
+                        session->turnManager->processMoveAction(completeMove, [&](const ActionResult& result) {
                             moveProcessed = true;
                             resultMessage = result.message;
                             
                             if (result.success) {
                                 std::cout << "Move processed successfully: " << result.message << std::endl;
                                 // Broadcast updated game state to all clients
-                                broadcastGameState(globalGameState);
+                                broadcastGameState(session);
 
                                 // Check for game over and update ratings
-                                if (gameRules.isGameOver(globalGameState)) {
+                                if (gameRules.isGameOver(session->gameState)) {
                                     std::cout << "Game Over detected." << std::endl;
                                     PlayerSide winner = PlayerSide::NEUTRAL; // Default to draw
-                                    if (gameRules.hasPlayerWon(globalGameState, PlayerSide::PLAYER_ONE)) {
+                                    if (gameRules.hasPlayerWon(session->gameState, PlayerSide::PLAYER_ONE)) {
                                         winner = PlayerSide::PLAYER_ONE;
-                                    } else if (gameRules.hasPlayerWon(globalGameState, PlayerSide::PLAYER_TWO)) {
+                                    } else if (gameRules.hasPlayerWon(session->gameState, PlayerSide::PLAYER_TWO)) {
                                         winner = PlayerSide::PLAYER_TWO;
                                     }
 
-                                    std::shared_ptr<ClientConnection> player1_conn = nullptr;
-                                    std::shared_ptr<ClientConnection> player2_conn = nullptr;
-                                    
-                                    // Lock clientsMutex when accessing the clients vector outside of main connection loop
-                                    std::lock_guard<std::mutex> lock(clientsMutex);
-                                    if (clients.size() == REQUIRED_PLAYERS) { 
-                                        // This simplified logic assumes clients[0] and clients[1] are the players.
-                                        // It also assumes their playerSide was set correctly upon connection.
-                                        if (clients[0]->playerSide == PlayerSide::PLAYER_ONE) {
-                                            player1_conn = clients[0];
-                                            player2_conn = clients[1];
-                                        } else if (clients[0]->playerSide == PlayerSide::PLAYER_TWO) { // Check if client[0] is P2
-                                            player1_conn = clients[1]; // Then client[1] must be P1
-                                            player2_conn = clients[0];
-                                        } else { // Fallback if playerSides are mixed up or not set as expected.
-                                             // Attempt to find by iterating - more robust
-                                            for(const auto& c : clients) {
-                                                if (c->playerSide == PlayerSide::PLAYER_ONE) player1_conn = c;
-                                                else if (c->playerSide == PlayerSide::PLAYER_TWO) player2_conn = c;
-                                            }
-                                        }
-                                    }
+                                    auto player1_conn = session->player1;
+                                    auto player2_conn = session->player2;
                                     
                                     if (!player1_conn || !player2_conn) {
                                         std::cerr << "Error: Could not find player connections for rating update." << std::endl;
@@ -421,18 +426,18 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                               << ") from " << client->socket.getRemoteAddress() << std::endl;
                     
                     // Verify it's the client's turn
-                    if (client->playerSide != globalGameState.getActivePlayer()) {
+                    if (client->playerSide != session->gameState.getActivePlayer()) {
                         sendCardPlayRejection(client, "Not your turn");
                         continue;
                     }
                     
                     // Process the card play using TurnManager
-                    if (turnManager) {
+                    if (session->turnManager) {
                         Position targetPosition(cardPlayData.targetX, cardPlayData.targetY);
                         bool cardPlayProcessed = false;
                         std::string resultMessage;
                         
-                        turnManager->processPlayCardAction(cardPlayData.cardIndex, targetPosition, 
+                        session->turnManager->processPlayCardAction(cardPlayData.cardIndex, targetPosition,
                             [&](const ActionResult& result) {
                                 cardPlayProcessed = true;
                                 resultMessage = result.message;
@@ -440,10 +445,10 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                                 if (result.success) {
                                     std::cout << "Card play processed successfully: " << result.message << std::endl;
                                     // Broadcast updated game state to all clients
-                                    broadcastGameState(globalGameState);
+                                    broadcastGameState(session);
                                     
                                     // Check for game over (same logic as move handling)
-                                    if (gameRules.isGameOver(globalGameState)) {
+                                    if (gameRules.isGameOver(session->gameState)) {
                                         std::cout << "Game Over detected after card play." << std::endl;
                                         // Game over handling would go here (same as move handling)
                                     }
@@ -533,24 +538,29 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                 std::cout << "End turn received from " << client->socket.getRemoteAddress() << std::endl;
                 
                 // Verify it's the client's turn
-                if (client->playerSide != globalGameState.getActivePlayer()) {
+                auto session = client->session.lock();
+                if (!session) {
+                    std::cout << "EndTurn rejected: not in game" << std::endl;
+                    continue;
+                }
+                if (client->playerSide != session->gameState.getActivePlayer()) {
                     std::cout << "EndTurn rejected: Not your turn" << std::endl;
                     continue;
                 }
-                
+
                 // Process the phase advance using TurnManager
-                if (turnManager) {
+                if (session->turnManager) {
                     bool phaseAdvanced = false;
                     std::string resultMessage;
-                    
-                    turnManager->nextPhase([&](const ActionResult& result) {
+
+                    session->turnManager->nextPhase([&](const ActionResult& result) {
                         phaseAdvanced = true;
                         resultMessage = result.message;
                         
                         if (result.success) {
                             std::cout << "Phase advanced successfully: " << result.message << std::endl;
                             // Broadcast updated game state to all clients
-                            broadcastGameState(globalGameState);
+                            broadcastGameState(session);
                         } else {
                             std::cout << "Phase advance failed: " << result.message << std::endl;
                         }
@@ -704,7 +714,7 @@ int main() {
 
         if (listener.accept(new_client_conn->socket) == sf::Socket::Done) {
             std::lock_guard<std::mutex> lock(clientsMutex); // Protect clients vector
-            if (clients.size() < REQUIRED_PLAYERS) {
+            {
                 // Handle UserLogin
                 new_client_conn->socket.setBlocking(true);
                 sf::Packet loginPacket;
@@ -835,14 +845,17 @@ int main() {
                     continue; // Skip adding to clients list and further processing
                 }
 
-                // Assign PlayerSide
-                new_client_conn->playerSide = (clients.empty()) ? PlayerSide::PLAYER_ONE : PlayerSide::PLAYER_TWO;
+                // Assign default PlayerSide until matchmaking
+                new_client_conn->playerSide = PlayerSide::NEUTRAL;
                 clients.push_back(new_client_conn);
                 
-                std::cout << "User '" << new_client_conn->username << "' (Rating: " << new_client_conn->rating 
-                          << ") connected as Player " << (new_client_conn->playerSide == PlayerSide::PLAYER_ONE ? "One" : "Two")
+                std::string sideStr = "Neutral";
+                if (new_client_conn->playerSide == PlayerSide::PLAYER_ONE) sideStr = "One";
+                else if (new_client_conn->playerSide == PlayerSide::PLAYER_TWO) sideStr = "Two";
+                std::cout << "User '" << new_client_conn->username << "' (Rating: " << new_client_conn->rating
+                          << ") connected as Player " << sideStr
                           << " from " << new_client_conn->socket.getRemoteAddress() << std::endl;
-                std::cout << "Current players connected: " << clients.size() << "/" << REQUIRED_PLAYERS << std::endl;
+                std::cout << "Current players connected: " << clients.size() << std::endl;
                 
                 // Send PlayerAssignment
                 sf::Packet assignmentPacket;
@@ -864,14 +877,6 @@ int main() {
                 // Start thread for each client to handle their messages
                 client_threads.emplace_back(handle_client, new_client_conn);
 
-            } else {
-                // Max players reached, reject new connection
-                std::cout << "Max players reached. Rejecting new connection from: " 
-                          << new_client_conn->socket.getRemoteAddress() << std::endl;
-                sf::Packet rejectPacket;
-                rejectPacket << MessageType::Error;
-                new_client_conn->socket.send(rejectPacket);
-                new_client_conn->socket.disconnect();
             }
         }
 
