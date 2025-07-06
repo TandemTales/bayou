@@ -1278,9 +1278,10 @@ int main()
                 const Square& square = board.getSquare(x, y);
                 if (!square.isEmpty()) {
                     Piece* piece = square.getPiece();
+                    sf::Vector2f piecePos = graphicsManager.boardToGame(x, y);
+                    
                     auto texIt = pieceTextures.find(piece->getTypeName());
                     if (texIt != pieceTextures.end()) {
-                        sf::Vector2f piecePos = graphicsManager.boardToGame(x, y);
                         sf::Sprite spr(texIt->second);
                         spr.setPosition(piecePos);
                         
