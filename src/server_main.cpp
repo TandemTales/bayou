@@ -61,6 +61,18 @@ GameRules gameRules; // Game rules for move validation and processing
 PieceDefinitionManager globalPieceDefManager;
 std::unique_ptr<PieceFactory> globalPieceFactory;
 
+// Find an existing game session that involves the given username
+std::shared_ptr<GameSession> findGameSessionByUsername(const std::string& username) {
+    std::lock_guard<std::mutex> gamesLock(gamesMutex);
+    for (auto& session : gameSessions) {
+        if ((session->player1 && session->player1->username == username) ||
+            (session->player2 && session->player2->username == username)) {
+            return session;
+        }
+    }
+    return nullptr;
+}
+
 // Helper function to find piece at position and reconstruct move
 Move reconstructMoveWithPiece(const Move& clientMove, const GameState& gameState) {
     const GameBoard& board = gameState.getBoard();
@@ -852,6 +864,50 @@ int main() {
                                 sqlite3_close(db);
                                 new_client_conn->username = received_username;
                                 login_successful = true;
+
+                                // Check for existing game session for this user
+                                auto existingSession = findGameSessionByUsername(new_client_conn->username);
+                                if (existingSession) {
+                                    std::cout << "Reconnecting user " << new_client_conn->username << " to ongoing game" << std::endl;
+                                    if (existingSession->player1 && existingSession->player1->username == new_client_conn->username) {
+                                        existingSession->player1 = new_client_conn;
+                                        new_client_conn->playerSide = PlayerSide::PLAYER_ONE;
+                                    } else if (existingSession->player2 && existingSession->player2->username == new_client_conn->username) {
+                                        existingSession->player2 = new_client_conn;
+                                        new_client_conn->playerSide = PlayerSide::PLAYER_TWO;
+                                    }
+                                    new_client_conn->session = existingSession;
+
+                                    new_client_conn->socket.setBlocking(false);
+
+                                    // Send PlayerAssignment
+                                    sf::Packet assignmentPacket;
+                                    assignmentPacket << MessageType::PlayerAssignment << new_client_conn->playerSide;
+                                    new_client_conn->socket.send(assignmentPacket);
+
+                                    // Send collection and deck
+                                    sf::Packet collectionPacket;
+                                    collectionPacket << MessageType::CardCollectionData << new_client_conn->collection.serialize();
+                                    new_client_conn->socket.send(collectionPacket);
+
+                                    sf::Packet deckPacket;
+                                    deckPacket << MessageType::DeckData << new_client_conn->deck.serialize();
+                                    new_client_conn->socket.send(deckPacket);
+
+                                    // Send current game state as GameStart packet (acts as resume)
+                                    sf::Packet gameStartPacket;
+                                    std::string p1_username = existingSession->player1->username;
+                                    int p1_rating = existingSession->player1->rating;
+                                    std::string p2_username = existingSession->player2->username;
+                                    int p2_rating = existingSession->player2->rating;
+                                    gameStartPacket << MessageType::GameStart << p1_username << p1_rating
+                                                    << p2_username << p2_rating << existingSession->gameState;
+                                    new_client_conn->socket.send(gameStartPacket);
+
+                                    clients.push_back(new_client_conn);
+                                    client_threads.emplace_back(handle_client, new_client_conn);
+                                    continue; // Skip normal post-login flow
+                                }
                             }
                         } else {
                              std::cerr << "Failed to deserialize username or username empty." << std::endl;

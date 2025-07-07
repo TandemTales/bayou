@@ -880,20 +880,68 @@ int main()
             uiMessage = "Login sent! Waiting for assignment...";
         }
     }
-    socket.setBlocking(false); // Use non-blocking mode for game loop
 
-    // Show main menu
-    MainMenuOption menuChoice = MainMenuOption::NONE;
-    do {
-        menuChoice = runMainMenu(window, graphicsManager, socket);
-        if (menuChoice == MainMenuOption::DECK_EDITOR) {
-            runDeckEditor(window, graphicsManager, socket);
-        } else if (menuChoice == MainMenuOption::PLAY_AI) {
-            showPlaceholderScreen(window, graphicsManager, "Play vs AI Coming Soon");
+    // Check immediately for ongoing game messages before entering menu
+    socket.setBlocking(true);
+    sf::Clock resumeClock;
+    while (resumeClock.getElapsedTime().asSeconds() < 1.f && !gameStartReceived) {
+        sf::Packet receivedPacket;
+        sf::Socket::Status status = socket.receive(receivedPacket);
+        if (status == sf::Socket::Done) {
+            MessageType messageType;
+            if (receivedPacket >> messageType) {
+                switch (messageType) {
+                    case MessageType::PlayerAssignment: {
+                        uint8_t side_uint8;
+                        if (receivedPacket >> side_uint8) {
+                            myPlayerSide = static_cast<PlayerSide>(side_uint8);
+                        }
+                        break;
+                    }
+                    case MessageType::CardCollectionData: {
+                        std::string data;
+                        if (receivedPacket >> data) {
+                            myCollection.deserialize(data);
+                        }
+                        break;
+                    }
+                    case MessageType::DeckData: {
+                        std::string data;
+                        if (receivedPacket >> data) {
+                            myDeck.deserialize(data);
+                        }
+                        break;
+                    }
+                    case MessageType::GameStart:
+                        gameStartPacketData = receivedPacket;
+                        gameStartReceived = true;
+                        break;
+                    default:
+                        break;
+                }
+            }
+        } else if (status == sf::Socket::NotReady) {
+            sf::sleep(sf::milliseconds(50));
+        } else {
+            break;
         }
-    } while (window.isOpen() && menuChoice != MainMenuOption::PLAY_HUMAN);
-    if (!window.isOpen()) {
-        return 0;
+    }
+    socket.setBlocking(false); // Switch to non-blocking for rest of program
+
+    // Show main menu only if no game to resume
+    MainMenuOption menuChoice = MainMenuOption::NONE;
+    if (!gameStartReceived) {
+        do {
+            menuChoice = runMainMenu(window, graphicsManager, socket);
+            if (menuChoice == MainMenuOption::DECK_EDITOR) {
+                runDeckEditor(window, graphicsManager, socket);
+            } else if (menuChoice == MainMenuOption::PLAY_AI) {
+                showPlaceholderScreen(window, graphicsManager, "Play vs AI Coming Soon");
+            }
+        } while (window.isOpen() && menuChoice != MainMenuOption::PLAY_HUMAN);
+        if (!window.isOpen()) {
+            return 0;
+        }
     }
 
     // Initialize UI text elements
