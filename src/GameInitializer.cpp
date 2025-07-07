@@ -106,8 +106,9 @@ void GameInitializer::resetGameState(GameState& gameState) {
         gameState.switchActivePlayer();
     }
     
-    // Set game phase to draw phase
-    gameState.setGamePhase(GamePhase::DRAW);
+    // Start directly in PLAY phase so the first player can make moves
+    // The DRAW phase auto-advancement was causing issues with turn switching
+    gameState.setGamePhase(GamePhase::PLAY);
     
     // Set game result to in progress
     gameState.setGameResult(GameResult::IN_PROGRESS);
@@ -118,9 +119,6 @@ void GameInitializer::resetGameState(GameState& gameState) {
     // Reset steam for both players
     gameState.setSteam(PlayerSide::PLAYER_ONE, 0);
     gameState.setSteam(PlayerSide::PLAYER_TWO, 0);
-    
-    // Auto-advance from draw phase to action phase
-    gameState.nextPhase();
 }
 
 void GameInitializer::calculateInitialControl(GameState& gameState) {

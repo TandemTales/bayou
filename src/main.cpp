@@ -171,7 +171,7 @@ void printBoardState(const GameState& gameState, PlayerSide localPlayer = Player
     // Print local player's hand if specified
     if (localPlayer != PlayerSide::NEUTRAL) {
         const Hand& hand = gameState.getHand(localPlayer);
-        std::cout << "=== MY HAND DEBUG ===" << std::endl;
+
         std::cout << "My Hand (" << hand.size() << " cards, " 
                   << gameState.getSteam(localPlayer) << " steam):" << std::endl;
         for (size_t i = 0; i < hand.size(); ++i) {
@@ -1003,6 +1003,9 @@ int main()
             } else if (gameHasStarted && myPlayerSide == gameState.getActivePlayer()) {
                 // Only handle input if it's the player's turn
                 inputManager.handleEvent(event);
+            } else if (gameHasStarted) {
+                // Debug: Log when input is blocked
+                
             }
         }
 
@@ -1095,6 +1098,7 @@ int main()
                             if (receivedPacket >> gameState) { // Deserialize the updated GameState
                                 // uiMessage = (myPlayerSide == gameState.getActivePlayer() ? "Your turn" : "Opponent's turn");
                                 std::cout << "GameState updated. Turn: " << gameState.getTurnNumber() << std::endl;
+
                                 printBoardState(gameState, myPlayerSide);
                                 
                                 // Update local player steam display

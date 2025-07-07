@@ -22,7 +22,7 @@ void GameRules::initializeGame(GameState& gameState) {
     
     // Set starting player
     gameState.setActivePlayer(PlayerSide::PLAYER_ONE);
-    gameState.setGamePhase(GamePhase::DRAW); // Start with draw phase
+    gameState.setGamePhase(GamePhase::PLAY); // Start directly in PLAY phase to match other initialization
     gameState.setGameResult(GameResult::IN_PROGRESS);
     
     // Don't auto-advance from draw phase - let the game flow handle this

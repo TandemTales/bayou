@@ -92,7 +92,7 @@ Move reconstructMoveWithPiece(const Move& clientMove, const GameState& gameState
 // Helper function to broadcast game state to all connected clients
 // Helper function to print card hands for debugging
 void printCardHands(const GameState& gameState) {
-    std::cout << "=== CARD HANDS DEBUG ===" << std::endl;
+    
     
     // Player 1 hand
     const Hand& p1Hand = gameState.getHand(PlayerSide::PLAYER_ONE);
@@ -186,6 +186,23 @@ void tryStartMatchmaking() {
         matchmakers[0]->playerSide = PlayerSide::PLAYER_ONE;
         matchmakers[1]->playerSide = PlayerSide::PLAYER_TWO;
         
+        // Send PlayerAssignment messages to inform clients of their sides
+        sf::Packet assignment1;
+        assignment1 << MessageType::PlayerAssignment << matchmakers[0]->playerSide;
+        if (matchmakers[0]->socket.send(assignment1) != sf::Socket::Done) {
+            std::cerr << "Error sending PlayerAssignment to " << matchmakers[0]->username << std::endl;
+        } else {
+            std::cout << "PlayerAssignment sent to " << matchmakers[0]->username << " (PLAYER_ONE)" << std::endl;
+        }
+        
+        sf::Packet assignment2;
+        assignment2 << MessageType::PlayerAssignment << matchmakers[1]->playerSide;
+        if (matchmakers[1]->socket.send(assignment2) != sf::Socket::Done) {
+            std::cerr << "Error sending PlayerAssignment to " << matchmakers[1]->username << std::endl;
+        } else {
+            std::cout << "PlayerAssignment sent to " << matchmakers[1]->username << " (PLAYER_TWO)" << std::endl;
+        }
+        
         // Clear their matchmaking flags
         matchmakers[0]->lookingForMatch = false;
         matchmakers[1]->lookingForMatch = false;
@@ -205,7 +222,7 @@ void tryStartMatchmaking() {
         matchmakers[1]->session = session;
 
         // Debug: Print board state after initialization
-        std::cout << "DEBUG: Board state after initialization:" << std::endl;
+
         const GameBoard& board = session->gameState.getBoard();
         for (int y = 0; y < GameBoard::BOARD_SIZE; y++) {
             std::cout << y << " | ";
@@ -313,6 +330,8 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                         continue;
                     }
 
+
+
                     // Process the move using TurnManager
                     if (session->turnManager) {
                         bool moveProcessed = false;
@@ -324,6 +343,7 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                             
                             if (result.success) {
                                 std::cout << "Move processed successfully: " << result.message << std::endl;
+                                
                                 // Broadcast updated game state to all clients
                                 broadcastGameState(session);
 

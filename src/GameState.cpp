@@ -5,6 +5,7 @@
 #include "CardPlayValidator.h" // For comprehensive card validation
 #include "TurnManager.h" // For ActionType enum
 #include <SFML/Network/Packet.hpp> // For sf::Packet
+#include <iostream> // For std::cout
 
 // GameState.h should have already included these.
 // GameBoard.h includes Square.h, etc.
@@ -70,7 +71,7 @@ void GameState::initializeNewGame() {
     
     // Set initial game state
     activePlayer = PlayerSide::PLAYER_ONE;
-    phase = GamePhase::DRAW; // Start with draw phase
+    phase = GamePhase::PLAY; // Start directly in PLAY phase to avoid auto-advancement issues
     result = GameResult::IN_PROGRESS;
     turnNumber = 1;
     
@@ -84,8 +85,7 @@ void GameState::initializeNewGame() {
     // Initialize card system
     initializeCardSystem();
     
-    // Auto-advance from draw phase to action phase
-    nextPhase();
+    // No need to call nextPhase() - start directly in PLAY phase where actions are allowed
     
     // TODO: Place initial pieces on the board (King for each player)
     // This will be implemented when we have the Piece class

@@ -46,18 +46,15 @@ bool PieceCard::play(GameState& gameState, PlayerSide player) const {
 bool PieceCard::isValidPlacement(const GameState& gameState, PlayerSide player, const Position& position) const {
     const GameBoard& board = gameState.getBoard();
     
-    std::cout << "DEBUG: Checking piece placement for " << pieceType << " at (" << position.x << ", " << position.y 
-              << ") for player " << (player == PlayerSide::PLAYER_ONE ? "1" : "2") << std::endl;
+
     
     // Check if position is within board bounds
     if (position.x < 0 || position.x >= 8 || position.y < 0 || position.y >= 8) {
-        std::cout << "DEBUG: Position out of bounds" << std::endl;
         return false;
     }
     
     // Check if the square is empty
     if (!board.getSquare(position.x, position.y).isEmpty()) {
-        std::cout << "DEBUG: Square is not empty" << std::endl;
         return false;
     }
     
@@ -71,10 +68,7 @@ bool PieceCard::isValidPlacement(const GameState& gameState, PlayerSide player, 
         validTerritory = (position.y >= 0 && position.y <= 3);
     }
     
-    std::cout << "DEBUG: Territorial check - player " 
-              << (player == PlayerSide::PLAYER_ONE ? "1" : "2")
-              << " placing at row " << position.y
-              << ": " << (validTerritory ? "VALID" : "INVALID") << std::endl;
+
     
     return validTerritory;
 }
@@ -104,12 +98,10 @@ bool PieceCard::playAtPosition(GameState& gameState, PlayerSide player, const Po
     // Note: Steam cost is handled by the caller (CardPlayValidator::executeCardPlay)
     // Don't spend steam here to avoid double-spending
     
-    std::cout << "DEBUG: PieceCard::playAtPosition - Creating piece of type '" << pieceType 
-              << "' for card '" << name << "'" << std::endl;
+
     
     // Use the global piece factory to create the piece with proper stats and movement rules
     if (!Square::globalPieceFactory) {
-        std::cout << "DEBUG: No global piece factory available" << std::endl;
         return false;
     }
     
@@ -118,7 +110,6 @@ bool PieceCard::playAtPosition(GameState& gameState, PlayerSide player, const Po
         auto piece = Square::globalPieceFactory->createPiece(pieceType, player);
         
         if (!piece) {
-            std::cout << "DEBUG: Failed to create piece of type '" << pieceType << "'" << std::endl;
             return false;
         }
         
@@ -130,12 +121,10 @@ bool PieceCard::playAtPosition(GameState& gameState, PlayerSide player, const Po
         Square& square = board.getSquare(position.x, position.y);
         square.setPiece(std::move(piece));
         
-        std::cout << "DEBUG: Successfully created and placed piece of type '" << pieceType << "'" << std::endl;
         return true;
     } catch (...) {
         // If piece creation fails, return false
         // Note: Steam refund is handled by the caller if needed
-        std::cout << "DEBUG: Exception caught while creating piece of type '" << pieceType << "'" << std::endl;
         return false;
     }
 }

@@ -89,28 +89,13 @@ void TurnManager::processPlayCardAction(int cardIndex, const Position& position,
         return;
     }
     
-    // Debug: Show hand information
     const Hand& hand = gameState.getHand(activePlayer);
-    std::cout << "DEBUG: Player " << (activePlayer == PlayerSide::PLAYER_ONE ? "1" : "2") 
-              << " hand size: " << hand.size() << ", trying to play card index: " << cardIndex << std::endl;
-    
-    for (size_t i = 0; i < hand.size(); ++i) {
-        const Card* card = hand.getCard(i);
-        if (card) {
-            std::cout << "DEBUG: Hand[" << i << "]: " << card->getName() 
-                      << " (cost: " << card->getSteamCost() << ")" << std::endl;
-        } else {
-            std::cout << "DEBUG: Hand[" << i << "]: NULL CARD" << std::endl;
-        }
-    }
     
     // Validate card index
     if (cardIndex < 0 || static_cast<size_t>(cardIndex) >= gameState.getHand(activePlayer).size()) {
-        std::cout << "DEBUG: Card index " << cardIndex << " is invalid for hand size " << hand.size() << std::endl;
         result.success = false;
         result.message = "Invalid card index";
     } else {
-        std::cout << "DEBUG: Card index " << cardIndex << " is valid, proceeding with card play" << std::endl;
         // Use GameState's playCardWithResult method which uses CardPlayValidator internally
         PlayResult playResult = gameState.playCardWithResult(activePlayer, static_cast<size_t>(cardIndex), position);
         
