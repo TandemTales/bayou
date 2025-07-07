@@ -274,15 +274,15 @@ TEST_CASE("GameRules Integration with TurnManager", "[gamerules][turnmanager][in
         // Should be in progress with Player One starting
         REQUIRE(gameState.getGameResult() == GameResult::IN_PROGRESS);
         REQUIRE(gameState.getActivePlayer() == PlayerSide::PLAYER_ONE);
-        REQUIRE(gameState.getGamePhase() == GamePhase::DRAW);
+        REQUIRE(gameState.getGamePhase() == GamePhase::PLAY);
         REQUIRE_FALSE(gameRules.isGameOver(gameState));
     }
 
     SECTION("Game rules properly handle phase-based restrictions") {
         gameRules.initializeGame(gameState);
         
-        // Game should start in DRAW phase
-        REQUIRE(gameState.getGamePhase() == GamePhase::DRAW);
+        // Game should start in PLAY phase
+        REQUIRE(gameState.getGamePhase() == GamePhase::PLAY);
         
         // Game over should prevent phase transitions (handled by GameState)
         gameState.setGameResult(GameResult::PLAYER_ONE_WIN);
