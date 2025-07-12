@@ -22,9 +22,17 @@ namespace BayouBonanza {
 class GameInitializer {
 public:
     /**
-     * @brief Constructor
+     * @brief Constructor that creates its own PieceDefinitionManager and PieceFactory
      */
     GameInitializer();
+    
+    /**
+     * @brief Constructor that uses external PieceDefinitionManager and PieceFactory
+     * 
+     * @param pieceDefManager Reference to an already loaded PieceDefinitionManager
+     * @param pieceFactory Reference to an already created PieceFactory
+     */
+    GameInitializer(const PieceDefinitionManager& pieceDefManager, PieceFactory& pieceFactory);
     
     /**
      * @brief Initialize a new game state
@@ -48,8 +56,13 @@ public:
     void setupBoard(GameState& gameState);
 
 private:
-    BayouBonanza::PieceDefinitionManager pieceDefManager;
-    std::unique_ptr<BayouBonanza::PieceFactory> pieceFactory;
+    // For constructor without parameters - owns the instances
+    std::unique_ptr<BayouBonanza::PieceDefinitionManager> ownedPieceDefManager;
+    std::unique_ptr<BayouBonanza::PieceFactory> ownedPieceFactory;
+    
+    // References to the actual instances to use (either owned or external)
+    const BayouBonanza::PieceDefinitionManager* pieceDefManager;
+    BayouBonanza::PieceFactory* pieceFactory;
 
     /**
      * @brief Create a piece and place it on the board

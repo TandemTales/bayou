@@ -54,7 +54,7 @@ std::vector<std::shared_ptr<GameSession>> gameSessions;
 std::mutex gamesMutex;
 
 // Game logic components
-GameInitializer gameInitializer; // Instance of GameInitializer
+std::unique_ptr<GameInitializer> gameInitializer; // Will be initialized after PieceFactory setup
 GameRules gameRules; // Game rules for move validation and processing
 
 // Global PieceFactory for piece creation (needed for card play)
@@ -221,7 +221,7 @@ void tryStartMatchmaking() {
         
         // Create a new game session
         auto session = std::make_shared<GameSession>();
-        gameInitializer.initializeNewGame(session->gameState, matchmakers[0]->deck, matchmakers[1]->deck);
+        gameInitializer->initializeNewGame(session->gameState, matchmakers[0]->deck, matchmakers[1]->deck);
         session->turnManager = std::make_unique<TurnManager>(session->gameState, gameRules);
         session->player1 = matchmakers[0];
         session->player2 = matchmakers[1];
@@ -732,6 +732,9 @@ int main() {
 
     // Set the global PieceFactory for Square deserialization and card play
     Square::setGlobalPieceFactory(globalPieceFactory.get());
+
+    // Initialize the GameInitializer with the loaded PieceDefinitionManager and PieceFactory
+    gameInitializer = std::make_unique<GameInitializer>(globalPieceDefManager, *globalPieceFactory);
 
     sf::TcpListener listener;
 

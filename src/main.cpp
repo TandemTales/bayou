@@ -763,11 +763,23 @@ MainMenuOption runMainMenu(sf::RenderWindow& window, GraphicsManager& graphicsMa
                     case MessageType::GameStart:
                         {
                             std::cout << "Game start received in main menu - storing packet data and transitioning to game!" << std::endl;
-                            // Store the entire packet data for processing in the main game loop
-                            gameStartPacketData = receivedPacket;
-                            gameStartReceived = true;
-                            std::cout << "GameStart packet data stored for processing in main game loop" << std::endl;
-                            return MainMenuOption::PLAY_HUMAN;
+                            // Create a new packet with the GameStart message type and data
+                            gameStartPacketData.clear();
+                            gameStartPacketData << MessageType::GameStart;
+                            
+                            // Extract and re-add the data to the new packet
+                            std::string p1_username, p2_username;
+                            int p1_rating, p2_rating;
+                            GameState tempGameState;
+                            
+                            if (receivedPacket >> p1_username >> p1_rating >> p2_username >> p2_rating >> tempGameState) {
+                                gameStartPacketData << p1_username << p1_rating << p2_username << p2_rating << tempGameState;
+                                gameStartReceived = true;
+                                std::cout << "GameStart packet data stored for processing in main game loop" << std::endl;
+                                return MainMenuOption::PLAY_HUMAN;
+                            } else {
+                                std::cerr << "Error: Failed to deserialize GameStart data in main menu" << std::endl;
+                            }
                         }
                         break;
                     default:
@@ -882,9 +894,21 @@ int main()
     }
 
     // Check immediately for ongoing game messages before entering menu
-    socket.setBlocking(true);
+    socket.setBlocking(false); // Keep non-blocking to avoid freezing
     sf::Clock resumeClock;
-    while (resumeClock.getElapsedTime().asSeconds() < 1.f && !gameStartReceived) {
+    while (resumeClock.getElapsedTime().asSeconds() < 3.f && !gameStartReceived && window.isOpen()) {
+        // Process window events to prevent freezing
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                window.close();
+                return 0;
+            } else if (event.type == sf::Event::Resized) {
+                graphicsManager.updateView();
+            }
+        }
+        
+        // Check for network messages
         sf::Packet receivedPacket;
         sf::Socket::Status status = socket.receive(receivedPacket);
         if (status == sf::Socket::Done) {
@@ -913,20 +937,52 @@ int main()
                         break;
                     }
                     case MessageType::GameStart:
-                        gameStartPacketData = receivedPacket;
-                        gameStartReceived = true;
+                        {
+                            // Create a new packet with the GameStart message type and data
+                            gameStartPacketData.clear();
+                            gameStartPacketData << MessageType::GameStart;
+                            
+                            // Extract and re-add the data to the new packet
+                            std::string p1_username, p2_username;
+                            int p1_rating, p2_rating;
+                            GameState tempGameState;
+                            
+                            if (receivedPacket >> p1_username >> p1_rating >> p2_username >> p2_rating >> tempGameState) {
+                                gameStartPacketData << p1_username << p1_rating << p2_username << p2_rating << tempGameState;
+                                gameStartReceived = true;
+                            }
+                        }
                         break;
                     default:
                         break;
                 }
             }
         } else if (status == sf::Socket::NotReady) {
-            sf::sleep(sf::milliseconds(50));
+            // No data available, continue loop
         } else {
-            break;
+            break; // Error or disconnection
         }
+        
+        // Render a "connecting" screen during the wait
+        graphicsManager.applyView();
+        window.clear(sf::Color(10, 50, 20));
+        
+        sf::Text connectingText;
+        connectingText.setFont(globalFont);
+        connectingText.setString("Connecting...");
+        connectingText.setCharacterSize(32);
+        connectingText.setFillColor(sf::Color::White);
+        
+        sf::FloatRect bounds = connectingText.getLocalBounds();
+        connectingText.setOrigin(bounds.left + bounds.width / 2.f, bounds.top + bounds.height / 2.f);
+        connectingText.setPosition(GraphicsManager::BASE_WIDTH / 2.f, GraphicsManager::BASE_HEIGHT / 2.f);
+        
+        window.draw(connectingText);
+        window.display();
+        
+        // Small sleep to prevent busy waiting
+        sf::sleep(sf::milliseconds(16)); // ~60 FPS
     }
-    socket.setBlocking(false); // Switch to non-blocking for rest of program
 
     // Show main menu only if no game to resume
     MainMenuOption menuChoice = MainMenuOption::NONE;
@@ -998,8 +1054,9 @@ int main()
             // Deserialize the stored packet data
             std::string p1_username, p2_username;
             int p1_rating, p2_rating;
+            MessageType dummyType;  // Add this to skip the MessageType in the stored packet
             
-            if (gameStartPacketData >> p1_username >> p1_rating >> p2_username >> p2_rating >> gameState) {
+            if (gameStartPacketData >> dummyType >> p1_username >> p1_rating >> p2_username >> p2_rating >> gameState) {
                 gameHasStarted = true;
                 printBoardState(gameState, myPlayerSide); // Keep this for debugging
 

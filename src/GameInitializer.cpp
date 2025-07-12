@@ -8,13 +8,24 @@ namespace BayouBonanza {
 
 // Constructor
 GameInitializer::GameInitializer() {
-    if (!pieceDefManager.loadDefinitions("assets/data/pieces.json")) {
+    ownedPieceDefManager = std::make_unique<PieceDefinitionManager>();
+    if (!ownedPieceDefManager->loadDefinitions("assets/data/pieces.json")) {
         // Handle error: Log and maybe throw or exit
         std::cerr << "FATAL: Could not load piece definitions from assets/data/pieces.json" << std::endl;
         // Consider throwing an exception or setting an error state that can be checked.
         // For now, proceeding will likely lead to issues if pieceFactory is used without definitions.
     }
-    pieceFactory = std::make_unique<BayouBonanza::PieceFactory>(pieceDefManager);
+    ownedPieceFactory = std::make_unique<BayouBonanza::PieceFactory>(*ownedPieceDefManager);
+    
+    // Set references to the owned instances
+    pieceDefManager = ownedPieceDefManager.get();
+    pieceFactory = ownedPieceFactory.get();
+}
+
+// Constructor with external references
+GameInitializer::GameInitializer(const PieceDefinitionManager& pieceDefManager, PieceFactory& pieceFactory)
+    : ownedPieceDefManager(nullptr), ownedPieceFactory(nullptr),
+      pieceDefManager(&pieceDefManager), pieceFactory(&pieceFactory) {
 }
 
 void GameInitializer::initializeNewGame(GameState& gameState) {
