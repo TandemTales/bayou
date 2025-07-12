@@ -159,6 +159,19 @@ const ResourceSystem& GameState::getResourceSystem() const {
 void GameState::processTurnStart() {
     // Use ResourceSystem to process turn start and calculate steam generation
     resourceSystem.processTurnStart(activePlayer, board);
+
+    // Decrement stun on all pieces belonging to the active player
+    for (int y = 0; y < GameBoard::BOARD_SIZE; ++y) {
+        for (int x = 0; x < GameBoard::BOARD_SIZE; ++x) {
+            Square& sq = board.getSquare(x, y);
+            if (!sq.isEmpty()) {
+                Piece* p = sq.getPiece();
+                if (p->getSide() == activePlayer) {
+                    p->decrementStun();
+                }
+            }
+        }
+    }
     
     // Update legacy tracking for backward compatibility
     steamPlayer1 = resourceSystem.getSteam(PlayerSide::PLAYER_ONE);

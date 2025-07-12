@@ -1392,6 +1392,9 @@ int main()
                     auto texIt = pieceTextures.find(piece->getTypeName());
                     if (texIt != pieceTextures.end()) {
                         sf::Sprite spr(texIt->second);
+                        if (piece->isStunned()) {
+                            spr.setColor(sf::Color(128, 128, 128));
+                        }
                         spr.setPosition(piecePos);
                         
                         // Scale based on actual texture dimensions
@@ -1433,6 +1436,9 @@ int main()
             auto texIt = pieceTextures.find(draggedPiece->getTypeName());
             if (texIt != pieceTextures.end()) {
                 sf::Sprite spr(texIt->second);
+                if (draggedPiece->isStunned()) {
+                    spr.setColor(sf::Color(128, 128, 128));
+                }
                 spr.setPosition(draggedPieceX, draggedPieceY);
 
                 // Scale based on actual texture dimensions

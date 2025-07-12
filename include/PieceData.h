@@ -41,6 +41,7 @@ struct PieceStats {
     std::string cardArtPath;
     int attack;
     int health;
+    int cooldown{0};
     std::vector<PieceMovementRule> movementRules;
     std::vector<PieceMovementRule> influenceRules;
     bool isRanged{false};

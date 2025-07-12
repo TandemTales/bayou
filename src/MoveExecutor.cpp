@@ -21,6 +21,11 @@ bool MoveExecutor::validateMove(const GameState& gameState, const Move& move) co
     if (piece->getSide() != gameState.getActivePlayer()) {
         return false;
     }
+
+    // Cannot move if stunned
+    if (piece->isStunned()) {
+        return false;
+    }
     
     // Check if the piece is at the expected starting position
     if (piece->getPosition() != move.getFrom()) {
@@ -61,6 +66,14 @@ MoveResult MoveExecutor::executeMove(GameState& gameState, const Move& move) {
             std::shared_ptr<Piece> targetSharedPtr(targetPiece, [](Piece*){});  // No-op deleter since ownership is managed by Square
             
             bool destroyed = resolveCombat(piece, targetSharedPtr, gameState);
+
+            // Apply stun effects
+            if (!destroyed) {
+                targetPiece->applyStun(1);
+            }
+            if (piece->getCooldown() > 0) {
+                piece->applyStun(piece->getCooldown());
+            }
 
             // Special handling for ranged pieces like the Archer
             if (piece->isRanged()) {

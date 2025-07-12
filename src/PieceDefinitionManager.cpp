@@ -50,6 +50,7 @@ bool PieceDefinitionManager::loadDefinitions(const std::string& filePath) {
             stats.cardArtPath = pieceJson.value("cardArt", std::string());
             stats.attack = pieceJson.at("attack").get<int>();
             stats.health = pieceJson.at("health").get<int>();
+            stats.cooldown = pieceJson.value("cooldown", 0);
 
             stats.isRanged = pieceJson.value("isRanged", false);
             stats.isVictoryPiece = pieceJson.value("victoryPiece", false);

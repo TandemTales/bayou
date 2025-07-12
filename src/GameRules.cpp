@@ -70,13 +70,16 @@ std::vector<Move> GameRules::getValidMovesForActivePlayer(const GameState& gameS
             
             // If square has a piece belonging to the active player
             if (!square.isEmpty() && square.getPiece()->getSide() == activeSide) {
+                if (square.getPiece()->isStunned()) {
+                    continue;
+                }
                 // Create a temporary shared_ptr wrapper for the piece
                 Piece* rawPiece = square.getPiece();
                 std::shared_ptr<Piece> piecePtr(rawPiece, [](Piece*){});  // No-op deleter
-                
+
                 // Get valid moves for this piece
                 std::vector<Move> pieceMoves = moveExecutor.getValidMoves(gameState, piecePtr);
-                
+
                 // Add them to the list of all valid moves
                 validMoves.insert(validMoves.end(), pieceMoves.begin(), pieceMoves.end());
             }

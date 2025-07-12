@@ -220,4 +220,24 @@ bool Piece::canJump() const {
     return false;
 }
 
+bool Piece::isStunned() const {
+    return stunRemaining > 0;
+}
+
+void Piece::applyStun(int turns) {
+    if (turns > stunRemaining) {
+        stunRemaining = turns;
+    }
+}
+
+void Piece::decrementStun() {
+    if (stunRemaining > 0) {
+        --stunRemaining;
+    }
+}
+
+int Piece::getCooldown() const {
+    return stats.cooldown;
+}
+
 } // namespace BayouBonanza

@@ -109,7 +109,9 @@ void InputManager::handleMouseButtonPressed(const sf::Event& event) {
     if (boardCoords.x >= 0 && boardCoords.y >= 0) {
         const Square& square = gameState.getBoard().getSquare(boardCoords.x, boardCoords.y);
         if (!square.isEmpty() && square.getPiece()->getSide() == gameState.getActivePlayer()) {
-            selectPiece(boardCoords.x, boardCoords.y, gameMousePos);
+            if (!square.getPiece()->isStunned()) {
+                selectPiece(boardCoords.x, boardCoords.y, gameMousePos);
+            }
         }
     }
 }

@@ -28,6 +28,7 @@ add_executable(BayouBonanzaTests
   ResourceSystemTests.cpp
   CardTests.cpp  # Added comprehensive card system tests
   GameRulesTests.cpp  # Added comprehensive win condition tests
+  StunTests.cpp
 )
 target_include_directories(BayouBonanzaTests PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(BayouBonanzaTests PRIVATE

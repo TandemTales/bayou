@@ -117,6 +117,13 @@ public:
     bool isRanged() const;
     bool canJump() const;
 
+    // Stun/cooldown helpers
+    bool isStunned() const;
+    void applyStun(int turns);
+    void decrementStun();
+    int getCooldown() const;
+    int getStunRemaining() const { return stunRemaining; }
+
 protected:
     PlayerSide side;
     int attack; // Will be initialized from stats
@@ -124,6 +131,7 @@ protected:
     Position position;
     bool hasMoved;
     PieceStats stats; // Changed from const PieceStats& to PieceStats (store by value)
+    int stunRemaining{0};
 
 public:
     void setHasMoved(bool moved) { hasMoved = moved; }
@@ -138,6 +146,7 @@ inline sf::Packet& operator<<(sf::Packet& packet, const Piece& piece) {
     packet << static_cast<sf::Int32>(piece.getHealth());
     packet << static_cast<sf::Int32>(piece.getAttack());
     packet << piece.getHasMoved(); // Use getHasMoved()
+    packet << static_cast<sf::Int32>(piece.getStunRemaining());
     return packet;
 }
 
@@ -149,8 +158,9 @@ inline sf::Packet& operator>>(sf::Packet& packet, Piece& piece) {
     Position position;
     sf::Int32 health, attack;
     bool hasMovedFlag;
+    sf::Int32 stun;
 
-    packet >> receivedSymbol >> position >> health >> attack >> hasMovedFlag;
+    packet >> receivedSymbol >> position >> health >> attack >> hasMovedFlag >> stun;
 
     // Verify symbol if necessary, though it's usually fixed by type.
     // if (receivedSymbol != piece.getSymbol()) { /* handle error or warning */ }
@@ -160,6 +170,7 @@ inline sf::Packet& operator>>(sf::Packet& packet, Piece& piece) {
     // piece.setAttack(static_cast<int>(attack)); // Piece class doesn't have setAttack, it's const after construction.
                                                 // This is fine, as attack is set by factory.
     piece.setHasMoved(hasMovedFlag);
+    piece.applyStun(static_cast<int>(stun));
     
     return packet;
 }
