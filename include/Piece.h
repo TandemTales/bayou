@@ -115,6 +115,7 @@ public:
     virtual std::string getSymbol() const;
     bool isVictoryPiece() const;
     bool isRanged() const;
+    bool canJump() const;
 
 protected:
     PlayerSide side;

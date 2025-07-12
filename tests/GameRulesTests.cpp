@@ -135,7 +135,7 @@ TEST_CASE("GameRules Win Condition System", "[gamerules][winconditions]") {
         REQUIRE(loaded);
         PieceFactory factory(pdm);
         
-        // Create a powerful attacking piece (ScarlettGlumpkin with 9 attack)
+        // Create a powerful attacking piece (ScarlettGlumpkin with 4 attack)
         std::unique_ptr<Piece> attackingQueen = factory.createPiece("ScarlettGlumpkin", PlayerSide::PLAYER_ONE);
         REQUIRE(attackingQueen != nullptr);
         
@@ -159,8 +159,8 @@ TEST_CASE("GameRules Win Condition System", "[gamerules][winconditions]") {
         Piece* queenPtr = attackingQueen.get();
         attackerSquare.setPiece(std::move(attackingQueen));
         
-        // Damage the king first so it can be killed in one hit (reduce health to 9 or less)
-        player2King->takeDamage(2); // King now has 8 health, Queen's 9 attack will kill it
+        // Damage the king first so it can be killed in one hit (reduce health to 1)
+        player2King->takeDamage(9); // King now has 1 health, Queen's 4 attack will kill it
         
         // Create a move that would capture the king
         std::shared_ptr<Piece> attackerPtr(queenPtr, [](Piece*){});
@@ -171,14 +171,6 @@ TEST_CASE("GameRules Win Condition System", "[gamerules][winconditions]") {
         
         // Process the move
         MoveResult result = gameRules.processMove(gameState, captureMove);
-        
-        // Debug information if the test fails
-        if (result != MoveResult::KING_CAPTURED) {
-            std::cout << "DEBUG: Expected KING_CAPTURED but got result: " << static_cast<int>(result) << std::endl;
-            std::cout << "DEBUG: Game result: " << static_cast<int>(gameState.getGameResult()) << std::endl;
-            std::cout << "DEBUG: Target king health: " << player2King->getHealth() << std::endl;
-            std::cout << "DEBUG: Attacker attack: " << attackerPtr->getAttack() << std::endl;
-        }
         
         // Should return KING_CAPTURED and set game result
         REQUIRE(result == MoveResult::KING_CAPTURED);

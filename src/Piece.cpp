@@ -211,4 +211,13 @@ std::vector<Position> Piece::getInfluenceArea(const GameBoard& board) const {
     return influenceArea;
 }
 
+bool Piece::canJump() const {
+    for (const auto& rule : stats.movementRules) {
+        if (rule.canJump) {
+            return true;
+        }
+    }
+    return false;
+}
+
 } // namespace BayouBonanza

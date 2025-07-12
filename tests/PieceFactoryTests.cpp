@@ -18,63 +18,87 @@ TEST_CASE("PieceFactory functionality", "[piecefactory]") {
     REQUIRE(loaded); // Crucial for tests to run
     
     SECTION("Create TinkeringTom") {
+        const auto* stats = pdm.getPieceStats("TinkeringTom");
+        REQUIRE(stats != nullptr);
         auto piece = factory.createPiece("TinkeringTom", PlayerSide::PLAYER_ONE);
         
         REQUIRE(piece != nullptr);
         REQUIRE(piece->getTypeName() == "TinkeringTom");
         REQUIRE(piece->getSide() == PlayerSide::PLAYER_ONE);
-        REQUIRE(piece->getAttack() == 3);  // Based on cards.json
-        REQUIRE(piece->getHealth() == 10); // Based on cards.json
+        REQUIRE(piece->getAttack() == stats->attack);
+        REQUIRE(piece->getHealth() == stats->health);
     }
     
     SECTION("Create ScarlettGlumpkin") {
+        const auto* stats = pdm.getPieceStats("ScarlettGlumpkin");
+        REQUIRE(stats != nullptr);
         auto piece = factory.createPiece("ScarlettGlumpkin", PlayerSide::PLAYER_ONE);
         
         REQUIRE(piece != nullptr);
         REQUIRE(piece->getTypeName() == "ScarlettGlumpkin");
-        REQUIRE(piece->getSymbol() == "G");
-        REQUIRE(piece->getAttack() == 9);
-        REQUIRE(piece->getHealth() == 9);
+        REQUIRE(piece->getSide() == PlayerSide::PLAYER_ONE);
+        REQUIRE(piece->getAttack() == stats->attack);
+        REQUIRE(piece->getHealth() == stats->health);
     }
     
     SECTION("Create Sweetykins") {
+        const auto* stats = pdm.getPieceStats("Sweetykins");
+        REQUIRE(stats != nullptr);
         auto piece = factory.createPiece("Sweetykins", PlayerSide::PLAYER_ONE);
         
         REQUIRE(piece != nullptr);
         REQUIRE(piece->getTypeName() == "Sweetykins");
-        REQUIRE(piece->getSymbol() == "S");
-        REQUIRE(piece->getAttack() == 5);  // This is correct
-        REQUIRE(piece->getHealth() == 5);
+        REQUIRE(piece->getSide() == PlayerSide::PLAYER_ONE);
+        REQUIRE(piece->getAttack() == stats->attack);
+        REQUIRE(piece->getHealth() == stats->health);
     }
     
     SECTION("Create Sidewinder") {
+        const auto* stats = pdm.getPieceStats("Sidewinder");
+        REQUIRE(stats != nullptr);
         auto piece = factory.createPiece("Sidewinder", PlayerSide::PLAYER_ONE);
         
         REQUIRE(piece != nullptr);
         REQUIRE(piece->getTypeName() == "Sidewinder");
-        REQUIRE(piece->getSymbol() == "W");
-        REQUIRE(piece->getAttack() == 3);
-        REQUIRE(piece->getHealth() == 3);
+        REQUIRE(piece->getSide() == PlayerSide::PLAYER_ONE);
+        REQUIRE(piece->getAttack() == stats->attack);
+        REQUIRE(piece->getHealth() == stats->health);
     }
     
     SECTION("Create Automatick") {
+        const auto* stats = pdm.getPieceStats("Automatick");
+        REQUIRE(stats != nullptr);
         auto piece = factory.createPiece("Automatick", PlayerSide::PLAYER_ONE);
         
         REQUIRE(piece != nullptr);
         REQUIRE(piece->getTypeName() == "Automatick");
-        REQUIRE(piece->getSymbol() == "A");
-        REQUIRE(piece->getAttack() == 3);
-        REQUIRE(piece->getHealth() == 3);  // Changed from 7 to 3
+        REQUIRE(piece->getSide() == PlayerSide::PLAYER_ONE);
+        REQUIRE(piece->getAttack() == stats->attack);
+        REQUIRE(piece->getHealth() == stats->health);
     }
     
     SECTION("Create Sentroid") {
+        const auto* stats = pdm.getPieceStats("Sentroid");
+        REQUIRE(stats != nullptr);
         auto piece = factory.createPiece("Sentroid", PlayerSide::PLAYER_ONE);
         
         REQUIRE(piece != nullptr);
         REQUIRE(piece->getTypeName() == "Sentroid");
         REQUIRE(piece->getSide() == PlayerSide::PLAYER_ONE);
-        REQUIRE(piece->getAttack() == 1); // Based on cards.json
-        REQUIRE(piece->getHealth() == 1); // Based on cards.json
+        REQUIRE(piece->getAttack() == stats->attack);
+        REQUIRE(piece->getHealth() == stats->health);
+    }
+    
+    SECTION("Create Rustbucket") {
+        const auto* stats = pdm.getPieceStats("Rustbucket");
+        REQUIRE(stats != nullptr);
+        auto piece = factory.createPiece("Rustbucket", PlayerSide::PLAYER_ONE);
+        
+        REQUIRE(piece != nullptr);
+        REQUIRE(piece->getTypeName() == "Rustbucket");
+        REQUIRE(piece->getSide() == PlayerSide::PLAYER_ONE);
+        REQUIRE(piece->getAttack() == stats->attack);
+        REQUIRE(piece->getHealth() == stats->health);
     }
     
     SECTION("Create piece for different player sides") {

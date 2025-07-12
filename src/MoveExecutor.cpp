@@ -4,6 +4,7 @@
 // #include "King.h" // Removed - using data-driven approach with PieceFactory
 #include "GameState.h"
 #include "Square.h"
+#include <numeric>
 
 namespace BayouBonanza {
 
@@ -87,10 +88,35 @@ MoveResult MoveExecutor::executeMove(GameState& gameState, const Move& move) {
                 return MoveResult::SUCCESS;
             }
 
-            // If the opponent's piece is not destroyed, the attacker stays in place
             if (!destroyed) {
+                if (!piece->isRanged() && !piece->canJump()) {
+                    int dx = to.x - from.x;
+                    int dy = to.y - from.y;
+                    int gcd_val = std::gcd(std::abs(dx), std::abs(dy));
+                    if (gcd_val > 1) {
+                        int step_x = dx / gcd_val;
+                        int step_y = dy / gcd_val;
+                        Position before = {to.x - step_x, to.y - step_y};
+                        if (board.isValidPosition(before.x, before.y)) {
+                            Square& beforeSquare = board.getSquare(before.x, before.y);
+                            if (beforeSquare.isEmpty()) {
+                                auto movingPiece = fromSquare.extractPiece();
+                                if (movingPiece) {
+                                    movingPiece->setPosition(before);
+                                    movingPiece->setHasMoved(true);
+                                    beforeSquare.setPiece(std::move(movingPiece));
+                                    recalculateBoardControl(gameState);
+                                    return MoveResult::SUCCESS;
+                                }
+                            }
+                        }
+                    }
+                }
                 return MoveResult::SUCCESS;
             }
+
+            // Remove the defeated piece if not already handled
+            toSquare.setPiece(nullptr);
 
             // Check if the destroyed piece was a king
             if (targetPiece->isVictoryPiece()) {
@@ -112,6 +138,7 @@ MoveResult MoveExecutor::executeMove(GameState& gameState, const Move& move) {
                 movingPiece->setHasMoved(true);
                 toSquare.setPiece(std::move(movingPiece));
 
+                recalculateBoardControl(gameState);
                 return MoveResult::KING_CAPTURED;
             }
         } else {
@@ -120,7 +147,7 @@ MoveResult MoveExecutor::executeMove(GameState& gameState, const Move& move) {
         }
     }
     
-    // Extract the piece from the source square properly
+    // Normal move to empty square or after capture
     std::unique_ptr<Piece> movingPiece = fromSquare.extractPiece();
     if (!movingPiece) {
         return MoveResult::INVALID_MOVE; // Piece was not at expected location

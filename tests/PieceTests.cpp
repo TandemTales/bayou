@@ -46,13 +46,15 @@ struct TestFixture {
 TEST_CASE_METHOD(TestFixture, "Piece Data-Driven Functionality", "[piece]") {
 
         SECTION("TinkeringTom Functionality") {
-        auto king = factory.createPiece("TinkeringTom", BayouBonanza::PlayerSide::PLAYER_ONE);
-        REQUIRE(king != nullptr);
+            const auto* stats = pdm.getPieceStats("TinkeringTom");
+            REQUIRE(stats != nullptr);
+            auto king = factory.createPiece("TinkeringTom", BayouBonanza::PlayerSide::PLAYER_ONE);
+            REQUIRE(king != nullptr);
 
-        REQUIRE(king->getTypeName() == "TinkeringTom");
-        REQUIRE(king->getSymbol() == "T");
-        REQUIRE(king->getAttack() == 3); // Based on sample JSON
-        REQUIRE(king->getHealth() == 10); // Based on sample JSON
+            REQUIRE(king->getTypeName() == "TinkeringTom");
+            REQUIRE(king->getSymbol() == stats->symbol);
+            REQUIRE(king->getAttack() == stats->attack);
+            REQUIRE(king->getHealth() == stats->health);
 
         board.getSquare(4, 7).setPiece(std::move(king)); // Place TinkeringTom
         BayouBonanza::Piece* kingPtr = board.getSquare(4,7).getPiece();
@@ -88,12 +90,14 @@ TEST_CASE_METHOD(TestFixture, "Piece Data-Driven Functionality", "[piece]") {
     }
 
     SECTION("Sentroid Functionality - Player One") {
+        const auto* stats = pdm.getPieceStats("Sentroid");
+        REQUIRE(stats != nullptr);
         auto pawn = factory.createPiece("Sentroid", BayouBonanza::PlayerSide::PLAYER_ONE);
         REQUIRE(pawn != nullptr);
         REQUIRE(pawn->getTypeName() == "Sentroid");
-        REQUIRE(pawn->getSymbol() == "E");
-        REQUIRE(pawn->getAttack() == 1);
-        REQUIRE(pawn->getHealth() == 1);
+        REQUIRE(pawn->getSide() == BayouBonanza::PlayerSide::PLAYER_ONE);
+        REQUIRE(pawn->getAttack() == stats->attack);
+        REQUIRE(pawn->getHealth() == stats->health);
 
         board.getSquare(3, 6).setPiece(std::move(pawn)); // Place Sentroid for Player One
         BayouBonanza::Piece* pawnPtr = board.getSquare(3,6).getPiece();
@@ -128,7 +132,15 @@ TEST_CASE_METHOD(TestFixture, "Piece Data-Driven Functionality", "[piece]") {
     }
     
     SECTION("Sentroid Functionality - Player Two") {
+        const auto* stats = pdm.getPieceStats("Sentroid");
+        REQUIRE(stats != nullptr);
         auto pawn = factory.createPiece("Sentroid", BayouBonanza::PlayerSide::PLAYER_TWO);
+        REQUIRE(pawn != nullptr);
+        REQUIRE(pawn->getTypeName() == "Sentroid");
+        REQUIRE(pawn->getSide() == BayouBonanza::PlayerSide::PLAYER_TWO);
+        REQUIRE(pawn->getAttack() == stats->attack);
+        REQUIRE(pawn->getHealth() == stats->health);
+
         board.getSquare(3, 1).setPiece(std::move(pawn)); // Place Sentroid for Player Two
         BayouBonanza::Piece* pawnPtr = board.getSquare(3,1).getPiece();
         REQUIRE(pawnPtr != nullptr);

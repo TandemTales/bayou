@@ -45,7 +45,7 @@
     "cardType": "PIECE_CARD",
     "steamCost": 8,
     "rarity": "RARE",
-    "attack": 9,
+    "attack": 4,
     "health": 9,
     "movementRules": [
       {
@@ -82,8 +82,8 @@
     "cardType": "PIECE_CARD",
     "steamCost": 5,
     "rarity": "UNCOMMON",
-    "attack": 5,
-    "health": 5,
+    "attack": 4,
+    "health": 10,
     "movementRules": [
       {
         "relativeMoves": [
@@ -194,7 +194,7 @@
     "steamCost": 2,
     "rarity": "COMMON",
     "attack": 1,
-    "health": 1,
+    "health": 2,
     "movementRules": [
       {
         "relativeMoves": [{"x": 0, "y": -1}],
@@ -230,7 +230,7 @@
     "steamCost": 3,
     "rarity": "COMMON",
     "attack": 2,
-    "health": 2,
+    "health": 3,
     "movementRules": [
       {
         "relativeMoves": [

@@ -9,12 +9,14 @@ TEST_CASE("Sweetykins piece functionality", "[sweetykins]") {
     GameBoard board;
     
     SECTION("Basic Sweetykins properties") {
-        Sweetykins sweetykins(PlayerSide::PLAYER_ONE);
+        const auto* stats = pdm.getPieceStats("Sweetykins");
+        REQUIRE(stats != nullptr);
+        auto sweetykins = factory.createPiece("Sweetykins", PlayerSide::PLAYER_ONE);
         
-        REQUIRE(sweetykins.getSide() == PlayerSide::PLAYER_ONE);
-        REQUIRE(sweetykins.getAttack() == 4);
-        REQUIRE(sweetykins.getHealth() == 12);
-        REQUIRE(sweetykins.getTypeName() == "Sweetykins");
+        REQUIRE(sweetykins->getSide() == PlayerSide::PLAYER_ONE);
+        REQUIRE(sweetykins->getAttack() == stats->attack);
+        REQUIRE(sweetykins->getHealth() == stats->health);
+        REQUIRE(sweetykins->getTypeName() == "Sweetykins");
     }
     
     SECTION("Sweetykins movement validation") {
