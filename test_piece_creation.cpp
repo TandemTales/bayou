@@ -59,21 +59,21 @@ int main() {
     std::cout << "✓ TinkeringTom found at (4,7): " << tom->getTypeName() 
               << " (symbol: " << tom->getSymbol() << ")" << std::endl;
     
-    // Check a Sentroid position
-    const Square& sentroidSquare = board.getSquare(0, 6); // Sentroid position for Player 1
-    if (sentroidSquare.isEmpty()) {
-        std::cerr << "✗ Sentroid not found at expected position (0,6)" << std::endl;
+    // Check Player 2's TinkeringTom position
+    const Square& tom2Square = board.getSquare(4, 0); // TinkeringTom position for Player 2
+    if (tom2Square.isEmpty()) {
+        std::cerr << "✗ Player 2 TinkeringTom not found at expected position (4,0)" << std::endl;
         return -1;
     }
     
-    Piece* sentroid = sentroidSquare.getPiece();
-    if (sentroid->getTypeName().empty()) {
-        std::cerr << "✗ Sentroid has empty type name!" << std::endl;
+    Piece* tom2 = tom2Square.getPiece();
+    if (tom2->getTypeName().empty()) {
+        std::cerr << "✗ Player 2 TinkeringTom has empty type name!" << std::endl;
         return -1;
     }
     
-    std::cout << "✓ Sentroid found at (0,6): " << sentroid->getTypeName() 
-              << " (symbol: " << sentroid->getSymbol() << ")" << std::endl;
+    std::cout << "✓ Player 2 TinkeringTom found at (4,0): " << tom2->getTypeName() 
+              << " (symbol: " << tom2->getSymbol() << ")" << std::endl;
     
     std::cout << "\n✅ All tests passed! Piece creation and game initialization working correctly." << std::endl;
     

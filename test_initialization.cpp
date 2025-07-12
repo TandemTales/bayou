@@ -92,10 +92,10 @@ int main() {
         std::cout << "Player 1: " << player1Pieces << " pieces\n";
         std::cout << "Player 2: " << player2Pieces << " pieces\n";
         
-        if (player1Pieces == 16 && player2Pieces == 16) {
-            std::cout << "\n✓ SUCCESS: Both players have 16 pieces as expected!\n";
+        if (player1Pieces == 1 && player2Pieces == 1) {
+            std::cout << "\n✓ SUCCESS: Both players have 1 piece as expected!\n";
         } else {
-            std::cout << "\n✗ FAILURE: Expected 16 pieces per player\n";
+            std::cout << "\n✗ FAILURE: Expected 1 piece per player\n";
         }
         
     } catch (const std::exception& e) {

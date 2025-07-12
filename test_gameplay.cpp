@@ -77,23 +77,23 @@ int main() {
         // Print initial board state
         printBoardState(gameState);
         
-        // Test a simple pawn move for Player 1
-        std::cout << "\nTesting Player 1 pawn move (e2 to e3)...\n";
+        // Test a simple TinkeringTom move for Player 1
+        std::cout << "\nTesting Player 1 TinkeringTom move (e8 to e7)...\n";
         std::cout.flush();
         
-        // Get the pawn at position (4, 6) - Player 1's e-pawn
-        const Square& pawnSquare = gameState.getBoard().getSquare(4, 6);
-        if (!pawnSquare.isEmpty()) {
-            Piece* pawn = pawnSquare.getPiece();
-            Position from(4, 6);
-            Position to(4, 5);
+        // Get the TinkeringTom at position (4, 7) - Player 1's TinkeringTom
+        const Square& tomSquare = gameState.getBoard().getSquare(4, 7);
+        if (!tomSquare.isEmpty()) {
+            Piece* tom = tomSquare.getPiece();
+            Position from(4, 7);
+            Position to(4, 6);
             
             // Create a temporary shared_ptr wrapper for the Move constructor
-            std::shared_ptr<Piece> pawnPtr(pawn, [](Piece*){});
-            Move pawnMove(pawnPtr, from, to);
+            std::shared_ptr<Piece> tomPtr(tom, [](Piece*){});
+            Move tomMove(tomPtr, from, to);
             
             bool moveProcessed = false;
-            turnManager.processMoveAction(pawnMove, [&](const ActionResult& result) {
+            turnManager.processMoveAction(tomMove, [&](const ActionResult& result) {
                 moveProcessed = true;
                 std::cout << "Move result: " << (result.success ? "SUCCESS" : "FAILED") << "\n";
                 std::cout << "Message: " << result.message << "\n";
@@ -107,26 +107,26 @@ int main() {
                 std::cout.flush();
             }
         } else {
-            std::cout << "No pawn found at position (4, 6)!\n";
+            std::cout << "No TinkeringTom found at position (4, 7)!\n";
             std::cout.flush();
         }
         
-        // Test a simple pawn move for Player 2
-        std::cout << "\nTesting Player 2 pawn move (e7 to e6)...\n";
+        // Test a simple TinkeringTom move for Player 2
+        std::cout << "\nTesting Player 2 TinkeringTom move (e1 to e2)...\n";
         
-        // Get the pawn at position (4, 1) - Player 2's e-pawn
-        const Square& pawn2Square = gameState.getBoard().getSquare(4, 1);
-        if (!pawn2Square.isEmpty()) {
-            Piece* pawn = pawn2Square.getPiece();
-            Position from(4, 1);
-            Position to(4, 2);
+        // Get the TinkeringTom at position (4, 0) - Player 2's TinkeringTom
+        const Square& tom2Square = gameState.getBoard().getSquare(4, 0);
+        if (!tom2Square.isEmpty()) {
+            Piece* tom = tom2Square.getPiece();
+            Position from(4, 0);
+            Position to(4, 1);
             
             // Create a temporary shared_ptr wrapper for the Move constructor
-            std::shared_ptr<Piece> pawnPtr(pawn, [](Piece*){});
-            Move pawnMove(pawnPtr, from, to);
+            std::shared_ptr<Piece> tomPtr(tom, [](Piece*){});
+            Move tomMove(tomPtr, from, to);
             
             bool moveProcessed = false;
-            turnManager.processMoveAction(pawnMove, [&](const ActionResult& result) {
+            turnManager.processMoveAction(tomMove, [&](const ActionResult& result) {
                 moveProcessed = true;
                 std::cout << "Move result: " << (result.success ? "SUCCESS" : "FAILED") << "\n";
                 std::cout << "Message: " << result.message << "\n";
@@ -139,17 +139,17 @@ int main() {
         }
         
         // Test an invalid move
-        std::cout << "\nTesting invalid move (Player 1 trying to move Player 2's piece)...\n";
+        std::cout << "\nTesting invalid move (Player 1 trying to move Player 2's TinkeringTom)...\n";
         
-        const Square& enemyPawnSquare = gameState.getBoard().getSquare(0, 1);
-        if (!enemyPawnSquare.isEmpty()) {
-            Piece* enemyPawn = enemyPawnSquare.getPiece();
-            Position from(0, 1);
-            Position to(0, 2);
+        const Square& enemyTomSquare = gameState.getBoard().getSquare(4, 0);
+        if (!enemyTomSquare.isEmpty()) {
+            Piece* enemyTom = enemyTomSquare.getPiece();
+            Position from(4, 0);
+            Position to(4, 1);
             
             // Create a temporary shared_ptr wrapper for the Move constructor
-            std::shared_ptr<Piece> enemyPawnPtr(enemyPawn, [](Piece*){});
-            Move invalidMove(enemyPawnPtr, from, to);
+            std::shared_ptr<Piece> enemyTomPtr(enemyTom, [](Piece*){});
+            Move invalidMove(enemyTomPtr, from, to);
             
             bool moveProcessed = false;
             turnManager.processMoveAction(invalidMove, [&](const ActionResult& result) {

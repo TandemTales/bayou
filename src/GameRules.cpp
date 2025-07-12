@@ -4,29 +4,16 @@
 #include "Square.h"
 #include "PieceFactory.h"
 #include "PieceDefinitionManager.h"
+#include "GameInitializer.h"
 
 namespace BayouBonanza {
 
 GameRules::GameRules() = default;
 
 void GameRules::initializeGame(GameState& gameState) {
-    // Reset the game state
-    gameState.initializeNewGame();
-    
-    // For now, we'll create a simplified initialization
-    // In a full implementation, we would use PieceFactory to create pieces
-    // based on a configuration file
-    
-    // TODO: This should be handled by GameInitializer with PieceFactory
-    // For now, just set up an empty board and basic game state
-    
-    // Set starting player
-    gameState.setActivePlayer(PlayerSide::PLAYER_ONE);
-    gameState.setGamePhase(GamePhase::PLAY); // Start directly in PLAY phase to match other initialization
-    gameState.setGameResult(GameResult::IN_PROGRESS);
-    
-    // Don't auto-advance from draw phase - let the game flow handle this
-    // gameState.nextPhase(); // Commented out to allow proper phase testing
+    // Use GameInitializer to properly set up the game with pieces
+    GameInitializer initializer;
+    initializer.initializeNewGame(gameState);
     
     // Recalculate board control after placing pieces
     moveExecutor.recalculateBoardControl(gameState);

@@ -55,37 +55,13 @@ void GameInitializer::setupBoard(GameState& gameState) {
     
     // Set up Player One pieces (bottom of board)
     PlayerSide playerOne = PlayerSide::PLAYER_ONE;
-    // Back row
-    createAndPlacePiece(gameState, "Sweetykins", playerOne, 0, 7);
-    createAndPlacePiece(gameState, "Automatick", playerOne, 1, 7);
-    createAndPlacePiece(gameState, "Sidewinder", playerOne, 2, 7);
-    createAndPlacePiece(gameState, "ScarlettGlumpkin", playerOne, 3, 7);
+    // Place single TinkeringTom piece in the center of the back row
     createAndPlacePiece(gameState, "TinkeringTom", playerOne, 4, 7);
-    createAndPlacePiece(gameState, "Rustbucket", playerOne, 5, 7);
-    createAndPlacePiece(gameState, "Automatick", playerOne, 6, 7);
-    createAndPlacePiece(gameState, "Sweetykins", playerOne, 7, 7);
-    
-    // Pawn row
-    for (int x = 0; x < GameBoard::BOARD_SIZE; x++) {
-        createAndPlacePiece(gameState, "Sentroid", playerOne, x, 6);
-    }
     
     // Set up Player Two pieces (top of board)
     PlayerSide playerTwo = PlayerSide::PLAYER_TWO;
-    // Back row
-    createAndPlacePiece(gameState, "Sweetykins", playerTwo, 0, 0);
-    createAndPlacePiece(gameState, "Automatick", playerTwo, 1, 0);
-    createAndPlacePiece(gameState, "Rustbucket", playerTwo, 2, 0);
-    createAndPlacePiece(gameState, "ScarlettGlumpkin", playerTwo, 3, 0);
+    // Place single TinkeringTom piece in the center of the back row
     createAndPlacePiece(gameState, "TinkeringTom", playerTwo, 4, 0);
-    createAndPlacePiece(gameState, "Sidewinder", playerTwo, 5, 0);
-    createAndPlacePiece(gameState, "Automatick", playerTwo, 6, 0);
-    createAndPlacePiece(gameState, "Sweetykins", playerTwo, 7, 0);
-    
-    // Pawn row
-    for (int x = 0; x < GameBoard::BOARD_SIZE; x++) {
-        createAndPlacePiece(gameState, "Sentroid", playerTwo, x, 1);
-    }
 }
 
 Piece* GameInitializer::createAndPlacePiece(GameState& gameState, const std::string& pieceType, PlayerSide side, int x, int y) {

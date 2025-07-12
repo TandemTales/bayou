@@ -33,23 +33,23 @@ TEST_CASE("TurnManager functionality", "[turnmanager]") {
         REQUIRE(gameState.getActivePlayer() == PlayerSide::PLAYER_ONE);
         REQUIRE(gameState.getTurnNumber() == 1);
         
-        // Use a sentroid move instead of TinkeringTom move since TinkeringTom can't move to occupied square
-        Position startPos(0, 6); // Player One Sentroid position
-        Position endPos(0, 5);   // Move forward one square
+        // Use TinkeringTom move since it's the only piece on the board
+        Position startPos(4, 7); // Player One TinkeringTom position
+        Position endPos(4, 6);   // Move forward one square
 
-        Piece* pawnToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
-        REQUIRE(pawnToMove != nullptr);
-        REQUIRE(pawnToMove->getSide() == PlayerSide::PLAYER_ONE);
-        REQUIRE(pawnToMove->isValidMove(gameState.getBoard(), endPos)); 
+        Piece* tomToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
+        REQUIRE(tomToMove != nullptr);
+        REQUIRE(tomToMove->getSide() == PlayerSide::PLAYER_ONE);
+        REQUIRE(tomToMove->isValidMove(gameState.getBoard(), endPos)); 
 
         // Create a temporary shared_ptr wrapper for the Move constructor
-        std::shared_ptr<Piece> pawnPtr(pawnToMove, [](Piece*){});
-        Move gameMove(pawnPtr, startPos, endPos);
+        std::shared_ptr<Piece> tomPtr(tomToMove, [](Piece*){});
+        Move gameMove(tomPtr, startPos, endPos);
         turnManager.processMoveAction(gameMove); 
 
         REQUIRE(gameState.getBoard().getSquare(startPos.x, startPos.y).isEmpty() == true);
-        REQUIRE(gameState.getBoard().getSquare(endPos.x, endPos.y).getPiece() == pawnToMove);
-        REQUIRE(pawnToMove->getPosition() == endPos);
+        REQUIRE(gameState.getBoard().getSquare(endPos.x, endPos.y).getPiece() == tomToMove);
+        REQUIRE(tomToMove->getPosition() == endPos);
         REQUIRE(gameState.getActivePlayer() == PlayerSide::PLAYER_TWO);
         REQUIRE(gameState.getTurnNumber() == 2); 
     }
@@ -63,18 +63,18 @@ TEST_CASE("TurnManager functionality", "[turnmanager]") {
         REQUIRE(initialPlayer == PlayerSide::PLAYER_ONE);
         
         Position startPos(4, 0); // Player Two TinkeringTom position
-        Position endPos(4, 2);   // Move to empty square (not occupied by pawn)
+        Position endPos(4, 2);   // Move to empty square
 
-        Piece* opponentKing = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
-        REQUIRE(opponentKing != nullptr);
-        REQUIRE(opponentKing->getSide() == PlayerSide::PLAYER_TWO); 
+        Piece* opponentTom = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
+        REQUIRE(opponentTom != nullptr);
+        REQUIRE(opponentTom->getSide() == PlayerSide::PLAYER_TWO); 
         
         // Create a temporary shared_ptr wrapper for the Move constructor
-        std::shared_ptr<Piece> kingPtr(opponentKing, [](Piece*){});
-        Move gameMove(kingPtr, startPos, endPos);
+        std::shared_ptr<Piece> tomPtr(opponentTom, [](Piece*){});
+        Move gameMove(tomPtr, startPos, endPos);
         turnManager.processMoveAction(gameMove); 
 
-        REQUIRE(gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece() == opponentKing); 
+        REQUIRE(gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece() == opponentTom); 
         REQUIRE(gameState.getBoard().getSquare(endPos.x, endPos.y).isEmpty() == true);
         REQUIRE(gameState.getActivePlayer() == initialPlayer); 
         REQUIRE(gameState.getTurnNumber() == initialTurnNumber); 
@@ -91,50 +91,50 @@ TEST_CASE("TurnManager functionality", "[turnmanager]") {
         Position startPos(4, 7);     // Player One TinkeringTom position
         Position invalidEndPos(4, 4); // Invalid move - too far
 
-        Piece* kingToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
-        REQUIRE(kingToMove != nullptr);
-        REQUIRE(kingToMove->getSide() == PlayerSide::PLAYER_ONE);
-        REQUIRE_FALSE(kingToMove->isValidMove(gameState.getBoard(), invalidEndPos)); 
+        Piece* tomToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
+        REQUIRE(tomToMove != nullptr);
+        REQUIRE(tomToMove->getSide() == PlayerSide::PLAYER_ONE);
+        REQUIRE_FALSE(tomToMove->isValidMove(gameState.getBoard(), invalidEndPos)); 
 
         // Create a temporary shared_ptr wrapper for the Move constructor
-        std::shared_ptr<Piece> kingPtr(kingToMove, [](Piece*){});
-        Move gameMove(kingPtr, startPos, invalidEndPos);
+        std::shared_ptr<Piece> tomPtr(tomToMove, [](Piece*){});
+        Move gameMove(tomPtr, startPos, invalidEndPos);
         turnManager.processMoveAction(gameMove); 
 
-        REQUIRE(gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece() == kingToMove); 
+        REQUIRE(gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece() == tomToMove); 
         REQUIRE(gameState.getBoard().getSquare(invalidEndPos.x, invalidEndPos.y).isEmpty() == true); 
         REQUIRE(gameState.getActivePlayer() == initialPlayer); 
         REQUIRE(gameState.getTurnNumber() == initialTurnNumber); 
     }
 
-    SECTION("Valid move: P1 Sentroid forward one step") {
+    SECTION("Valid move: P1 TinkeringTom forward one step") {
         setupInitialState(gameState, initializer);
         TurnManager turnManager(gameState, gameRules);
 
         REQUIRE(gameState.getActivePlayer() == PlayerSide::PLAYER_ONE);
         REQUIRE(gameState.getTurnNumber() == 1);
 
-        Position startPos(0, 6); // Player One Sentroid position
-        Position endPos(0, 5);   // Move forward one square
+        Position startPos(4, 7); // Player One TinkeringTom position
+        Position endPos(4, 6);   // Move forward one square
         
-        Piece* pawnToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
-        REQUIRE(pawnToMove != nullptr);
-        REQUIRE(pawnToMove->getSide() == PlayerSide::PLAYER_ONE);
-        REQUIRE(pawnToMove->isValidMove(gameState.getBoard(), endPos));
+        Piece* tomToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
+        REQUIRE(tomToMove != nullptr);
+        REQUIRE(tomToMove->getSide() == PlayerSide::PLAYER_ONE);
+        REQUIRE(tomToMove->isValidMove(gameState.getBoard(), endPos));
 
         // Create a temporary shared_ptr wrapper for the Move constructor
-        std::shared_ptr<Piece> pawnPtr(pawnToMove, [](Piece*){});
-        Move gameMove(pawnPtr, startPos, endPos);
+        std::shared_ptr<Piece> tomPtr(tomToMove, [](Piece*){});
+        Move gameMove(tomPtr, startPos, endPos);
         turnManager.processMoveAction(gameMove); 
 
         REQUIRE(gameState.getBoard().getSquare(startPos.x, startPos.y).isEmpty() == true);
-        REQUIRE(gameState.getBoard().getSquare(endPos.x, endPos.y).getPiece() == pawnToMove);
-        REQUIRE(pawnToMove->getPosition() == endPos);
+        REQUIRE(gameState.getBoard().getSquare(endPos.x, endPos.y).getPiece() == tomToMove);
+        REQUIRE(tomToMove->getPosition() == endPos);
         REQUIRE(gameState.getActivePlayer() == PlayerSide::PLAYER_TWO);
         REQUIRE(gameState.getTurnNumber() == 2);
     }
     
-    SECTION("Invalid move: P1 Sentroid attempting to move backwards") {
+    SECTION("Invalid move: P1 TinkeringTom attempting to move too far") {
         setupInitialState(gameState, initializer);
         TurnManager turnManager(gameState, gameRules);
 
@@ -142,20 +142,20 @@ TEST_CASE("TurnManager functionality", "[turnmanager]") {
         int initialTurnNumber = gameState.getTurnNumber();
         REQUIRE(initialPlayer == PlayerSide::PLAYER_ONE);
 
-        Position startPos(0, 6);     // Player One Sentroid position
-        Position invalidEndPos(0, 7); // Invalid move - backwards
+        Position startPos(4, 7);     // Player One TinkeringTom position
+        Position invalidEndPos(4, 5); // Invalid move - too far (2 squares)
 
-        Piece* pawnToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
-        REQUIRE(pawnToMove != nullptr);
-        REQUIRE(pawnToMove->getSide() == PlayerSide::PLAYER_ONE);
-        REQUIRE_FALSE(pawnToMove->isValidMove(gameState.getBoard(), invalidEndPos));
+        Piece* tomToMove = gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece();
+        REQUIRE(tomToMove != nullptr);
+        REQUIRE(tomToMove->getSide() == PlayerSide::PLAYER_ONE);
+        REQUIRE_FALSE(tomToMove->isValidMove(gameState.getBoard(), invalidEndPos));
         
         // Create a temporary shared_ptr wrapper for the Move constructor
-        std::shared_ptr<Piece> pawnPtr(pawnToMove, [](Piece*){});
-        Move gameMove(pawnPtr, startPos, invalidEndPos);
+        std::shared_ptr<Piece> tomPtr(tomToMove, [](Piece*){});
+        Move gameMove(tomPtr, startPos, invalidEndPos);
         turnManager.processMoveAction(gameMove); 
 
-        REQUIRE(gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece() == pawnToMove);
+        REQUIRE(gameState.getBoard().getSquare(startPos.x, startPos.y).getPiece() == tomToMove);
         REQUIRE(gameState.getActivePlayer() == initialPlayer);
         REQUIRE(gameState.getTurnNumber() == initialTurnNumber);
     }

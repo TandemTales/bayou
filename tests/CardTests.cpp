@@ -11,6 +11,7 @@
 #include "PieceDefinitionManager.h"
 #include "PieceFactory.h"
 #include "Square.h"
+#include "GameInitializer.h"
 #include <memory>
 #include <vector>
 #include <iostream>
@@ -36,8 +37,9 @@ struct CardTestFixture {
         // Set global factory for Square piece creation
         Square::setGlobalPieceFactory(factory.get());
         
-        // Initialize game state for testing
-        gameState.initializeNewGame();
+        // Initialize game state for testing using GameInitializer
+        GameInitializer initializer;
+        initializer.initializeNewGame(gameState);
         
         // Check steam before card system initialization
         int steamBefore = gameState.getSteam(PlayerSide::PLAYER_ONE);
