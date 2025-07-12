@@ -1,0 +1,262 @@
+[
+  {
+    "typeName": "TinkeringTom",
+    "symbol": "T",
+    "sprite": "sprites/tinkeringTom.png",
+    "cardArt": "sprites/tinkeringTom.png",
+    "cardType": "PIECE_CARD",
+    "steamCost": 7,
+    "rarity": "RARE",
+    "attack": 3,
+    "health": 10,
+    "movementRules": [
+      {
+        "relativeMoves": [
+          {"x": -1, "y": -1}, {"x": 0, "y": -1}, {"x": 1, "y": -1},
+          {"x": -1, "y": 0},                    {"x": 1, "y": 0},
+          {"x": -1, "y": 1}, {"x": 0, "y": 1}, {"x": 1, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 1
+      }
+    ],
+    "influenceRules": [
+      {
+        "relativeMoves": [
+          {"x": -1, "y": -1}, {"x": 0, "y": -1}, {"x": 1, "y": -1},
+          {"x": -1, "y": 0},                    {"x": 1, "y": 0},
+          {"x": -1, "y": 1}, {"x": 0, "y": 1}, {"x": 1, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 1
+      }
+    ],
+    "victoryPiece": true
+  },
+  {
+    "typeName": "ScarlettGlumpkin",
+    "symbol": "G",
+    "sprite": "sprites/scarlettGlumpkin.png",
+    "cardArt": "sprites/scarlettGlumpkin.png",
+    "cardType": "PIECE_CARD",
+    "steamCost": 8,
+    "rarity": "RARE",
+    "attack": 9,
+    "health": 9,
+    "movementRules": [
+      {
+        "relativeMoves": [
+          {"x": -1, "y": -1}, {"x": 0, "y": -1}, {"x": 1, "y": -1},
+          {"x": -1, "y": 0},                    {"x": 1, "y": 0},
+          {"x": -1, "y": 1}, {"x": 0, "y": 1}, {"x": 1, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 7
+      }
+    ],
+    "influenceRules": [
+      {
+        "relativeMoves": [
+          {"x": -1, "y": -1}, {"x": 0, "y": -1}, {"x": 1, "y": -1},
+          {"x": -1, "y": 0},                    {"x": 1, "y": 0},
+          {"x": -1, "y": 1}, {"x": 0, "y": 1}, {"x": 1, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 7
+      }
+    ]
+    },
+  {
+    "typeName": "Sweetykins",
+    "symbol": "S",
+    "sprite": "sprites/sweetykins.png",
+    "cardArt": "sprites/sweetykins.png",
+    "cardType": "PIECE_CARD",
+    "steamCost": 5,
+    "rarity": "UNCOMMON",
+    "attack": 5,
+    "health": 5,
+    "movementRules": [
+      {
+        "relativeMoves": [
+                            {"x": 0, "y": -1},
+          {"x": -1, "y": 0},                    {"x": 1, "y": 0},
+                            {"x": 0, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 7
+      }
+    ],
+    "influenceRules": [
+      {
+        "relativeMoves": [
+                            {"x": 0, "y": -1},
+          {"x": -1, "y": 0},                    {"x": 1, "y": 0},
+                            {"x": 0, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 7
+      }
+    ]
+    },
+  {
+    "typeName": "Sidewinder",
+    "symbol": "W",
+    "sprite": "sprites/sidewinder.png",
+    "cardArt": "sprites/sidewinder.png",
+    "cardType": "PIECE_CARD",
+    "steamCost": 4,
+    "rarity": "UNCOMMON",
+    "attack": 3,
+    "health": 3,
+    "movementRules": [
+      {
+        "relativeMoves": [
+          {"x": -1, "y": -1}, {"x": 1, "y": -1},
+          {"x": -1, "y": 1}, {"x": 1, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 7
+      }
+    ],
+    "influenceRules": [
+      {
+        "relativeMoves": [
+          {"x": -1, "y": -1}, {"x": 1, "y": -1},
+          {"x": -1, "y": 1}, {"x": 1, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 7
+      }
+    ]
+    },
+  {
+    "typeName": "Automatick",
+    "symbol": "A",
+    "sprite": "sprites/automatick.png",
+    "cardArt": "sprites/automatick.png",
+    "cardType": "PIECE_CARD",
+    "steamCost": 4,
+    "rarity": "UNCOMMON",
+    "attack": 3,
+    "health": 3,
+    "movementRules": [
+      {
+        "relativeMoves": [
+          {"x": -2, "y": -1}, {"x": -2, "y": 1},
+          {"x": -1, "y": -2}, {"x": -1, "y": 2},
+          {"x": 1, "y": -2}, {"x": 1, "y": 2},
+          {"x": 2, "y": -1}, {"x": 2, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": true,
+        "maxRange": 1
+      }
+    ],
+    "influenceRules": [
+      {
+        "relativeMoves": [
+          {"x": -2, "y": -1}, {"x": -2, "y": 1},
+          {"x": -1, "y": -2}, {"x": -1, "y": 2},
+          {"x": 1, "y": -2}, {"x": 1, "y": 2},
+          {"x": 2, "y": -1}, {"x": 2, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": true,
+        "maxRange": 1
+      }
+    ]
+    },
+  {
+    "typeName": "Sentroid",
+    "symbol": "E",
+    "sprite": "sprites/sentroid.png",
+    "cardArt": "sprites/sentroid.png",
+    "cardType": "PIECE_CARD",
+    "steamCost": 2,
+    "rarity": "COMMON",
+    "attack": 1,
+    "health": 1,
+    "movementRules": [
+      {
+        "relativeMoves": [{"x": 0, "y": -1}],
+        "isPawnForward": true,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 1
+      },
+      {
+        "relativeMoves": [{"x": -1, "y": -1}, {"x": 1, "y": -1}],
+        "isPawnForward": false,
+        "isPawnCapture": true,
+        "canJump": false,
+        "maxRange": 1
+      }
+    ],
+    "influenceRules": [
+      {
+        "relativeMoves": [{"x": -1, "y": -1}, {"x": 1, "y": -1}],
+        "isPawnForward": false,
+        "isPawnCapture": true,
+        "canJump": false,
+        "maxRange": 1
+      }
+    ]
+    },
+  {
+    "typeName": "Rustbucket",
+    "symbol": "R",
+    "sprite": "sprites/rustbucket.png",
+    "cardArt": "sprites/rustbucket.png",
+    "cardType": "PIECE_CARD",
+    "steamCost": 3,
+    "rarity": "COMMON",
+    "attack": 2,
+    "health": 2,
+    "movementRules": [
+      {
+        "relativeMoves": [
+          {"x": -1, "y": -1}, {"x": 0, "y": -1}, {"x": 1, "y": -1},
+          {"x": -1, "y": 0},                    {"x": 1, "y": 0},
+          {"x": -1, "y": 1}, {"x": 0, "y": 1}, {"x": 1, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 3
+      }
+    ],
+    "influenceRules": [
+      {
+        "relativeMoves": [
+          {"x": -1, "y": -1}, {"x": 0, "y": -1}, {"x": 1, "y": -1},
+          {"x": -1, "y": 0},                    {"x": 1, "y": 0},
+          {"x": -1, "y": 1}, {"x": 0, "y": 1}, {"x": 1, "y": 1}
+        ],
+        "isPawnForward": false,
+        "isPawnCapture": false,
+        "canJump": false,
+        "maxRange": 3
+      }
+    ],
+    "isRanged": true
+  }
+]

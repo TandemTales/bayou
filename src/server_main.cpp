@@ -724,8 +724,8 @@ int main() {
     initialize_database(); // Initialize the database at the start
 
     // Initialize global PieceFactory for piece creation (needed for card play)
-    if (!globalPieceDefManager.loadDefinitions("assets/data/pieces.json")) {
-        std::cerr << "FATAL: Could not load piece definitions from assets/data/pieces.json" << std::endl;
+    if (!globalPieceDefManager.loadDefinitions("assets/data/cards.json")) {
+        std::cerr << "FATAL: Could not load piece definitions from assets/data/cards.json" << std::endl;
         return -1;
     }
     globalPieceFactory = std::make_unique<PieceFactory>(globalPieceDefManager);

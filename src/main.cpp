@@ -837,8 +837,8 @@ int main()
     }
 
     // Initialize global PieceFactory for deserialization
-    if (!globalPieceDefManager.loadDefinitions("assets/data/pieces.json")) {
-        std::cerr << "FATAL: Could not load piece definitions from assets/data/pieces.json" << std::endl;
+    if (!globalPieceDefManager.loadDefinitions("assets/data/cards.json")) {
+        std::cerr << "FATAL: Could not load piece definitions from assets/data/cards.json" << std::endl;
         return -1;
     }
     globalPieceFactory = std::make_unique<PieceFactory>(globalPieceDefManager);

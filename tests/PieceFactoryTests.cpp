@@ -11,9 +11,9 @@ TEST_CASE("PieceFactory functionality", "[piecefactory]") {
     PieceFactory factory(pdm);
     
     // Load piece definitions
-    bool loaded = pdm.loadDefinitions("assets/data/pieces.json"); // Try relative path from test executable directory first
+    bool loaded = pdm.loadDefinitions("assets/data/cards.json"); // Try relative path from test executable directory first
     if (!loaded) {
-        loaded = pdm.loadDefinitions("../../assets/data/pieces.json"); // Fallback to original path
+        loaded = pdm.loadDefinitions("../../assets/data/cards.json"); // Fallback to original path
     }
     REQUIRE(loaded); // Crucial for tests to run
     
@@ -23,8 +23,8 @@ TEST_CASE("PieceFactory functionality", "[piecefactory]") {
         REQUIRE(piece != nullptr);
         REQUIRE(piece->getTypeName() == "TinkeringTom");
         REQUIRE(piece->getSide() == PlayerSide::PLAYER_ONE);
-        REQUIRE(piece->getAttack() == 3);  // Based on pieces.json
-        REQUIRE(piece->getHealth() == 10); // Based on pieces.json
+        REQUIRE(piece->getAttack() == 3);  // Based on cards.json
+        REQUIRE(piece->getHealth() == 10); // Based on cards.json
     }
     
     SECTION("Create ScarlettGlumpkin") {
@@ -73,8 +73,8 @@ TEST_CASE("PieceFactory functionality", "[piecefactory]") {
         REQUIRE(piece != nullptr);
         REQUIRE(piece->getTypeName() == "Sentroid");
         REQUIRE(piece->getSide() == PlayerSide::PLAYER_ONE);
-        REQUIRE(piece->getAttack() == 1); // Based on pieces.json
-        REQUIRE(piece->getHealth() == 1); // Based on pieces.json
+        REQUIRE(piece->getAttack() == 1); // Based on cards.json
+        REQUIRE(piece->getHealth() == 1); // Based on cards.json
     }
     
     SECTION("Create piece for different player sides") {

@@ -128,9 +128,9 @@ TEST_CASE("GameRules Win Condition System", "[gamerules][winconditions]") {
         
         // Create PieceFactory for creating test pieces
         PieceDefinitionManager pdm;
-        bool loaded = pdm.loadDefinitions("assets/data/pieces.json");
-        if (!loaded) {
-            loaded = pdm.loadDefinitions("../../assets/data/pieces.json");
+            bool loaded = pdm.loadDefinitions("assets/data/cards.json");
+    if (!loaded) {
+        loaded = pdm.loadDefinitions("../../assets/data/cards.json");
         }
         REQUIRE(loaded);
         PieceFactory factory(pdm);

@@ -13,10 +13,10 @@ using namespace BayouBonanza;
 #include <vector>
 #include <algorithm> // For std::find_if
 
-// Note: "assets/data/pieces.json" needs to be accessible when tests are run.
+// Note: "assets/data/cards.json" needs to be accessible when tests are run.
 // Catch2 tests are typically run from the build directory.
 // Ensure "assets" is copied to a location findable from there, or use absolute paths/configure paths.
-// For this example, we'll assume "assets/data/pieces.json" can be found relative to the build/test execution dir.
+// For this example, we'll assume "assets/data/cards.json" can be found relative to the build/test execution dir.
 // A common practice is to copy assets to the build directory alongside the test executable.
 
 struct TestFixture {
@@ -27,9 +27,9 @@ struct TestFixture {
     TestFixture() : factory(pdm) {
         // Attempt to load definitions. Path might need adjustment based on test execution directory.
         // Assets are copied to the test executable directory, so use relative path from there
-        bool loaded = pdm.loadDefinitions("assets/data/pieces.json"); // Try relative path from test executable directory
+        bool loaded = pdm.loadDefinitions("assets/data/cards.json"); // Try relative path from test executable directory
         if (!loaded) {
-            loaded = pdm.loadDefinitions("../../assets/data/pieces.json"); // Fallback to original path
+            loaded = pdm.loadDefinitions("../../assets/data/cards.json"); // Fallback to original path
         }
         REQUIRE(loaded); // Crucial for tests to run
     }

@@ -28,9 +28,9 @@ struct CardTestFixture {
     
     CardTestFixture() {
         // Load piece definitions for piece creation
-        if (!pieceDefManager.loadDefinitions("assets/data/pieces.json")) {
+        if (!pieceDefManager.loadDefinitions("assets/data/cards.json")) {
             // Fallback to alternative path
-            pieceDefManager.loadDefinitions("../../assets/data/pieces.json");
+            pieceDefManager.loadDefinitions("../../assets/data/cards.json");
         }
         factory = std::make_unique<PieceFactory>(pieceDefManager);
         

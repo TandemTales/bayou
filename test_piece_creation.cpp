@@ -12,7 +12,7 @@ int main() {
     
     // Load piece definitions
     PieceDefinitionManager pieceDefManager;
-    if (!pieceDefManager.loadDefinitions("assets/data/pieces.json")) {
+    if (!pieceDefManager.loadDefinitions("assets/data/cards.json")) {
         std::cerr << "FATAL: Could not load piece definitions" << std::endl;
         return -1;
     }

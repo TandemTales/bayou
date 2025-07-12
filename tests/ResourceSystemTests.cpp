@@ -14,7 +14,7 @@ class ResourceSystemTestFixture {
 public:
     ResourceSystemTestFixture() {
         // Load piece definitions for board setup
-        if (!pieceDefManager.loadDefinitions("assets/data/pieces.json")) {
+        if (!pieceDefManager.loadDefinitions("assets/data/cards.json")) {
             // Handle error - for tests, we might want to use a test-specific file
             // or create minimal definitions programmatically
         }

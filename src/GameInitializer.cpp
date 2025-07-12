@@ -9,9 +9,9 @@ namespace BayouBonanza {
 // Constructor
 GameInitializer::GameInitializer() {
     ownedPieceDefManager = std::make_unique<PieceDefinitionManager>();
-    if (!ownedPieceDefManager->loadDefinitions("assets/data/pieces.json")) {
+    if (!ownedPieceDefManager->loadDefinitions("assets/data/cards.json")) {
         // Handle error: Log and maybe throw or exit
-        std::cerr << "FATAL: Could not load piece definitions from assets/data/pieces.json" << std::endl;
+        std::cerr << "FATAL: Could not load piece definitions from assets/data/cards.json" << std::endl;
         // Consider throwing an exception or setting an error state that can be checked.
         // For now, proceeding will likely lead to issues if pieceFactory is used without definitions.
     }

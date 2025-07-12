@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <set>
+#include "nlohmann/json.hpp"
 
 namespace BayouBonanza {
 
@@ -123,43 +124,40 @@ std::vector<std::unique_ptr<Card>> CardFactory::createStarterDeck() {
     
     std::vector<std::unique_ptr<Card>> deck;
     
-    // Create a balanced starter deck with 20 cards including all piece types
-    // Each player gets cards for all 7 piece types
-    
-    // 6 Sentroid cards (common, low cost) - ID 1
+    // 6 Sentroid cards
     for (int i = 0; i < 6; i++) {
-        deck.push_back(createCard(1)); // Summon Sentroid
+        deck.push_back(createCard("Summon Sentroid"));
     }
     
-    // 3 Rustbucket cards (common, ranged) - ID 7
+    // 3 Rustbucket cards
     for (int i = 0; i < 3; i++) {
-        deck.push_back(createCard(7)); // Summon Rustbucket
+        deck.push_back(createCard("Summon Rustbucket"));
     }
     
-    // 2 Sweetykins cards (uncommon, rook-like) - ID 2
+    // 2 Sweetykins cards
     for (int i = 0; i < 2; i++) {
-        deck.push_back(createCard(2)); // Summon Sweetykins
+        deck.push_back(createCard("Summon Sweetykins"));
     }
     
-    // 2 Automatick cards (uncommon, knight-like) - ID 3
+    // 2 Automatick cards
     for (int i = 0; i < 2; i++) {
-        deck.push_back(createCard(3)); // Summon Automatick
+        deck.push_back(createCard("Summon Automatick"));
     }
     
-    // 2 Sidewinder cards (uncommon, bishop-like) - ID 4
+    // 2 Sidewinder cards
     for (int i = 0; i < 2; i++) {
-        deck.push_back(createCard(4)); // Summon Sidewinder
+        deck.push_back(createCard("Summon Sidewinder"));
     }
     
-    // 1 ScarlettGlumpkin card (rare, queen-like) - ID 5
-    deck.push_back(createCard(5)); // Summon ScarlettGlumpkin
+    // 1 ScarlettGlumpkin card
+    deck.push_back(createCard("Summon ScarlettGlumpkin"));
     
-    // 1 TinkeringTom card (rare, king-like) - ID 6
-    deck.push_back(createCard(6)); // Summon TinkeringTom
+    // 1 TinkeringTom card
+    deck.push_back(createCard("Summon TinkeringTom"));
     
-    // 3 Effect cards (healing) - use predefined card definitions
+    // 3 Effect cards (Healing Light)
     for (int i = 0; i < 3; i++) {
-        deck.push_back(createCard(10)); // Healing Light
+        deck.push_back(createCard("Healing Light"));
     }
     
     return deck;
@@ -288,64 +286,56 @@ bool CardFactory::saveCardDefinitions(const std::string& filename) {
 void CardFactory::createDefaultDefinitions() {
     cardDefinitions.clear();
     
-    // Create default piece cards
-    CardDefinition pawnCard(1, "Summon Sentroid", "Summon a Sentroid piece to the battlefield",
-                           2, CardType::PIECE_CARD, CardRarity::COMMON);
-    pawnCard.pieceType = "Sentroid";
-    cardDefinitions[1] = pawnCard;
+    std::ifstream file("assets/data/cards.json");
+    if (!file.is_open()) {
+        std::cerr << "Failed to open cards.json" << std::endl;
+        return;
+    }
     
-    CardDefinition sweetykinsCard(2, "Summon Sweetykins", "Summon a Sweetykins piece to the battlefield",
-                           5, CardType::PIECE_CARD, CardRarity::UNCOMMON);
-    sweetykinsCard.pieceType = "Sweetykins";
-    cardDefinitions[2] = sweetykinsCard;
+    nlohmann::json piecesData;
+    file >> piecesData;
     
-    CardDefinition knightCard(3, "Summon Automatick", "Summon an Automatick piece to the battlefield",
-                             4, CardType::PIECE_CARD, CardRarity::UNCOMMON);
-    knightCard.pieceType = "Automatick";
-    cardDefinitions[3] = knightCard;
+    int id = 1;
+    for (const auto& piece : piecesData) {
+        std::string typeName = piece["typeName"].get<std::string>();
+        std::string cardName = "Summon " + typeName;
+        std::string desc = "Summon a " + typeName + " piece to the battlefield";
+        int steamCost = piece["steamCost"].get<int>();
+        std::string rarityStr = piece["rarity"].get<std::string>();
+        CardRarity rarity;
+        if (rarityStr == "COMMON") rarity = CardRarity::COMMON;
+        else if (rarityStr == "UNCOMMON") rarity = CardRarity::UNCOMMON;
+        else if (rarityStr == "RARE") rarity = CardRarity::RARE;
+        else rarity = CardRarity::COMMON;
+        CardDefinition def(id, cardName, desc, steamCost, CardType::PIECE_CARD, rarity);
+        def.pieceType = typeName;
+        cardDefinitions[id] = def;
+        id++;
+    }
     
-    CardDefinition bishopCard(4, "Summon Sidewinder", "Summon a Sidewinder piece to the battlefield",
-                             4, CardType::PIECE_CARD, CardRarity::UNCOMMON);
-    bishopCard.pieceType = "Sidewinder";
-    cardDefinitions[4] = bishopCard;
-    
-    CardDefinition queenCard(5, "Summon ScarlettGlumpkin", "Summon a ScarlettGlumpkin piece to the battlefield",
-                            8, CardType::PIECE_CARD, CardRarity::RARE);
-    queenCard.pieceType = "ScarlettGlumpkin";
-    cardDefinitions[5] = queenCard;
-    
-    // Add TinkeringTom card definition
-    CardDefinition tinkeringTomCard(6, "Summon TinkeringTom", "Summon a TinkeringTom piece to the battlefield",
-                                   7, CardType::PIECE_CARD, CardRarity::RARE);
-    tinkeringTomCard.pieceType = "TinkeringTom";
-    cardDefinitions[6] = tinkeringTomCard;
-    
-    // Add Rustbucket card definition  
-    CardDefinition rustbucketCard(7, "Summon Rustbucket", "Summon a Rustbucket piece to the battlefield",
-                                 3, CardType::PIECE_CARD, CardRarity::COMMON);
-    rustbucketCard.pieceType = "Rustbucket";
-    cardDefinitions[7] = rustbucketCard;
-    
-    // Create default effect cards
-    CardDefinition healCard(10, "Healing Light", "Restore 25 health to target piece", 
+    // Hardcoded effect cards starting from next id
+    CardDefinition healCard(id, "Healing Light", "Restore 25 health to target piece", 
                            3, CardType::EFFECT_CARD, CardRarity::COMMON);
     healCard.effect = Effect(EffectType::HEAL, 25, 0, TargetType::SINGLE_PIECE);
-    cardDefinitions[10] = healCard;
+    cardDefinitions[id] = healCard;
+    id++;
     
-    CardDefinition damageCard(11, "Lightning Bolt", "Deal 30 damage to target piece", 
+    CardDefinition damageCard(id, "Lightning Bolt", "Deal 30 damage to target piece", 
                              4, CardType::EFFECT_CARD, CardRarity::COMMON);
     damageCard.effect = Effect(EffectType::DAMAGE, 30, 0, TargetType::SINGLE_PIECE);
-    cardDefinitions[11] = damageCard;
+    cardDefinitions[id] = damageCard;
+    id++;
     
-    CardDefinition buffCard(12, "Battle Fury", "Increase target's attack by 20", 
+    CardDefinition buffCard(id, "Battle Fury", "Increase target's attack by 20", 
                            3, CardType::EFFECT_CARD, CardRarity::UNCOMMON);
     buffCard.effect = Effect(EffectType::BUFF_ATTACK, 20, 3, TargetType::SINGLE_PIECE);
-    cardDefinitions[12] = buffCard;
+    cardDefinitions[id] = buffCard;
+    id++;
     
-    CardDefinition massHealCard(13, "Mass Healing", "Restore 15 health to all friendly pieces", 
+    CardDefinition massHealCard(id, "Mass Healing", "Restore 15 health to all friendly pieces", 
                                6, CardType::EFFECT_CARD, CardRarity::RARE);
     massHealCard.effect = Effect(EffectType::HEAL, 15, 0, TargetType::ALL_FRIENDLY);
-    cardDefinitions[13] = massHealCard;
+    cardDefinitions[id] = massHealCard;
 }
 
 void CardFactory::updateNameMapping() {
