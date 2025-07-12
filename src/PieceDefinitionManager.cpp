@@ -38,6 +38,9 @@ bool PieceDefinitionManager::loadDefinitions(const std::string& filePath) {
     pieceStatsMap.clear(); // Clear previous definitions
 
     for (const auto& pieceJson : jsonData) {
+        if (!pieceJson.contains("cardType") || pieceJson["cardType"] != "PIECE_CARD") {
+            continue;
+        }
         PieceStats stats;
         try {
             stats.typeName = pieceJson.at("typeName").get<std::string>();

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <set>
 #include "nlohmann/json.hpp"
+#include <stdexcept>  // Add for std::invalid_argument
 
 namespace BayouBonanza {
 
@@ -283,6 +284,21 @@ bool CardFactory::saveCardDefinitions(const std::string& filename) {
     return false;
 }
 
+// Helper functions for parsing enums from strings
+EffectType getEffectType(const std::string& str) {
+    if (str == "HEAL") return EffectType::HEAL;
+    if (str == "DAMAGE") return EffectType::DAMAGE;
+    if (str == "BUFF_ATTACK") return EffectType::BUFF_ATTACK;
+    if (str == "BUFF_HEALTH") return EffectType::BUFF_HEALTH;
+    throw std::invalid_argument("Unknown effect type: " + str);
+}
+
+TargetType getTargetType(const std::string& str) {
+    if (str == "SINGLE_PIECE") return TargetType::SINGLE_PIECE;
+    if (str == "ALL_FRIENDLY") return TargetType::ALL_FRIENDLY;
+    throw std::invalid_argument("Unknown target type: " + str);
+}
+
 void CardFactory::createDefaultDefinitions() {
     cardDefinitions.clear();
     
@@ -292,50 +308,57 @@ void CardFactory::createDefaultDefinitions() {
         return;
     }
     
-    nlohmann::json piecesData;
-    file >> piecesData;
+    nlohmann::json cardsData;
+    file >> cardsData;
     
     int id = 1;
-    for (const auto& piece : piecesData) {
-        std::string typeName = piece["typeName"].get<std::string>();
-        std::string cardName = "Summon " + typeName;
-        std::string desc = "Summon a " + typeName + " piece to the battlefield";
-        int steamCost = piece["steamCost"].get<int>();
-        std::string rarityStr = piece["rarity"].get<std::string>();
+    for (const auto& cardJson : cardsData) {
+        std::string cardTypeStr = cardJson.value("cardType", "PIECE_CARD");
+        CardType cardType;
+        if (cardTypeStr == "PIECE_CARD") {
+            cardType = CardType::PIECE_CARD;
+        } else if (cardTypeStr == "EFFECT_CARD") {
+            cardType = CardType::EFFECT_CARD;
+        } else {
+            std::cerr << "Unknown card type: " << cardTypeStr << std::endl;
+            continue;
+        }
+        
+        std::string rarityStr = cardJson.value("rarity", "COMMON");
         CardRarity rarity;
         if (rarityStr == "COMMON") rarity = CardRarity::COMMON;
         else if (rarityStr == "UNCOMMON") rarity = CardRarity::UNCOMMON;
         else if (rarityStr == "RARE") rarity = CardRarity::RARE;
         else rarity = CardRarity::COMMON;
-        CardDefinition def(id, cardName, desc, steamCost, CardType::PIECE_CARD, rarity);
-        def.pieceType = typeName;
+        
+        int steamCost = cardJson["steamCost"].get<int>();
+        
+        CardDefinition def(id, "", "", steamCost, cardType, rarity);
+        
+        if (cardType == CardType::PIECE_CARD) {
+            std::string typeName = cardJson["typeName"].get<std::string>();
+            def.name = "Summon " + typeName;
+            def.description = "Summon a " + typeName + " piece to the battlefield";
+            def.pieceType = typeName;
+        } else if (cardType == CardType::EFFECT_CARD) {
+            def.name = cardJson["name"].get<std::string>();
+            def.description = cardJson["description"].get<std::string>();
+            
+            std::string effectTypeStr = cardJson["effectType"].get<std::string>();
+            EffectType effectType = getEffectType(effectTypeStr);
+            
+            int magnitude = cardJson["magnitude"].get<int>();
+            int duration = cardJson.value("duration", 0);
+            
+            std::string targetTypeStr = cardJson["targetType"].get<std::string>();
+            TargetType targetType = getTargetType(targetTypeStr);
+            
+            def.effect = Effect(effectType, magnitude, duration, targetType);
+        }
+        
         cardDefinitions[id] = def;
         id++;
     }
-    
-    // Hardcoded effect cards starting from next id
-    CardDefinition healCard(id, "Healing Light", "Restore 25 health to target piece", 
-                           3, CardType::EFFECT_CARD, CardRarity::COMMON);
-    healCard.effect = Effect(EffectType::HEAL, 25, 0, TargetType::SINGLE_PIECE);
-    cardDefinitions[id] = healCard;
-    id++;
-    
-    CardDefinition damageCard(id, "Lightning Bolt", "Deal 30 damage to target piece", 
-                             4, CardType::EFFECT_CARD, CardRarity::COMMON);
-    damageCard.effect = Effect(EffectType::DAMAGE, 30, 0, TargetType::SINGLE_PIECE);
-    cardDefinitions[id] = damageCard;
-    id++;
-    
-    CardDefinition buffCard(id, "Battle Fury", "Increase target's attack by 20", 
-                           3, CardType::EFFECT_CARD, CardRarity::UNCOMMON);
-    buffCard.effect = Effect(EffectType::BUFF_ATTACK, 20, 3, TargetType::SINGLE_PIECE);
-    cardDefinitions[id] = buffCard;
-    id++;
-    
-    CardDefinition massHealCard(id, "Mass Healing", "Restore 15 health to all friendly pieces", 
-                               6, CardType::EFFECT_CARD, CardRarity::RARE);
-    massHealCard.effect = Effect(EffectType::HEAL, 15, 0, TargetType::ALL_FRIENDLY);
-    cardDefinitions[id] = massHealCard;
 }
 
 void CardFactory::updateNameMapping() {
