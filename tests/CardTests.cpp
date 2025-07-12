@@ -362,6 +362,7 @@ TEST_CASE_METHOD(CardTestFixture, "CardPlayValidator Functionality", "[card][val
     SECTION("Basic Card Play Validation") {
         // Add a card to player's hand
         Hand& hand = gameState.getHand(PlayerSide::PLAYER_ONE);
+        hand.clear();
         auto testCard = createTestPieceCard("Test Sentroid", 2, "Sentroid");
         hand.addCard(std::move(testCard));
         

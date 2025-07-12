@@ -16,8 +16,30 @@ using namespace BayouBonanza;
 
 // Helper function to reset game state for each test section
 static void setupInitialState(GameState& gs, GameInitializer& init) {
-    gs = GameState(); // Reset to default constructor
+    gs = GameState();
     init.initializeNewGame(gs);
+
+    // Manually place basic pieces required for the tests
+    PieceDefinitionManager pdm;
+    bool loaded = pdm.loadDefinitions("assets/data/pieces.json");
+    if (!loaded) {
+        pdm.loadDefinitions("../../assets/data/pieces.json");
+    }
+    PieceFactory factory(pdm);
+    GameBoard& board = gs.getBoard();
+
+    auto p1Pawn = factory.createPiece("Sentroid", PlayerSide::PLAYER_ONE);
+    auto p1Tom = factory.createPiece("TinkeringTom", PlayerSide::PLAYER_ONE);
+    auto p2Tom = factory.createPiece("TinkeringTom", PlayerSide::PLAYER_TWO);
+    p1Pawn->setPosition({0,6});
+    p1Tom->setPosition({4,7});
+    p2Tom->setPosition({4,0});
+    board.getSquare(0,6).setPiece(std::move(p1Pawn));
+    board.getSquare(4,7).setPiece(std::move(p1Tom));
+    board.getSquare(4,0).setPiece(std::move(p2Tom));
+
+    // Skip setup phase for these tests
+    gs.setGamePhase(GamePhase::PLAY);
 }
 
 TEST_CASE("TurnManager functionality", "[turnmanager]") {

@@ -16,6 +16,20 @@ using namespace BayouBonanza;
 static void setupBasicGame(GameState& gameState, GameInitializer& initializer) {
     gameState = GameState();
     initializer.initializeNewGame(gameState);
+
+    PieceDefinitionManager pdm;
+    bool loaded = pdm.loadDefinitions("assets/data/pieces.json");
+    if (!loaded) {
+        pdm.loadDefinitions("../../assets/data/pieces.json");
+    }
+    PieceFactory factory(pdm);
+    GameBoard& board = gameState.getBoard();
+    auto p1 = factory.createPiece("TinkeringTom", PlayerSide::PLAYER_ONE);
+    auto p2 = factory.createPiece("TinkeringTom", PlayerSide::PLAYER_TWO);
+    p1->setPosition({2,4});
+    p2->setPosition({5,3});
+    board.getSquare(2,4).setPiece(std::move(p1));
+    board.getSquare(5,3).setPiece(std::move(p2));
 }
 
 // Helper function to find a king on the board

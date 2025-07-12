@@ -4,6 +4,7 @@
 #include "CardFactory.h" // For card system initialization
 #include "CardPlayValidator.h" // For comprehensive card validation
 #include "TurnManager.h" // For ActionType enum
+#include "GameOverDetector.h"
 #include <SFML/Network/Packet.hpp> // For sf::Packet
 #include <iostream> // For std::cout
 
@@ -171,11 +172,20 @@ void GameState::processTurnStart() {
 void GameState::nextPhase() {
     switch (phase) {
         case GamePhase::SETUP:
-            // After setup, start with draw phase
-            phase = GamePhase::DRAW;
-            // Auto-advance from draw phase immediately
-            nextPhase();
+        {
+            GameOverDetector detector;
+            bool p1 = detector.hasVictoryPieces(*this, PlayerSide::PLAYER_ONE);
+            bool p2 = detector.hasVictoryPieces(*this, PlayerSide::PLAYER_TWO);
+            if (p1 && p2) {
+                phase = GamePhase::DRAW;
+                processTurnStart();
+                nextPhase();
+            } else {
+                switchActivePlayer();
+                incrementTurnNumber();
+            }
             break;
+        }
             
         case GamePhase::DRAW:
             // Auto-draw card and immediately advance to action phase (using PLAY as action phase)
@@ -213,15 +223,15 @@ bool GameState::isActionAllowedInPhase(ActionType actionType) const {
         case ActionType::MOVE_PIECE:
             // Piece movement is allowed in the action phase (PLAY) or legacy MOVE phase
             return phase == GamePhase::PLAY || phase == GamePhase::MOVE;
-            
+
         case ActionType::PLAY_CARD:
-            // Card play is allowed in the action phase (PLAY) or legacy MOVE phase
-            return phase == GamePhase::PLAY || phase == GamePhase::MOVE;
+            // Card play is allowed in the action phase (PLAY) or during setup for victory pieces
+            return phase == GamePhase::PLAY || phase == GamePhase::MOVE || phase == GamePhase::SETUP;
             
         case ActionType::END_TURN:
             // Turn ending is not needed anymore since actions auto-end the turn
             // But keep for compatibility
-            return phase == GamePhase::PLAY || phase == GamePhase::MOVE;
+            return phase == GamePhase::PLAY || phase == GamePhase::MOVE || phase == GamePhase::SETUP;
             
         default:
             return false;

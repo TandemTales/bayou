@@ -1,6 +1,7 @@
 #include "CardPlayValidator.h"
 #include "GameBoard.h"
 #include "Square.h"
+#include "GameOverDetector.h"
 #include <algorithm>
 #include <iostream>
 
@@ -23,8 +24,23 @@ ValidationResult CardPlayValidator::validateCardPlay(const GameState& gameState,
     // Get the card
     const Card* card = hand.getCard(handIndex);
     if (!card) {
-        return ValidationResult(false, ValidationError::CARD_NOT_FOUND, 
+        return ValidationResult(false, ValidationError::CARD_NOT_FOUND,
                               "No card found at hand index " + std::to_string(handIndex));
+    }
+
+    // During setup only victory piece cards may be played
+    if (gameState.getGamePhase() == GamePhase::SETUP) {
+        const PieceCard* pc = dynamic_cast<const PieceCard*>(card);
+        if (!pc || !Square::globalPieceFactory ||
+            !Square::globalPieceFactory->isVictoryPiece(pc->getPieceType())) {
+            return ValidationResult(false, ValidationError::GAME_STATE_INVALID,
+                                  "Only victory piece cards can be played during setup");
+        }
+        GameOverDetector detector;
+        if (detector.hasVictoryPieces(gameState, player)) {
+            return ValidationResult(false, ValidationError::GAME_STATE_INVALID,
+                                  "Victory piece already in play for this player");
+        }
     }
     
     // Check steam cost
@@ -54,8 +70,17 @@ ValidationResult CardPlayValidator::validateTargetedCardPlay(const GameState& ga
     // Check if target position is within bounds
     if (!isValidBoardPosition(targetPosition)) {
         return ValidationResult(false, ValidationError::INVALID_TARGET,
-                              "Target position (" + std::to_string(targetPosition.x) + ", " + 
+                              "Target position (" + std::to_string(targetPosition.x) + ", " +
                               std::to_string(targetPosition.y) + ") is out of bounds");
+    }
+
+    if (gameState.getGamePhase() == GamePhase::SETUP) {
+        const GameBoard& board = gameState.getBoard();
+        const Square& sq = board.getSquare(targetPosition.x, targetPosition.y);
+        if (sq.getControlledBy() != player || !sq.isEmpty()) {
+            return ValidationResult(false, ValidationError::INVALID_PLACEMENT,
+                                  "Square not controlled by player or occupied");
+        }
     }
     
     // Get the card and validate specific targeting
@@ -93,11 +118,13 @@ ValidationResult CardPlayValidator::validatePiecePlacement(const GameState& game
         return ValidationResult(false, ValidationError::CARD_NOT_FOUND, "PieceCard is null");
     }
     
-    // Use the piece card's own validation
-    if (!pieceCard->isValidPlacement(gameState, player, position)) {
-        return ValidationResult(false, ValidationError::INVALID_PLACEMENT,
-                              "Position (" + std::to_string(position.x) + ", " + 
-                              std::to_string(position.y) + ") is not valid for piece placement");
+    // During setup, placement validity is checked separately
+    if (gameState.getGamePhase() != GamePhase::SETUP) {
+        if (!pieceCard->isValidPlacement(gameState, player, position)) {
+            return ValidationResult(false, ValidationError::INVALID_PLACEMENT,
+                                  "Position (" + std::to_string(position.x) + ", " +
+                                  std::to_string(position.y) + ") is not valid for piece placement");
+        }
     }
     
     return ValidationResult(true, ValidationError::NONE, "Piece placement is valid");

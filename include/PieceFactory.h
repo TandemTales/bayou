@@ -17,6 +17,10 @@ public:
     // createPiece takes a type name string allowing for data-driven pieces
     std::unique_ptr<Piece> createPiece(const std::string& typeName, PlayerSide side);
 
+    const PieceDefinitionManager& getDefinitionManager() const { return definitionManager; }
+
+    bool isVictoryPiece(const std::string& typeName) const;
+
 private:
     const PieceDefinitionManager& definitionManager;
 };

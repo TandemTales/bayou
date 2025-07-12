@@ -55,6 +55,8 @@ public:
      */
     void setupBoard(GameState& gameState);
 
+    void setupStartingHands(GameState& gameState);
+
 private:
     // For constructor without parameters - owns the instances
     std::unique_ptr<BayouBonanza::PieceDefinitionManager> ownedPieceDefManager;

@@ -25,4 +25,9 @@ std::unique_ptr<Piece> PieceFactory::createPiece(const std::string& typeName, Pl
     return newPiece;
 }
 
+bool PieceFactory::isVictoryPiece(const std::string& typeName) const {
+    const PieceStats* stats = definitionManager.getPieceStats(typeName);
+    return stats && stats->isVictoryPiece;
+}
+
 } // namespace BayouBonanza
