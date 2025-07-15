@@ -23,7 +23,7 @@ TEST_CASE("Stun and cooldown mechanics") {
     auto defender = factory.createPiece("TinkeringTom", PlayerSide::PLAYER_TWO);
     REQUIRE(attacker);
     REQUIRE(defender);
-    REQUIRE(attacker->getCooldown() == 2);
+    REQUIRE(attacker->getCooldown() == 1);
 
     attacker->setPosition({0,0});
     defender->setPosition({0,1});
@@ -42,18 +42,19 @@ TEST_CASE("Stun and cooldown mechanics") {
     REQUIRE(attPiece);
 
     CHECK(defPiece->isStunned());
-    CHECK(defPiece->getStunRemaining() == 1);
+    CHECK(defPiece->getStunRemaining() == 2);
     CHECK(attPiece->isStunned());
-    CHECK(attPiece->getStunRemaining() == 2);
+    CHECK(attPiece->getStunRemaining() == 1);
 
     state.setActivePlayer(PlayerSide::PLAYER_ONE);
     state.processTurnStart();
     // attacker stun decremented
-    CHECK(attPiece->getStunRemaining() == 1);
+    CHECK(attPiece->getStunRemaining() == 0);
     // defender not decremented yet (other player)
-    CHECK(defPiece->getStunRemaining() == 1);
+    CHECK(defPiece->getStunRemaining() == 2);
 
     state.setActivePlayer(PlayerSide::PLAYER_TWO);
     state.processTurnStart();
-    CHECK(defPiece->getStunRemaining() == 0);
+    CHECK(defPiece->getStunRemaining() == 1);
+    CHECK(defPiece->isStunned());
 }

@@ -136,7 +136,7 @@ endif()
 # Add gameplay test executable
 add_executable(GameplayTest test_gameplay.cpp)
 target_link_libraries(GameplayTest GameLogic)
-
+  
 # Add initialization test executable
 add_executable(TestInitialization test_initialization.cpp)
 target_link_libraries(TestInitialization GameLogic)

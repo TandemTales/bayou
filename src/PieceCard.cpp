@@ -58,15 +58,9 @@ bool PieceCard::isValidPlacement(const GameState& gameState, PlayerSide player, 
         return false;
     }
     
-    // Use territorial rules for card placement:
-    // Player One can place pieces on their half (rows 4-7)
-    // Player Two can place pieces on their half (rows 0-3)
-    bool validTerritory = false;
-    if (player == PlayerSide::PLAYER_ONE) {
-        validTerritory = (position.y >= 4 && position.y <= 7);
-    } else if (player == PlayerSide::PLAYER_TWO) {
-        validTerritory = (position.y >= 0 && position.y <= 3);
-    }
+    // Check if the square is controlled by the player
+    PlayerSide controller = board.getSquare(position.x, position.y).getControlledBy();
+    bool validTerritory = (controller == player);
     
 
     

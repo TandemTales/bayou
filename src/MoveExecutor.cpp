@@ -69,7 +69,7 @@ MoveResult MoveExecutor::executeMove(GameState& gameState, const Move& move) {
 
             // Apply stun effects
             if (!destroyed) {
-                targetPiece->applyStun(1);
+                targetPiece->applyStun(2);
             }
             if (piece->getCooldown() > 0) {
                 piece->applyStun(piece->getCooldown());
@@ -128,13 +128,17 @@ MoveResult MoveExecutor::executeMove(GameState& gameState, const Move& move) {
                 return MoveResult::SUCCESS;
             }
 
-            // Remove the defeated piece if not already handled
+            // Check if the destroyed piece was a victory piece BEFORE removing it
+            bool wasVictoryPiece = targetPiece->isVictoryPiece();
+            PlayerSide targetSide = targetPiece->getSide();
+            
+            // Remove the defeated piece from the board
             toSquare.setPiece(nullptr);
 
-            // Check if the destroyed piece was a king
-            if (targetPiece->isVictoryPiece()) {
-                // Set game result based on which king was captured
-                if (targetPiece->getSide() == PlayerSide::PLAYER_ONE) {
+            // Only set game result if a victory piece was destroyed
+            if (wasVictoryPiece) {
+                // Set game result based on which victory piece was captured
+                if (targetSide == PlayerSide::PLAYER_ONE) {
                     gameState.setGameResult(GameResult::PLAYER_TWO_WIN);
                 } else {
                     gameState.setGameResult(GameResult::PLAYER_ONE_WIN);
@@ -154,6 +158,20 @@ MoveResult MoveExecutor::executeMove(GameState& gameState, const Move& move) {
                 recalculateBoardControl(gameState);
                 return MoveResult::KING_CAPTURED;
             }
+            
+            // If a non-victory piece was destroyed, just move the attacking piece
+            std::unique_ptr<Piece> movingPiece = fromSquare.extractPiece();
+            if (!movingPiece) {
+                return MoveResult::INVALID_MOVE; // Piece was not at expected location
+            }
+
+            // Move the attacking piece to the target square
+            movingPiece->setPosition(to);
+            movingPiece->setHasMoved(true);
+            toSquare.setPiece(std::move(movingPiece));
+
+            recalculateBoardControl(gameState);
+            return MoveResult::PIECE_DESTROYED;
         } else {
             // Cannot move to a square occupied by own piece
             return MoveResult::INVALID_MOVE;

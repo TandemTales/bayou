@@ -23,20 +23,8 @@ MoveResult GameRules::processMove(GameState& gameState, const Move& move) {
     // Execute the move and get the result
     MoveResult result = moveExecutor.executeMove(gameState, move);
     
-    // If the move was successful, check for game ending conditions
-    if (result == MoveResult::SUCCESS || result == MoveResult::PIECE_DESTROYED) {
-        // Check if any player has lost their king
-        if (!hasKing(gameState, PlayerSide::PLAYER_ONE)) {
-            gameState.setGameResult(GameResult::PLAYER_TWO_WIN);
-            return MoveResult::KING_CAPTURED;
-        }
-        
-        if (!hasKing(gameState, PlayerSide::PLAYER_TWO)) {
-            gameState.setGameResult(GameResult::PLAYER_ONE_WIN);
-            return MoveResult::KING_CAPTURED;
-        }
-    }
-    
+    // MoveExecutor already handles victory piece destruction and sets game result
+    // No need for additional checks here
     return result;
 }
 

@@ -9,7 +9,6 @@
     "rarity": "RARE",
     "attack": 3,
     "health": 10,
-    "cooldown": 1,
     "movementRules": [
       {
         "relativeMoves": [
@@ -122,7 +121,6 @@
     "rarity": "UNCOMMON",
     "attack": 3,
     "health": 3,
-    "cooldown": 2,
     "movementRules": [
       {
         "relativeMoves": [
@@ -233,7 +231,7 @@
     "rarity": "COMMON",
     "attack": 2,
     "health": 3,
-    "cooldown": 2,
+    "cooldown": 1,
     "movementRules": [
       {
         "relativeMoves": [
