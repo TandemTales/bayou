@@ -34,9 +34,9 @@ void GameInitializer::initializeNewGame(GameState& gameState) {
     // Reset the game state to default values
     resetGameState(gameState);
     
-    // Use starter decks to set up victory pieces
-    Deck d1(CardFactory::createStarterDeck());
-    Deck d2(CardFactory::createStarterDeck());
+    // Use starter decks with victory pieces to set up the board
+    Deck d1(CardFactory::createStarterDeck(), CardFactory::createStarterVictoryCards());
+    Deck d2(CardFactory::createStarterDeck(), CardFactory::createStarterVictoryCards());
     setupBoard(gameState, d1, d2);
     gameState.initializeCardSystem(d1, d2);
 
@@ -55,19 +55,24 @@ void GameInitializer::setupBoard(GameState& gameState, const Deck& deck1, const 
     // Clear the board
     gameState.getBoard().resetBoard();
 
-    auto placeSlots = [&](const Deck& deck, PlayerSide side, int column) {
+    // Only place victory pieces from decks in the side columns
+    auto placeVictorySlots = [&](const Deck& deck, PlayerSide side, int column) {
         for (size_t i = 0; i < Deck::VICTORY_SIZE; ++i) {
             const Card* c = deck.getVictoryCard(i);
             if (!c) continue;
             auto pc = dynamic_cast<const PieceCard*>(c);
             if (!pc) continue;
             int row = static_cast<int>(i) + 2;
+            // Place victory pieces in left column (x=0) for Player 1 
+            // and right column (x=7) for Player 2
             createAndPlacePiece(gameState, pc->getPieceType(), side, column, row);
         }
     };
 
-    placeSlots(deck1, PlayerSide::PLAYER_ONE, 0);
-    placeSlots(deck2, PlayerSide::PLAYER_TWO, GameBoard::BOARD_SIZE - 1);
+    // Player 1 victory pieces in left column (x=0)
+    placeVictorySlots(deck1, PlayerSide::PLAYER_ONE, 0);
+    // Player 2 victory pieces in right column (x=7)
+    placeVictorySlots(deck2, PlayerSide::PLAYER_TWO, GameBoard::BOARD_SIZE - 1);
 }
 
 Piece* GameInitializer::createAndPlacePiece(GameState& gameState, const std::string& pieceType, PlayerSide side, int x, int y) {
@@ -113,6 +118,8 @@ void GameInitializer::resetGameState(GameState& gameState) {
     gameState.setSteam(PlayerSide::PLAYER_ONE, 0);
     gameState.setSteam(PlayerSide::PLAYER_TWO, 0);
 }
+
+
 
 void GameInitializer::calculateInitialControl(GameState& gameState) {
     GameBoard& board = gameState.getBoard();
