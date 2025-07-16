@@ -248,6 +248,7 @@ class Deck : public CardCollection {
 public:
     static const size_t DECK_SIZE = 20;
     static const int MAX_COPIES = 2;
+    static const size_t VICTORY_SIZE = 4;
     
     /**
      * @brief Default constructor
@@ -259,7 +260,13 @@ public:
      * 
      * @param cards Vector of cards to initialize the deck with
      */
-    Deck(std::vector<std::unique_ptr<Card>> cards);
+    Deck(std::vector<std::unique_ptr<Card>> cards,
+         std::vector<std::unique_ptr<Card>> victoryCards = {});
+
+    Deck(const Deck& other);
+    Deck& operator=(const Deck& other);
+    Deck(Deck&& other) noexcept;
+    Deck& operator=(Deck&& other) noexcept;
     
     /**
      * @brief Draw a card from the top of the deck
@@ -296,6 +303,19 @@ public:
      * @return Number of cards left to draw
      */
     size_t cardsRemaining() const;
+
+    // Victory piece slot helpers
+    bool addVictoryCard(std::unique_ptr<Card> card);
+    std::unique_ptr<Card> removeVictoryCardAt(size_t index);
+    const Card* getVictoryCard(size_t index) const;
+    Card* getVictoryCard(size_t index);
+    size_t victoryCount() const;
+
+    std::string serialize() const;
+    bool deserialize(const std::string& data);
+
+private:
+    std::vector<std::unique_ptr<Card>> victoryCards;
 };
 
 } // namespace BayouBonanza 
