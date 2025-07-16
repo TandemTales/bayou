@@ -53,7 +53,7 @@ public:
      * 
      * @param gameState Game state to set up
      */
-    void setupBoard(GameState& gameState);
+    void setupBoard(GameState& gameState, const Deck& deck1, const Deck& deck2);
 
 private:
     // For constructor without parameters - owns the instances

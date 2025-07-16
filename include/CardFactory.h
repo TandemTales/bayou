@@ -100,6 +100,13 @@ public:
     static std::vector<std::unique_ptr<Card>> createStarterDeck();
     
     /**
+     * @brief Create starter victory cards for a player
+     * 
+     * @return A vector of victory cards for the starter deck
+     */
+    static std::vector<std::unique_ptr<Card>> createStarterVictoryCards();
+    
+    /**
      * @brief Create a custom deck with specific card IDs
      * 
      * @param cardIds Vector of card IDs to include in the deck

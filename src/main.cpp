@@ -525,12 +525,23 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
     const int   COLLECTION_COLS = 10;
     const float ROW_HEIGHT = CARD_H + CARD_SPACING;
 
-    float startX = (GraphicsManager::BASE_WIDTH - (CARD_W * COLLECTION_COLS + CARD_SPACING * (COLLECTION_COLS - 1))) / 2.f;
-    float collectionY = 20.f;
-    float collectionAreaHeight = GraphicsManager::BASE_HEIGHT / 2.f - 30.f;
-    float deckY = GraphicsManager::BASE_HEIGHT / 2.f + 10.f;
+    // New layout: Collection is now a single horizontally scrollable row
+    float collectionY = 35.f; // More spacing at the top
+    float collectionStartX = 30.f; // More margin from left edge
+    // Calculate width to show exactly 11 cards (no partial cards)
+    const int VISIBLE_COLLECTION_CARDS = 11;
+    float collectionAreaWidth = VISIBLE_COLLECTION_CARDS * CARD_W + (VISIBLE_COLLECTION_CARDS - 1) * CARD_SPACING;
+    
+    // Deck area moved up since collection takes less vertical space
+    float deckY = collectionY + CARD_H + 50.f; // More spacing between collection and deck
+    float deckStartX = (GraphicsManager::BASE_WIDTH - (CARD_W * 10 + CARD_SPACING * 9)) / 2.f;
+    
+    // Victory area moved up with more space available
+    float victoryY = deckY + ROW_HEIGHT * 2 + 35.f; // More spacing between deck and victory
+    float victoryWidth = CARD_W * Deck::VICTORY_SIZE + CARD_SPACING * (Deck::VICTORY_SIZE - 1);
+    float victoryStartX = deckStartX + ((CARD_W * 10 + CARD_SPACING * 9) - victoryWidth) / 2.f;
 
-    float collectionScroll = 0.f;
+    float collectionScroll = 0.f; // Now horizontal scroll
 
     // Helper function to wrap text within card bounds
     auto drawWrappedText = [&](const std::string& text, float cardX, float cardY, sf::Color color) {
@@ -599,6 +610,9 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
     bool deckClick = false;
     int deckClickIndex = -1;
     sf::Vector2f deckClickPos(0.f,0.f);
+    bool victoryClick = false;
+    int victoryClickIndex = -1;
+    sf::Vector2f victoryClickPos(0.f,0.f);
 
     // Status message system
     std::string statusMessage = "";
@@ -622,26 +636,38 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
         }
     };
 
+    auto isVictoryCard = [&](const Card* card) -> bool {
+        auto pc = dynamic_cast<const PieceCard*>(card);
+        if (!pc) return false;
+        const PieceStats* stats = globalPieceDefManager.getPieceStats(pc->getPieceType());
+        return stats && stats->isVictoryPiece;
+    };
+
     auto collectionIndexAt = [&](const sf::Vector2f& pos) -> int {
-        float totalWidth = CARD_W * COLLECTION_COLS + CARD_SPACING * (COLLECTION_COLS - 1);
-        float colStartX = startX;
-        if (pos.x < colStartX || pos.x > colStartX + totalWidth) return -1;
-        if (pos.y < collectionY || pos.y > collectionY + collectionAreaHeight) return -1;
-        int col = static_cast<int>((pos.x - colStartX) / (CARD_W + CARD_SPACING));
-        int row = static_cast<int>((pos.y - collectionY + collectionScroll) / ROW_HEIGHT);
-        int idx = row * COLLECTION_COLS + col;
+        // Check if click is within collection area bounds
+        if (pos.y < collectionY || pos.y > collectionY + CARD_H) return -1;
+        if (pos.x < collectionStartX || pos.x > collectionStartX + collectionAreaWidth) return -1;
+        
+        // Calculate which card was clicked based on horizontal position and scroll
+        int idx = static_cast<int>((pos.x - collectionStartX + collectionScroll) / (CARD_W + CARD_SPACING));
         return (idx >= 0 && static_cast<size_t>(idx) < myCollection.size()) ? idx : -1;
     };
 
     auto deckSlotIndexAt = [&](const sf::Vector2f& pos) -> int {
         float totalWidth = CARD_W * 10 + CARD_SPACING * 9;
-        float deckStartX = startX;
         if (pos.x < deckStartX || pos.x > deckStartX + totalWidth) return -1;
         if (pos.y < deckY || pos.y > deckY + ROW_HEIGHT * 2 - CARD_SPACING) return -1;
         int col = static_cast<int>((pos.x - deckStartX) / (CARD_W + CARD_SPACING));
         int row = static_cast<int>((pos.y - deckY) / ROW_HEIGHT);
         int idx = row * 10 + col;
         return (idx >= 0 && idx < static_cast<int>(Deck::DECK_SIZE)) ? idx : -1;
+    };
+
+    auto victorySlotIndexAt = [&](const sf::Vector2f& pos) -> int {
+        if (pos.x < victoryStartX || pos.x > victoryStartX + victoryWidth) return -1;
+        if (pos.y < victoryY || pos.y > victoryY + CARD_H) return -1;
+        int col = static_cast<int>((pos.x - victoryStartX) / (CARD_W + CARD_SPACING));
+        return (col >= 0 && col < static_cast<int>(Deck::VICTORY_SIZE)) ? col : -1;
     };
 
     while (window.isOpen()) {
@@ -685,7 +711,8 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
                 graphicsManager.updateView();
             } else if (event.type == sf::Event::MouseWheelScrolled) {
                 if (event.mouseWheelScroll.wheel == sf::Mouse::VerticalWheel) {
-                    collectionScroll -= event.mouseWheelScroll.delta * ROW_HEIGHT;
+                    // Horizontal scrolling for collection - scroll by card width + spacing
+                    collectionScroll += event.mouseWheelScroll.delta * (CARD_W + CARD_SPACING);
                 }
             } else if (event.type == sf::Event::MouseButtonPressed) {
                 if (event.mouseButton.button == sf::Mouse::Left) {
@@ -697,8 +724,8 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
                         actualDrag = false;
                         dragIndex = static_cast<size_t>(cIdx);
                         dragStartPos = gm;
-                        float colX = startX + (cIdx % COLLECTION_COLS) * (CARD_W + CARD_SPACING);
-                        float colY = collectionY + (cIdx / COLLECTION_COLS) * ROW_HEIGHT - collectionScroll;
+                        float colX = collectionStartX + cIdx * (CARD_W + CARD_SPACING) - collectionScroll;
+                        float colY = collectionY;
                         dragOffset = sf::Vector2f(gm.x - colX, gm.y - colY);
                     } else {
                         int dIdx = deckSlotIndexAt(gm);
@@ -706,6 +733,13 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
                             deckClick = true;
                             deckClickIndex = dIdx;
                             deckClickPos = gm;
+                        } else {
+                            int vIdx = victorySlotIndexAt(gm);
+                            if (vIdx >= 0) {
+                                victoryClick = true;
+                                victoryClickIndex = vIdx;
+                                victoryClickPos = gm;
+                            }
                         }
                     }
                 }
@@ -726,9 +760,10 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
                     if (dragging) {
                         if (actualDrag) {
                             int dIdx = deckSlotIndexAt(gm);
-                            if (dIdx >= 0 && myDeck.size() < Deck::DECK_SIZE) {
-                                const Card* c = myCollection.getCard(dragIndex);
-                                if (c) {
+                            int vIdx = victorySlotIndexAt(gm);
+                            const Card* c = myCollection.getCard(dragIndex);
+                            if (c) {
+                                if (dIdx >= 0 && !isVictoryCard(c) && myDeck.size() < Deck::DECK_SIZE) {
                                     myDeck.addCard(c->clone());
                                     if (!myDeck.isValidForEditing()) {
                                         myDeck.removeCardAt(myDeck.size()-1);
@@ -738,16 +773,36 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
                                     } else {
                                         sendDeckToServer();
                                     }
+                                } else if (vIdx >= 0 && isVictoryCard(c)) {
+                                    myDeck.addVictoryCard(c->clone());
+                                    if (!myDeck.isValidForEditing()) {
+                                        myDeck.removeVictoryCardAt(myDeck.victoryCount()-1);
+                                        statusMessage = "Invalid victory card";
+                                        statusColor = sf::Color::Red;
+                                        statusClock.restart();
+                                    } else {
+                                        sendDeckToServer();
+                                    }
                                 }
                             }
                         } else { // treat as click
-                            if (myDeck.size() < Deck::DECK_SIZE) {
-                                const Card* c = myCollection.getCard(dragIndex);
-                                if (c) {
+                            const Card* c = myCollection.getCard(dragIndex);
+                            if (c) {
+                                if (!isVictoryCard(c) && myDeck.size() < Deck::DECK_SIZE) {
                                     myDeck.addCard(c->clone());
                                     if (!myDeck.isValidForEditing()) {
                                         myDeck.removeCardAt(myDeck.size()-1);
                                         statusMessage = "Max copies reached";
+                                        statusColor = sf::Color::Red;
+                                        statusClock.restart();
+                                    } else {
+                                        sendDeckToServer();
+                                    }
+                                } else if (isVictoryCard(c)) {
+                                    myDeck.addVictoryCard(c->clone());
+                                    if (!myDeck.isValidForEditing()) {
+                                        myDeck.removeVictoryCardAt(myDeck.victoryCount()-1);
+                                        statusMessage = "Invalid victory card";
                                         statusColor = sf::Color::Red;
                                         statusClock.restart();
                                     } else {
@@ -767,6 +822,15 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
                         }
                         deckClick = false;
                         deckClickIndex = -1;
+                    } else if (victoryClick) {
+                        if (std::hypot(gm.x - victoryClickPos.x, gm.y - victoryClickPos.y) < 5.f) {
+                            if (victoryClickIndex >= 0 && victoryClickIndex < static_cast<int>(myDeck.victoryCount())) {
+                                myDeck.removeVictoryCardAt(victoryClickIndex);
+                                sendDeckToServer();
+                            }
+                        }
+                        victoryClick = false;
+                        victoryClickIndex = -1;
                     }
                 }
             } else if (event.type == sf::Event::KeyPressed) {
@@ -776,21 +840,62 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
             }
         }
 
-        int totalRows = (myCollection.size() + COLLECTION_COLS - 1) / COLLECTION_COLS;
-        float maxScroll = std::max(0.f, totalRows * ROW_HEIGHT - collectionAreaHeight);
+        // Calculate horizontal scroll limits for collection
+        float totalCollectionWidth = myCollection.size() * (CARD_W + CARD_SPACING) - CARD_SPACING;
+        float maxScroll = std::max(0.f, totalCollectionWidth - collectionAreaWidth);
         if (collectionScroll < 0.f) collectionScroll = 0.f;
         if (collectionScroll > maxScroll) collectionScroll = maxScroll;
 
         graphicsManager.applyView();
         window.clear(sf::Color(10, 50, 20));
 
-        // --- Render collection ---
+        // --- Render collection background and scroll area ---
+        // Adjust background width for equal padding on both sides
+        sf::RectangleShape collectionBg(sf::Vector2f(collectionAreaWidth + 10.f, CARD_H + 10.f));
+        collectionBg.setPosition(collectionStartX - 5.f, collectionY - 5.f);
+        collectionBg.setFillColor(sf::Color(20, 40, 20, 100));
+        collectionBg.setOutlineColor(sf::Color::White);
+        collectionBg.setOutlineThickness(1.f);
+        window.draw(collectionBg);
+
+        // Collection label
+        sf::Text collectionLabel;
+        collectionLabel.setFont(globalFont);
+        collectionLabel.setCharacterSize(16);
+        collectionLabel.setFillColor(sf::Color::White);
+        collectionLabel.setString("Collection (Scroll with mouse wheel)");
+        collectionLabel.setPosition(collectionStartX, collectionY - 25.f);
+        window.draw(collectionLabel);
+
+        // Horizontal scroll indicator
+        if (totalCollectionWidth > collectionAreaWidth) {
+            float scrollBarWidth = collectionAreaWidth * 0.8f;
+            float scrollBarHeight = 4.f;
+            float scrollBarX = collectionStartX + (collectionAreaWidth - scrollBarWidth) / 2.f;
+            float scrollBarY = collectionY + CARD_H + 8.f;
+            
+            // Scroll bar background
+            sf::RectangleShape scrollBg(sf::Vector2f(scrollBarWidth, scrollBarHeight));
+            scrollBg.setPosition(scrollBarX, scrollBarY);
+            scrollBg.setFillColor(sf::Color(100, 100, 100, 150));
+            window.draw(scrollBg);
+            
+            // Scroll bar thumb
+            float thumbWidth = (collectionAreaWidth / totalCollectionWidth) * scrollBarWidth;
+            float thumbX = scrollBarX + (collectionScroll / totalCollectionWidth) * scrollBarWidth;
+            sf::RectangleShape scrollThumb(sf::Vector2f(thumbWidth, scrollBarHeight));
+            scrollThumb.setPosition(thumbX, scrollBarY);
+            scrollThumb.setFillColor(sf::Color::White);
+            window.draw(scrollThumb);
+        }
+
+        // --- Render collection (horizontal single row) ---
         for (size_t i = 0; i < myCollection.size(); ++i) {
-            int row = static_cast<int>(i) / COLLECTION_COLS;
-            int col = static_cast<int>(i) % COLLECTION_COLS;
-            float x = startX + col * (CARD_W + CARD_SPACING);
-            float y = collectionY + row * ROW_HEIGHT - collectionScroll;
-            if (y + CARD_H < collectionY || y > collectionY + collectionAreaHeight) continue;
+            float x = collectionStartX + i * (CARD_W + CARD_SPACING) - collectionScroll;
+            float y = collectionY;
+            
+            // Only render cards that are visible in the collection area
+            if (x + CARD_W < collectionStartX || x > collectionStartX + collectionAreaWidth) continue;
 
             sf::RectangleShape rect(sf::Vector2f(CARD_W, CARD_H));
             rect.setPosition(x, y);
@@ -862,10 +967,19 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
         }
 
         // --- Render deck slots ---
+        // Deck label
+        sf::Text deckLabel;
+        deckLabel.setFont(globalFont);
+        deckLabel.setCharacterSize(16);
+        deckLabel.setFillColor(sf::Color::White);
+        deckLabel.setString("Deck (20 cards)");
+        deckLabel.setPosition(deckStartX, deckY - 25.f);
+        window.draw(deckLabel);
+
         for (int i = 0; i < static_cast<int>(Deck::DECK_SIZE); ++i) {
             int row = i / 10;
             int col = i % 10;
-            float x = startX + col * (CARD_W + CARD_SPACING);
+            float x = deckStartX + col * (CARD_W + CARD_SPACING);
             float y = deckY + row * ROW_HEIGHT;
             sf::RectangleShape slot(sf::Vector2f(CARD_W, CARD_H));
             slot.setPosition(x, y);
@@ -934,6 +1048,79 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
                     };
                     
                     drawWrappedText(c->getName(), x, y, sf::Color::Yellow);
+                }
+            }
+        }
+
+        // --- Render victory slots ---
+        // Victory label
+        sf::Text victoryLabel;
+        victoryLabel.setFont(globalFont);
+        victoryLabel.setCharacterSize(16);
+        victoryLabel.setFillColor(sf::Color::White);
+        victoryLabel.setString("Victory Pieces (4 cards)");
+        victoryLabel.setPosition(victoryStartX, victoryY - 25.f);
+        window.draw(victoryLabel);
+
+        for (int i = 0; i < static_cast<int>(Deck::VICTORY_SIZE); ++i) {
+            float x = victoryStartX + i * (CARD_W + CARD_SPACING);
+            float y = victoryY;
+            sf::RectangleShape slot(sf::Vector2f(CARD_W, CARD_H));
+            slot.setPosition(x, y);
+            slot.setFillColor(sf::Color(60,30,30,180));
+            slot.setOutlineColor(sf::Color::White);
+            slot.setOutlineThickness(1.f);
+            window.draw(slot);
+
+            if (i < static_cast<int>(myDeck.victoryCount())) {
+                const Card* c = myDeck.getVictoryCard(i);
+                if (c) {
+                    auto drawWrappedText = [&](const std::string& text, float cardX, float cardY, sf::Color color) {
+                        const float TEXT_MARGIN = 5.f;
+                        const float MAX_TEXT_WIDTH = CARD_W - (TEXT_MARGIN * 2);
+                        const float MAX_TEXT_HEIGHT = CARD_H - (TEXT_MARGIN * 2);
+                        const int FONT_SIZE = 10;
+                        const float LINE_SPACING = FONT_SIZE + 2;
+                        sf::Text testText;
+                        testText.setFont(globalFont);
+                        testText.setCharacterSize(FONT_SIZE);
+                        std::vector<std::string> lines;
+                        std::string currentLine = "";
+                        std::istringstream words(text);
+                        std::string word;
+                        while (words >> word) {
+                            std::string testLine = currentLine.empty() ? word : currentLine + " " + word;
+                            testText.setString(testLine);
+                            if (testText.getLocalBounds().width <= MAX_TEXT_WIDTH) {
+                                currentLine = testLine;
+                            } else {
+                                if (!currentLine.empty()) {
+                                    lines.push_back(currentLine);
+                                    currentLine = word;
+                                } else {
+                                    lines.push_back(word.substr(0, std::min(word.length(), size_t(8))) + "...");
+                                    currentLine = "";
+                                }
+                            }
+                        }
+                        if (!currentLine.empty()) {
+                            lines.push_back(currentLine);
+                        }
+                        float totalTextHeight = lines.size() * LINE_SPACING;
+                        float startY = cardY + (CARD_H - totalTextHeight) / 2.f;
+                        for (size_t lineIdx = 0; lineIdx < lines.size() && (lineIdx * LINE_SPACING) < MAX_TEXT_HEIGHT; ++lineIdx) {
+                            sf::Text lineText;
+                            lineText.setFont(globalFont);
+                            lineText.setCharacterSize(FONT_SIZE);
+                            lineText.setFillColor(color);
+                            lineText.setString(lines[lineIdx]);
+                            sf::FloatRect bounds = lineText.getLocalBounds();
+                            lineText.setPosition(cardX + (CARD_W - bounds.width) / 2.f, startY + lineIdx * LINE_SPACING);
+                            window.draw(lineText);
+                        }
+                    };
+
+                    drawWrappedText(c->getName(), x, y, sf::Color::Cyan);
                 }
             }
         }

@@ -4,6 +4,7 @@
 #include <random>
 #include <fstream>
 #include <sstream>
+#include <set>
 #include <iostream>
 
 namespace BayouBonanza {
@@ -255,9 +256,33 @@ size_t Hand::getAvailableSlots() const {
 // Deck implementation
 Deck::Deck() = default;
 
-Deck::Deck(std::vector<std::unique_ptr<Card>> cards) 
-    : CardCollection(std::move(cards)) {
+Deck::Deck(std::vector<std::unique_ptr<Card>> cards,
+           std::vector<std::unique_ptr<Card>> victory)
+    : CardCollection(std::move(cards)), victoryCards(std::move(victory)) {
 }
+
+Deck::Deck(const Deck& other) : CardCollection(other) {
+    victoryCards.clear();
+    victoryCards.reserve(other.victoryCards.size());
+    for (const auto& c : other.victoryCards) {
+        victoryCards.push_back(c->clone());
+    }
+}
+
+Deck& Deck::operator=(const Deck& other) {
+    if (this != &other) {
+        CardCollection::operator=(other);
+        victoryCards.clear();
+        victoryCards.reserve(other.victoryCards.size());
+        for (const auto& c : other.victoryCards) {
+            victoryCards.push_back(c->clone());
+        }
+    }
+    return *this;
+}
+
+Deck::Deck(Deck&& other) noexcept = default;
+Deck& Deck::operator=(Deck&& other) noexcept = default;
 
 std::unique_ptr<Card> Deck::drawCard() {
     if (empty()) {
@@ -279,17 +304,130 @@ const Card* Deck::peekTop() const {
 }
 
 bool Deck::isValid() const {
-    return validate(DECK_SIZE, MAX_COPIES) && size() == DECK_SIZE;
+    if (!validate(DECK_SIZE, MAX_COPIES) || size() != DECK_SIZE) {
+        return false;
+    }
+
+    if (victoryCards.size() > VICTORY_SIZE) return false;
+
+    std::set<int> ids;
+    for (const auto& c : cards) {
+        ids.insert(c->getId());
+    }
+    std::set<int> vicIds;
+    for (const auto& c : victoryCards) {
+        int id = c->getId();
+        if (vicIds.count(id) || ids.count(id)) return false;
+        vicIds.insert(id);
+    }
+    return true;
 }
 
 bool Deck::isValidForEditing() const {
-    // For editing, we only check max copies rule, not the exact size requirement
-    // This allows players to save incomplete decks while building
-    return validate(0, MAX_COPIES); // 0 = no size limit, but enforce max copies
+    if (!validate(0, MAX_COPIES)) {
+        return false;
+    }
+
+    if (victoryCards.size() > VICTORY_SIZE) return false;
+
+    std::set<int> ids;
+    for (const auto& c : cards) {
+        ids.insert(c->getId());
+    }
+    std::set<int> vicIds;
+    for (const auto& c : victoryCards) {
+        int id = c->getId();
+        if (vicIds.count(id) || ids.count(id)) return false;
+        vicIds.insert(id);
+    }
+    return true;
 }
 
 size_t Deck::cardsRemaining() const {
     return size();
+}
+
+bool Deck::addVictoryCard(std::unique_ptr<Card> card) {
+    if (victoryCards.size() >= VICTORY_SIZE) {
+        return false;
+    }
+    victoryCards.push_back(std::move(card));
+    return true;
+}
+
+std::unique_ptr<Card> Deck::removeVictoryCardAt(size_t index) {
+    if (index >= victoryCards.size()) {
+        return nullptr;
+    }
+    auto it = victoryCards.begin() + index;
+    std::unique_ptr<Card> card = std::move(*it);
+    victoryCards.erase(it);
+    return card;
+}
+
+const Card* Deck::getVictoryCard(size_t index) const {
+    if (index >= victoryCards.size()) return nullptr;
+    return victoryCards[index].get();
+}
+
+Card* Deck::getVictoryCard(size_t index) {
+    if (index >= victoryCards.size()) return nullptr;
+    return victoryCards[index].get();
+}
+
+size_t Deck::victoryCount() const {
+    return victoryCards.size();
+}
+
+std::string Deck::serialize() const {
+    std::ostringstream oss;
+    for (size_t i = 0; i < cards.size(); ++i) {
+        if (i > 0) oss << ",";
+        oss << cards[i]->getId();
+    }
+    oss << "|";
+    for (size_t i = 0; i < victoryCards.size(); ++i) {
+        if (i > 0) oss << ",";
+        oss << victoryCards[i]->getId();
+    }
+    return oss.str();
+}
+
+bool Deck::deserialize(const std::string& data) {
+    cards.clear();
+    victoryCards.clear();
+    std::string mainPart = data;
+    std::string victoryPart;
+    size_t sep = data.find('|');
+    if (sep != std::string::npos) {
+        mainPart = data.substr(0, sep);
+        victoryPart = data.substr(sep + 1);
+    }
+    if (!CardCollection::deserialize(mainPart)) {
+        return false;
+    }
+    if (!victoryPart.empty()) {
+        std::istringstream iss(victoryPart);
+        std::string token;
+        while (std::getline(iss, token, ',')) {
+            try {
+                int id = std::stoi(token);
+                auto card = CardFactory::createCard(id);
+                if (card) {
+                    victoryCards.push_back(std::move(card));
+                } else {
+                    cards.clear();
+                    victoryCards.clear();
+                    return false;
+                }
+            } catch (...) {
+                cards.clear();
+                victoryCards.clear();
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 } // namespace BayouBonanza 

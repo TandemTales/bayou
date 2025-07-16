@@ -164,6 +164,19 @@ std::vector<std::unique_ptr<Card>> CardFactory::createStarterDeck() {
     return deck;
 }
 
+std::vector<std::unique_ptr<Card>> CardFactory::createStarterVictoryCards() {
+    if (!initialized) {
+        initialize();
+    }
+    
+    std::vector<std::unique_ptr<Card>> victoryCards;
+    
+    // Create a victory piece for the starter deck
+    victoryCards.push_back(createCard("Summon TinkeringTom"));
+    
+    return victoryCards;
+}
+
 std::vector<std::unique_ptr<Card>> CardFactory::createCustomDeck(const std::vector<int>& cardIds) {
     if (!initialized) {
         initialize();
