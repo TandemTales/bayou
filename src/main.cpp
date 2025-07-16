@@ -517,15 +517,75 @@ void showPlaceholderScreen(sf::RenderWindow& window, GraphicsManager& graphicsMa
 }
 
 void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, sf::TcpSocket& socket) {
-    size_t selectedCollection = 0;
-    size_t selectedDeck = 0;
-    bool editingDeck = false; // false=select from collection, true=deck
-    
+    // --- Layout constants ---
+    const float CARD_W = 100.f;
+    const float CARD_H = 140.f;
+    const float CARD_SPACING = 10.f;
+    const int   COLLECTION_COLS = 10;
+    const float ROW_HEIGHT = CARD_H + CARD_SPACING;
+
+    float startX = (GraphicsManager::BASE_WIDTH - (CARD_W * COLLECTION_COLS + CARD_SPACING * (COLLECTION_COLS - 1))) / 2.f;
+    float collectionY = 20.f;
+    float collectionAreaHeight = GraphicsManager::BASE_HEIGHT / 2.f - 30.f;
+    float deckY = GraphicsManager::BASE_HEIGHT / 2.f + 10.f;
+
+    float collectionScroll = 0.f;
+
+    // Drag state for collection cards
+    bool dragging = false;
+    bool actualDrag = false;
+    size_t dragIndex = 0;
+    sf::Vector2f dragOffset(0.f, 0.f);
+    sf::Vector2f dragStartPos(0.f, 0.f);
+
+    // Deck slot click state
+    bool deckClick = false;
+    int deckClickIndex = -1;
+    sf::Vector2f deckClickPos(0.f,0.f);
+
     // Status message system
     std::string statusMessage = "";
     sf::Color statusColor = sf::Color::Green;
     sf::Clock statusClock;
     const float STATUS_DISPLAY_TIME = 2.0f; // Show status for 2 seconds
+
+    auto sendDeckToServer = [&]() {
+        sf::Packet pkt;
+        pkt << MessageType::SaveDeck << myDeck.serialize();
+        if (socket.send(pkt) == sf::Socket::Done) {
+            statusMessage = "Saving deck...";
+            statusColor = sf::Color::Yellow;
+            statusClock.restart();
+            std::cout << "Deck changes auto-saved to server" << std::endl;
+        } else {
+            statusMessage = "Failed to save deck!";
+            statusColor = sf::Color::Red;
+            statusClock.restart();
+            std::cerr << "Failed to auto-save deck changes" << std::endl;
+        }
+    };
+
+    auto collectionIndexAt = [&](const sf::Vector2f& pos) -> int {
+        float totalWidth = CARD_W * COLLECTION_COLS + CARD_SPACING * (COLLECTION_COLS - 1);
+        float colStartX = startX;
+        if (pos.x < colStartX || pos.x > colStartX + totalWidth) return -1;
+        if (pos.y < collectionY || pos.y > collectionY + collectionAreaHeight) return -1;
+        int col = static_cast<int>((pos.x - colStartX) / (CARD_W + CARD_SPACING));
+        int row = static_cast<int>((pos.y - collectionY + collectionScroll) / ROW_HEIGHT);
+        int idx = row * COLLECTION_COLS + col;
+        return (idx >= 0 && static_cast<size_t>(idx) < myCollection.size()) ? idx : -1;
+    };
+
+    auto deckSlotIndexAt = [&](const sf::Vector2f& pos) -> int {
+        float totalWidth = CARD_W * 10 + CARD_SPACING * 9;
+        float deckStartX = startX;
+        if (pos.x < deckStartX || pos.x > deckStartX + totalWidth) return -1;
+        if (pos.y < deckY || pos.y > deckY + ROW_HEIGHT * 2 - CARD_SPACING) return -1;
+        int col = static_cast<int>((pos.x - deckStartX) / (CARD_W + CARD_SPACING));
+        int row = static_cast<int>((pos.y - deckY) / ROW_HEIGHT);
+        int idx = row * 10 + col;
+        return (idx >= 0 && idx < static_cast<int>(Deck::DECK_SIZE)) ? idx : -1;
+    };
 
     while (window.isOpen()) {
         // Process network messages first
@@ -564,91 +624,189 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
             if (event.type == sf::Event::Closed) {
                 window.close();
                 return;
-            } else if (event.type == sf::Event::KeyPressed) {
-                if (event.key.code == sf::Keyboard::Escape) {
-                    // Deck changes are now auto-saved, so we can exit immediately
-                    return;
-                } else if (event.key.code == sf::Keyboard::Tab) {
-                    editingDeck = !editingDeck;
-                } else if (event.key.code == sf::Keyboard::Up) {
-                    if (editingDeck && selectedDeck > 0) --selectedDeck;
-                    if (!editingDeck && selectedCollection > 0) --selectedCollection;
-                } else if (event.key.code == sf::Keyboard::Down) {
-                    if (editingDeck && selectedDeck + 1 < myDeck.size()) ++selectedDeck;
-                    if (!editingDeck && selectedCollection + 1 < myCollection.size()) ++selectedCollection;
-                } else if (event.key.code == sf::Keyboard::Enter) {
-                    bool deckChanged = false;
-                    if (editingDeck) {
-                        if (selectedDeck < myDeck.size()) {
-                            myDeck.removeCardAt(selectedDeck);
-                            deckChanged = true;
-                        }
+            } else if (event.type == sf::Event::Resized) {
+                graphicsManager.updateView();
+            } else if (event.type == sf::Event::MouseWheelScrolled) {
+                if (event.mouseWheelScroll.wheel == sf::Mouse::VerticalWheel) {
+                    collectionScroll -= event.mouseWheelScroll.delta * ROW_HEIGHT;
+                }
+            } else if (event.type == sf::Event::MouseButtonPressed) {
+                if (event.mouseButton.button == sf::Mouse::Left) {
+                    sf::Vector2i sm(event.mouseButton.x, event.mouseButton.y);
+                    sf::Vector2f gm = graphicsManager.screenToGame(sm);
+                    int cIdx = collectionIndexAt(gm);
+                    if (cIdx >= 0) {
+                        dragging = true;
+                        actualDrag = false;
+                        dragIndex = static_cast<size_t>(cIdx);
+                        dragStartPos = gm;
+                        float colX = startX + (cIdx % COLLECTION_COLS) * (CARD_W + CARD_SPACING);
+                        float colY = collectionY + (cIdx / COLLECTION_COLS) * ROW_HEIGHT - collectionScroll;
+                        dragOffset = sf::Vector2f(gm.x - colX, gm.y - colY);
                     } else {
-                        if (myDeck.size() < Deck::DECK_SIZE && selectedCollection < myCollection.size()) {
-                            const Card* c = myCollection.getCard(selectedCollection);
-                            if (c) {
-                                myDeck.addCard(c->clone());
-                                deckChanged = true;
-                            }
-                        }
-                    }
-                    
-                    // Auto-save deck changes to database
-                    if (deckChanged) {
-                        sf::Packet pkt;
-                        pkt << MessageType::SaveDeck << myDeck.serialize();
-                        if (socket.send(pkt) == sf::Socket::Done) {
-                            std::cout << "Deck changes auto-saved to server" << std::endl;
-                            statusMessage = "Saving deck...";
-                            statusColor = sf::Color::Yellow;
-                            statusClock.restart();
-                        } else {
-                            std::cerr << "Failed to auto-save deck changes" << std::endl;
-                            statusMessage = "Failed to save deck!";
-                            statusColor = sf::Color::Red;
-                            statusClock.restart();
+                        int dIdx = deckSlotIndexAt(gm);
+                        if (dIdx >= 0) {
+                            deckClick = true;
+                            deckClickIndex = dIdx;
+                            deckClickPos = gm;
                         }
                     }
                 }
-            } else if (event.type == sf::Event::Resized) {
-                graphicsManager.updateView();
+            } else if (event.type == sf::Event::MouseMoved) {
+                if (dragging) {
+                    sf::Vector2i sm = sf::Mouse::getPosition(window);
+                    sf::Vector2f gm = graphicsManager.screenToGame(sm);
+                    if (!actualDrag) {
+                        if (std::hypot(gm.x - dragStartPos.x, gm.y - dragStartPos.y) > 5.f)
+                            actualDrag = true;
+                    }
+                    dragStartPos = gm; // keep last position for drawing
+                }
+            } else if (event.type == sf::Event::MouseButtonReleased) {
+                if (event.mouseButton.button == sf::Mouse::Left) {
+                    sf::Vector2i sm(event.mouseButton.x, event.mouseButton.y);
+                    sf::Vector2f gm = graphicsManager.screenToGame(sm);
+                    if (dragging) {
+                        if (actualDrag) {
+                            int dIdx = deckSlotIndexAt(gm);
+                            if (dIdx >= 0 && myDeck.size() < Deck::DECK_SIZE) {
+                                const Card* c = myCollection.getCard(dragIndex);
+                                if (c) {
+                                    myDeck.addCard(c->clone());
+                                    if (!myDeck.isValidForEditing()) {
+                                        myDeck.removeCardAt(myDeck.size()-1);
+                                        statusMessage = "Max copies reached";
+                                        statusColor = sf::Color::Red;
+                                        statusClock.restart();
+                                    } else {
+                                        sendDeckToServer();
+                                    }
+                                }
+                            }
+                        } else { // treat as click
+                            if (myDeck.size() < Deck::DECK_SIZE) {
+                                const Card* c = myCollection.getCard(dragIndex);
+                                if (c) {
+                                    myDeck.addCard(c->clone());
+                                    if (!myDeck.isValidForEditing()) {
+                                        myDeck.removeCardAt(myDeck.size()-1);
+                                        statusMessage = "Max copies reached";
+                                        statusColor = sf::Color::Red;
+                                        statusClock.restart();
+                                    } else {
+                                        sendDeckToServer();
+                                    }
+                                }
+                            }
+                        }
+                        dragging = false;
+                        actualDrag = false;
+                    } else if (deckClick) {
+                        if (std::hypot(gm.x - deckClickPos.x, gm.y - deckClickPos.y) < 5.f) {
+                            if (deckClickIndex >= 0 && deckClickIndex < static_cast<int>(myDeck.size())) {
+                                myDeck.removeCardAt(deckClickIndex);
+                                sendDeckToServer();
+                            }
+                        }
+                        deckClick = false;
+                        deckClickIndex = -1;
+                    }
+                }
+            } else if (event.type == sf::Event::KeyPressed) {
+                if (event.key.code == sf::Keyboard::Escape) {
+                    return;
+                }
             }
         }
+
+        int totalRows = (myCollection.size() + COLLECTION_COLS - 1) / COLLECTION_COLS;
+        float maxScroll = std::max(0.f, totalRows * ROW_HEIGHT - collectionAreaHeight);
+        if (collectionScroll < 0.f) collectionScroll = 0.f;
+        if (collectionScroll > maxScroll) collectionScroll = maxScroll;
 
         graphicsManager.applyView();
         window.clear(sf::Color(10, 50, 20));
 
-        float y = 50.f;
-        sf::Text header;
-        header.setFont(globalFont);
-        header.setCharacterSize(28);
-        header.setFillColor(sf::Color::Yellow);
-        header.setString("Collection (TAB to switch)");
-        header.setPosition(40.f, y);
-        window.draw(header);
-        y += 30.f;
-        for (size_t i=0;i<myCollection.size();++i) {
-            sf::Text t; t.setFont(globalFont); t.setCharacterSize(20);
+        // --- Render collection ---
+        for (size_t i = 0; i < myCollection.size(); ++i) {
+            int row = static_cast<int>(i) / COLLECTION_COLS;
+            int col = static_cast<int>(i) % COLLECTION_COLS;
+            float x = startX + col * (CARD_W + CARD_SPACING);
+            float y = collectionY + row * ROW_HEIGHT - collectionScroll;
+            if (y + CARD_H < collectionY || y > collectionY + collectionAreaHeight) continue;
+
+            sf::RectangleShape rect(sf::Vector2f(CARD_W, CARD_H));
+            rect.setPosition(x, y);
+            rect.setFillColor(sf::Color(60,80,60,200));
+            rect.setOutlineColor(sf::Color::White);
+            rect.setOutlineThickness(1.f);
+            window.draw(rect);
+
             const Card* c = myCollection.getCard(i);
-            t.setString(c?c->getName():"?");
-            t.setFillColor(!editingDeck && i==selectedCollection?sf::Color::Cyan:sf::Color::White);
-            t.setPosition(40.f, y+i*22.f);
-            window.draw(t);
+            if (c) {
+                sf::Text t;
+                t.setFont(globalFont);
+                t.setCharacterSize(14);
+                t.setFillColor(sf::Color::White);
+                t.setString(c->getName());
+                sf::FloatRect b = t.getLocalBounds();
+                t.setPosition(x + (CARD_W - b.width)/2.f, y + 10.f);
+                window.draw(t);
+            }
         }
 
-        float x2 = GraphicsManager::BASE_WIDTH/2.f + 40.f;
-        y = 50.f;
-        header.setString("Deck (Enter to remove)");
-        header.setPosition(x2, y);
-        window.draw(header);
-        y += 30.f;
-        for (size_t i=0;i<myDeck.size();++i) {
-            sf::Text t; t.setFont(globalFont); t.setCharacterSize(20);
-            const Card* c = myDeck.getCard(i);
-            t.setString(c?c->getName():"?");
-            t.setFillColor(editingDeck && i==selectedDeck?sf::Color::Cyan:sf::Color::White);
-            t.setPosition(x2, y+i*22.f);
-            window.draw(t);
+        // --- Render deck slots ---
+        for (int i = 0; i < static_cast<int>(Deck::DECK_SIZE); ++i) {
+            int row = i / 10;
+            int col = i % 10;
+            float x = startX + col * (CARD_W + CARD_SPACING);
+            float y = deckY + row * ROW_HEIGHT;
+            sf::RectangleShape slot(sf::Vector2f(CARD_W, CARD_H));
+            slot.setPosition(x, y);
+            slot.setFillColor(sf::Color(30,30,30,180));
+            slot.setOutlineColor(sf::Color::White);
+            slot.setOutlineThickness(1.f);
+            window.draw(slot);
+
+            if (i < static_cast<int>(myDeck.size())) {
+                const Card* c = myDeck.getCard(i);
+                if (c) {
+                    sf::Text t;
+                    t.setFont(globalFont);
+                    t.setCharacterSize(14);
+                    t.setFillColor(sf::Color::Yellow);
+                    t.setString(c->getName());
+                    sf::FloatRect b = t.getLocalBounds();
+                    t.setPosition(x + (CARD_W - b.width)/2.f, y + 10.f);
+                    window.draw(t);
+                }
+            }
+        }
+
+        // Draw dragged card if any
+        if (dragging && actualDrag) {
+            const Card* c = myCollection.getCard(dragIndex);
+            if (c) {
+                sf::Vector2i sm = sf::Mouse::getPosition(window);
+                sf::Vector2f gm = graphicsManager.screenToGame(sm);
+                float x = gm.x - dragOffset.x;
+                float y = gm.y - dragOffset.y;
+                sf::RectangleShape rect(sf::Vector2f(CARD_W, CARD_H));
+                rect.setPosition(x, y);
+                rect.setFillColor(sf::Color(60,80,60,200));
+                rect.setOutlineColor(sf::Color::Yellow);
+                rect.setOutlineThickness(2.f);
+                window.draw(rect);
+
+                sf::Text t;
+                t.setFont(globalFont);
+                t.setCharacterSize(14);
+                t.setFillColor(sf::Color::White);
+                t.setString(c->getName());
+                sf::FloatRect b = t.getLocalBounds();
+                t.setPosition(x + (CARD_W - b.width)/2.f, y + 10.f);
+                window.draw(t);
+            }
         }
 
         // Draw status message if active
