@@ -5,6 +5,7 @@
 #include <iostream>
 #include <string>
 #include <memory>
+#include <sstream> // Added for text wrapping
 #include <cctype> // Required for std::tolower
 #include <cmath> // Added for std::sqrt
 
@@ -531,6 +532,62 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
 
     float collectionScroll = 0.f;
 
+    // Helper function to wrap text within card bounds
+    auto drawWrappedText = [&](const std::string& text, float cardX, float cardY, sf::Color color) {
+        const float TEXT_MARGIN = 5.f;
+        const float MAX_TEXT_WIDTH = CARD_W - (TEXT_MARGIN * 2);
+        const float MAX_TEXT_HEIGHT = CARD_H - (TEXT_MARGIN * 2);
+        const int FONT_SIZE = 10; // Smaller font size
+        const float LINE_SPACING = FONT_SIZE + 2;
+        
+        sf::Text testText;
+        testText.setFont(globalFont);
+        testText.setCharacterSize(FONT_SIZE);
+        
+        std::vector<std::string> lines;
+        std::string currentLine = "";
+        std::istringstream words(text);
+        std::string word;
+        
+        // Word wrapping logic
+        while (words >> word) {
+            std::string testLine = currentLine.empty() ? word : currentLine + " " + word;
+            testText.setString(testLine);
+            
+            if (testText.getLocalBounds().width <= MAX_TEXT_WIDTH) {
+                currentLine = testLine;
+            } else {
+                if (!currentLine.empty()) {
+                    lines.push_back(currentLine);
+                    currentLine = word;
+                } else {
+                    // Single word is too long, truncate it
+                    lines.push_back(word.substr(0, std::min(word.length(), size_t(8))) + "...");
+                    currentLine = "";
+                }
+            }
+        }
+        if (!currentLine.empty()) {
+            lines.push_back(currentLine);
+        }
+        
+        // Draw the wrapped lines
+        float totalTextHeight = lines.size() * LINE_SPACING;
+        float startY = cardY + (CARD_H - totalTextHeight) / 2.f;
+        
+        for (size_t lineIdx = 0; lineIdx < lines.size() && (lineIdx * LINE_SPACING) < MAX_TEXT_HEIGHT; ++lineIdx) {
+            sf::Text lineText;
+            lineText.setFont(globalFont);
+            lineText.setCharacterSize(FONT_SIZE);
+            lineText.setFillColor(color);
+            lineText.setString(lines[lineIdx]);
+            
+            sf::FloatRect bounds = lineText.getLocalBounds();
+            lineText.setPosition(cardX + (CARD_W - bounds.width) / 2.f, startY + lineIdx * LINE_SPACING);
+            window.draw(lineText);
+        }
+    };
+
     // Drag state for collection cards
     bool dragging = false;
     bool actualDrag = false;
@@ -744,14 +801,63 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
 
             const Card* c = myCollection.getCard(i);
             if (c) {
-                sf::Text t;
-                t.setFont(globalFont);
-                t.setCharacterSize(14);
-                t.setFillColor(sf::Color::White);
-                t.setString(c->getName());
-                sf::FloatRect b = t.getLocalBounds();
-                t.setPosition(x + (CARD_W - b.width)/2.f, y + 10.f);
-                window.draw(t);
+                // Helper function to wrap text within card bounds
+                auto drawWrappedText = [&](const std::string& text, float cardX, float cardY, sf::Color color) {
+                    const float TEXT_MARGIN = 5.f;
+                    const float MAX_TEXT_WIDTH = CARD_W - (TEXT_MARGIN * 2);
+                    const float MAX_TEXT_HEIGHT = CARD_H - (TEXT_MARGIN * 2);
+                    const int FONT_SIZE = 10; // Smaller font size
+                    const float LINE_SPACING = FONT_SIZE + 2;
+                    
+                    sf::Text testText;
+                    testText.setFont(globalFont);
+                    testText.setCharacterSize(FONT_SIZE);
+                    
+                    std::vector<std::string> lines;
+                    std::string currentLine = "";
+                    std::istringstream words(text);
+                    std::string word;
+                    
+                    // Word wrapping logic
+                    while (words >> word) {
+                        std::string testLine = currentLine.empty() ? word : currentLine + " " + word;
+                        testText.setString(testLine);
+                        
+                        if (testText.getLocalBounds().width <= MAX_TEXT_WIDTH) {
+                            currentLine = testLine;
+                        } else {
+                            if (!currentLine.empty()) {
+                                lines.push_back(currentLine);
+                                currentLine = word;
+                            } else {
+                                // Single word is too long, truncate it
+                                lines.push_back(word.substr(0, std::min(word.length(), size_t(8))) + "...");
+                                currentLine = "";
+                            }
+                        }
+                    }
+                    if (!currentLine.empty()) {
+                        lines.push_back(currentLine);
+                    }
+                    
+                    // Draw the wrapped lines
+                    float totalTextHeight = lines.size() * LINE_SPACING;
+                    float startY = cardY + (CARD_H - totalTextHeight) / 2.f;
+                    
+                    for (size_t lineIdx = 0; lineIdx < lines.size() && (lineIdx * LINE_SPACING) < MAX_TEXT_HEIGHT; ++lineIdx) {
+                        sf::Text lineText;
+                        lineText.setFont(globalFont);
+                        lineText.setCharacterSize(FONT_SIZE);
+                        lineText.setFillColor(color);
+                        lineText.setString(lines[lineIdx]);
+                        
+                        sf::FloatRect bounds = lineText.getLocalBounds();
+                        lineText.setPosition(cardX + (CARD_W - bounds.width) / 2.f, startY + lineIdx * LINE_SPACING);
+                        window.draw(lineText);
+                    }
+                };
+                
+                drawWrappedText(c->getName(), x, y, sf::Color::White);
             }
         }
 
@@ -771,14 +877,63 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
             if (i < static_cast<int>(myDeck.size())) {
                 const Card* c = myDeck.getCard(i);
                 if (c) {
-                    sf::Text t;
-                    t.setFont(globalFont);
-                    t.setCharacterSize(14);
-                    t.setFillColor(sf::Color::Yellow);
-                    t.setString(c->getName());
-                    sf::FloatRect b = t.getLocalBounds();
-                    t.setPosition(x + (CARD_W - b.width)/2.f, y + 10.f);
-                    window.draw(t);
+                    // Helper function to wrap text within card bounds
+                    auto drawWrappedText = [&](const std::string& text, float cardX, float cardY, sf::Color color) {
+                        const float TEXT_MARGIN = 5.f;
+                        const float MAX_TEXT_WIDTH = CARD_W - (TEXT_MARGIN * 2);
+                        const float MAX_TEXT_HEIGHT = CARD_H - (TEXT_MARGIN * 2);
+                        const int FONT_SIZE = 10; // Smaller font size
+                        const float LINE_SPACING = FONT_SIZE + 2;
+                        
+                        sf::Text testText;
+                        testText.setFont(globalFont);
+                        testText.setCharacterSize(FONT_SIZE);
+                        
+                        std::vector<std::string> lines;
+                        std::string currentLine = "";
+                        std::istringstream words(text);
+                        std::string word;
+                        
+                        // Word wrapping logic
+                        while (words >> word) {
+                            std::string testLine = currentLine.empty() ? word : currentLine + " " + word;
+                            testText.setString(testLine);
+                            
+                            if (testText.getLocalBounds().width <= MAX_TEXT_WIDTH) {
+                                currentLine = testLine;
+                            } else {
+                                if (!currentLine.empty()) {
+                                    lines.push_back(currentLine);
+                                    currentLine = word;
+                                } else {
+                                    // Single word is too long, truncate it
+                                    lines.push_back(word.substr(0, std::min(word.length(), size_t(8))) + "...");
+                                    currentLine = "";
+                                }
+                            }
+                        }
+                        if (!currentLine.empty()) {
+                            lines.push_back(currentLine);
+                        }
+                        
+                        // Draw the wrapped lines
+                        float totalTextHeight = lines.size() * LINE_SPACING;
+                        float startY = cardY + (CARD_H - totalTextHeight) / 2.f;
+                        
+                        for (size_t lineIdx = 0; lineIdx < lines.size() && (lineIdx * LINE_SPACING) < MAX_TEXT_HEIGHT; ++lineIdx) {
+                            sf::Text lineText;
+                            lineText.setFont(globalFont);
+                            lineText.setCharacterSize(FONT_SIZE);
+                            lineText.setFillColor(color);
+                            lineText.setString(lines[lineIdx]);
+                            
+                            sf::FloatRect bounds = lineText.getLocalBounds();
+                            lineText.setPosition(cardX + (CARD_W - bounds.width) / 2.f, startY + lineIdx * LINE_SPACING);
+                            window.draw(lineText);
+                        }
+                    };
+                    
+                    drawWrappedText(c->getName(), x, y, sf::Color::Yellow);
                 }
             }
         }
@@ -798,14 +953,63 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
                 rect.setOutlineThickness(2.f);
                 window.draw(rect);
 
-                sf::Text t;
-                t.setFont(globalFont);
-                t.setCharacterSize(14);
-                t.setFillColor(sf::Color::White);
-                t.setString(c->getName());
-                sf::FloatRect b = t.getLocalBounds();
-                t.setPosition(x + (CARD_W - b.width)/2.f, y + 10.f);
-                window.draw(t);
+                // Helper function to wrap text within card bounds
+                auto drawWrappedText = [&](const std::string& text, float cardX, float cardY, sf::Color color) {
+                    const float TEXT_MARGIN = 5.f;
+                    const float MAX_TEXT_WIDTH = CARD_W - (TEXT_MARGIN * 2);
+                    const float MAX_TEXT_HEIGHT = CARD_H - (TEXT_MARGIN * 2);
+                    const int FONT_SIZE = 10; // Smaller font size
+                    const float LINE_SPACING = FONT_SIZE + 2;
+                    
+                    sf::Text testText;
+                    testText.setFont(globalFont);
+                    testText.setCharacterSize(FONT_SIZE);
+                    
+                    std::vector<std::string> lines;
+                    std::string currentLine = "";
+                    std::istringstream words(text);
+                    std::string word;
+                    
+                    // Word wrapping logic
+                    while (words >> word) {
+                        std::string testLine = currentLine.empty() ? word : currentLine + " " + word;
+                        testText.setString(testLine);
+                        
+                        if (testText.getLocalBounds().width <= MAX_TEXT_WIDTH) {
+                            currentLine = testLine;
+                        } else {
+                            if (!currentLine.empty()) {
+                                lines.push_back(currentLine);
+                                currentLine = word;
+                            } else {
+                                // Single word is too long, truncate it
+                                lines.push_back(word.substr(0, std::min(word.length(), size_t(8))) + "...");
+                                currentLine = "";
+                            }
+                        }
+                    }
+                    if (!currentLine.empty()) {
+                        lines.push_back(currentLine);
+                    }
+                    
+                    // Draw the wrapped lines
+                    float totalTextHeight = lines.size() * LINE_SPACING;
+                    float startY = cardY + (CARD_H - totalTextHeight) / 2.f;
+                    
+                    for (size_t lineIdx = 0; lineIdx < lines.size() && (lineIdx * LINE_SPACING) < MAX_TEXT_HEIGHT; ++lineIdx) {
+                        sf::Text lineText;
+                        lineText.setFont(globalFont);
+                        lineText.setCharacterSize(FONT_SIZE);
+                        lineText.setFillColor(color);
+                        lineText.setString(lines[lineIdx]);
+                        
+                        sf::FloatRect bounds = lineText.getLocalBounds();
+                        lineText.setPosition(cardX + (CARD_W - bounds.width) / 2.f, startY + lineIdx * LINE_SPACING);
+                        window.draw(lineText);
+                    }
+                };
+                
+                drawWrappedText(c->getName(), x, y, sf::Color::White);
             }
         }
 
