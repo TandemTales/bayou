@@ -610,9 +610,12 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
     bool deckClick = false;
     int deckClickIndex = -1;
     sf::Vector2f deckClickPos(0.f,0.f);
-    bool victoryClick = false;
-    int victoryClickIndex = -1;
-    sf::Vector2f victoryClickPos(0.f,0.f);
+
+    bool victoryDragging = false;
+    bool victoryActualDrag = false;
+    int victoryDragIndex = -1;
+    sf::Vector2f victoryDragOffset(0.f,0.f);
+    sf::Vector2f victoryDragStartPos(0.f,0.f);
 
     // Status message system
     std::string statusMessage = "";
@@ -641,6 +644,13 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
         if (!pc) return false;
         const PieceStats* stats = globalPieceDefManager.getPieceStats(pc->getPieceType());
         return stats && stats->isVictoryPiece;
+    };
+
+    auto firstEmptyVictorySlot = [&]() -> int {
+        for (size_t i = 0; i < Deck::VICTORY_SIZE; ++i) {
+            if (!myDeck.getVictoryCard(i)) return static_cast<int>(i);
+        }
+        return -1;
     };
 
     auto collectionIndexAt = [&](const sf::Vector2f& pos) -> int {
@@ -735,10 +745,14 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
                             deckClickPos = gm;
                         } else {
                             int vIdx = victorySlotIndexAt(gm);
-                            if (vIdx >= 0) {
-                                victoryClick = true;
-                                victoryClickIndex = vIdx;
-                                victoryClickPos = gm;
+                            if (vIdx >= 0 && myDeck.getVictoryCard(vIdx)) {
+                                victoryDragging = true;
+                                victoryActualDrag = false;
+                                victoryDragIndex = vIdx;
+                                victoryDragStartPos = gm;
+                                float slotX = victoryStartX + vIdx * (CARD_W + CARD_SPACING);
+                                float slotY = victoryY;
+                                victoryDragOffset = sf::Vector2f(gm.x - slotX, gm.y - slotY);
                             }
                         }
                     }
@@ -752,6 +766,14 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
                             actualDrag = true;
                     }
                     dragStartPos = gm; // keep last position for drawing
+                } else if (victoryDragging) {
+                    sf::Vector2i sm = sf::Mouse::getPosition(window);
+                    sf::Vector2f gm = graphicsManager.screenToGame(sm);
+                    if (!victoryActualDrag) {
+                        if (std::hypot(gm.x - victoryDragStartPos.x, gm.y - victoryDragStartPos.y) > 5.f)
+                            victoryActualDrag = true;
+                    }
+                    victoryDragStartPos = gm;
                 }
             } else if (event.type == sf::Event::MouseButtonReleased) {
                 if (event.mouseButton.button == sf::Mouse::Left) {
@@ -774,9 +796,11 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
                                         sendDeckToServer();
                                     }
                                 } else if (vIdx >= 0 && isVictoryCard(c)) {
-                                    myDeck.addVictoryCard(c->clone());
+                                    auto prev = myDeck.removeVictoryCardAt(vIdx);
+                                    myDeck.setVictoryCard(vIdx, c->clone());
                                     if (!myDeck.isValidForEditing()) {
-                                        myDeck.removeVictoryCardAt(myDeck.victoryCount()-1);
+                                        myDeck.removeVictoryCardAt(vIdx);
+                                        myDeck.setVictoryCard(vIdx, std::move(prev));
                                         statusMessage = "Invalid victory card";
                                         statusColor = sf::Color::Red;
                                         statusClock.restart();
@@ -799,20 +823,47 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
                                         sendDeckToServer();
                                     }
                                 } else if (isVictoryCard(c)) {
-                                    myDeck.addVictoryCard(c->clone());
-                                    if (!myDeck.isValidForEditing()) {
-                                        myDeck.removeVictoryCardAt(myDeck.victoryCount()-1);
-                                        statusMessage = "Invalid victory card";
-                                        statusColor = sf::Color::Red;
-                                        statusClock.restart();
-                                    } else {
-                                        sendDeckToServer();
+                                    int slot = firstEmptyVictorySlot();
+                                    if (slot >= 0) {
+                                        myDeck.setVictoryCard(slot, c->clone());
+                                        if (!myDeck.isValidForEditing()) {
+                                            myDeck.removeVictoryCardAt(slot);
+                                            statusMessage = "Invalid victory card";
+                                            statusColor = sf::Color::Red;
+                                            statusClock.restart();
+                                        } else {
+                                            sendDeckToServer();
+                                        }
                                     }
                                 }
                             }
                         }
                         dragging = false;
                         actualDrag = false;
+                    } else if (victoryDragging) {
+                        if (victoryActualDrag) {
+                            int dropIdx = victorySlotIndexAt(gm);
+                            if (dropIdx >= 0) {
+                                if (dropIdx == victoryDragIndex) {
+                                    // nothing
+                                } else if (!myDeck.getVictoryCard(dropIdx)) {
+                                    auto card = myDeck.removeVictoryCardAt(victoryDragIndex);
+                                    myDeck.setVictoryCard(dropIdx, std::move(card));
+                                    sendDeckToServer();
+                                } else {
+                                    myDeck.swapVictoryCards(victoryDragIndex, dropIdx);
+                                    sendDeckToServer();
+                                }
+                            }
+                        } else {
+                            if (myDeck.getVictoryCard(victoryDragIndex)) {
+                                myDeck.removeVictoryCardAt(victoryDragIndex);
+                                sendDeckToServer();
+                            }
+                        }
+                        victoryDragging = false;
+                        victoryActualDrag = false;
+                        victoryDragIndex = -1;
                     } else if (deckClick) {
                         if (std::hypot(gm.x - deckClickPos.x, gm.y - deckClickPos.y) < 5.f) {
                             if (deckClickIndex >= 0 && deckClickIndex < static_cast<int>(myDeck.size())) {
@@ -822,15 +873,6 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
                         }
                         deckClick = false;
                         deckClickIndex = -1;
-                    } else if (victoryClick) {
-                        if (std::hypot(gm.x - victoryClickPos.x, gm.y - victoryClickPos.y) < 5.f) {
-                            if (victoryClickIndex >= 0 && victoryClickIndex < static_cast<int>(myDeck.victoryCount())) {
-                                myDeck.removeVictoryCardAt(victoryClickIndex);
-                                sendDeckToServer();
-                            }
-                        }
-                        victoryClick = false;
-                        victoryClickIndex = -1;
                     }
                 }
             } else if (event.type == sf::Event::KeyPressed) {
@@ -1072,9 +1114,7 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
             slot.setOutlineThickness(1.f);
             window.draw(slot);
 
-            if (i < static_cast<int>(myDeck.victoryCount())) {
-                const Card* c = myDeck.getVictoryCard(i);
-                if (c) {
+            if (const Card* c = myDeck.getVictoryCard(i)) {
                     auto drawWrappedText = [&](const std::string& text, float cardX, float cardY, sf::Color color) {
                         const float TEXT_MARGIN = 5.f;
                         const float MAX_TEXT_WIDTH = CARD_W - (TEXT_MARGIN * 2);
@@ -1200,6 +1240,71 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
             }
         }
 
+        if (victoryDragging && victoryActualDrag) {
+            const Card* c = myDeck.getVictoryCard(victoryDragIndex);
+            if (c) {
+                sf::Vector2i sm = sf::Mouse::getPosition(window);
+                sf::Vector2f gm = graphicsManager.screenToGame(sm);
+                float x = gm.x - victoryDragOffset.x;
+                float y = gm.y - victoryDragOffset.y;
+                sf::RectangleShape rect(sf::Vector2f(CARD_W, CARD_H));
+                rect.setPosition(x, y);
+                rect.setFillColor(sf::Color(60,80,60,200));
+                rect.setOutlineColor(sf::Color::Yellow);
+                rect.setOutlineThickness(2.f);
+                window.draw(rect);
+
+                auto drawWrappedText = [&](const std::string& text, float cardX, float cardY, sf::Color color) {
+                    const float TEXT_MARGIN = 5.f;
+                    const float MAX_TEXT_WIDTH = CARD_W - (TEXT_MARGIN * 2);
+                    const float MAX_TEXT_HEIGHT = CARD_H - (TEXT_MARGIN * 2);
+                    const int FONT_SIZE = 10;
+                    const float LINE_SPACING = FONT_SIZE + 2;
+
+                    sf::Text testText;
+                    testText.setFont(globalFont);
+                    testText.setCharacterSize(FONT_SIZE);
+                    std::vector<std::string> lines;
+                    std::string currentLine = "";
+                    std::istringstream words(text);
+                    std::string word;
+                    while (words >> word) {
+                        std::string testLine = currentLine.empty() ? word : currentLine + " " + word;
+                        testText.setString(testLine);
+                        if (testText.getLocalBounds().width <= MAX_TEXT_WIDTH) {
+                            currentLine = testLine;
+                        } else {
+                            if (!currentLine.empty()) {
+                                lines.push_back(currentLine);
+                                currentLine = word;
+                            } else {
+                                lines.push_back(word.substr(0, std::min(word.length(), size_t(8))) + "...");
+                                currentLine = "";
+                            }
+                        }
+                    }
+                    if (!currentLine.empty()) {
+                        lines.push_back(currentLine);
+                    }
+
+                    float totalTextHeight = lines.size() * LINE_SPACING;
+                    float startY = cardY + (CARD_H - totalTextHeight) / 2.f;
+                    for (size_t lineIdx = 0; lineIdx < lines.size() && (lineIdx * LINE_SPACING) < MAX_TEXT_HEIGHT; ++lineIdx) {
+                        sf::Text lineText;
+                        lineText.setFont(globalFont);
+                        lineText.setCharacterSize(FONT_SIZE);
+                        lineText.setFillColor(color);
+                        lineText.setString(lines[lineIdx]);
+                        sf::FloatRect bounds = lineText.getLocalBounds();
+                        lineText.setPosition(cardX + (CARD_W - bounds.width) / 2.f, startY + lineIdx * LINE_SPACING);
+                        window.draw(lineText);
+                    }
+                };
+
+                drawWrappedText(c->getName(), x, y, sf::Color::White);
+            }
+        }
+
         // Draw status message if active
         if (!statusMessage.empty() && statusClock.getElapsedTime().asSeconds() < STATUS_DISPLAY_TIME) {
             sf::Text statusText;
@@ -1228,7 +1333,6 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
 
         window.display();
     }
-}
 
 MainMenuOption runMainMenu(sf::RenderWindow& window, GraphicsManager& graphicsManager, sf::TcpSocket& socket) {
     int selected = 0;
