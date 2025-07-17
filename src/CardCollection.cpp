@@ -258,24 +258,30 @@ Deck::Deck() = default;
 
 Deck::Deck(std::vector<std::unique_ptr<Card>> cards,
            std::vector<std::unique_ptr<Card>> victory)
-    : CardCollection(std::move(cards)), victoryCards(std::move(victory)) {
+    : CardCollection(std::move(cards)) {
+    for (auto& slot : victoryCards) slot = nullptr;
+    for (size_t i = 0; i < std::min(victory.size(), VICTORY_SIZE); ++i) {
+        victoryCards[i] = std::move(victory[i]);
+    }
 }
 
 Deck::Deck(const Deck& other) : CardCollection(other) {
-    victoryCards.clear();
-    victoryCards.reserve(other.victoryCards.size());
-    for (const auto& c : other.victoryCards) {
-        victoryCards.push_back(c->clone());
+    for (auto& slot : victoryCards) slot = nullptr;
+    for (size_t i = 0; i < VICTORY_SIZE; ++i) {
+        if (other.victoryCards[i]) {
+            victoryCards[i] = other.victoryCards[i]->clone();
+        }
     }
 }
 
 Deck& Deck::operator=(const Deck& other) {
     if (this != &other) {
         CardCollection::operator=(other);
-        victoryCards.clear();
-        victoryCards.reserve(other.victoryCards.size());
-        for (const auto& c : other.victoryCards) {
-            victoryCards.push_back(c->clone());
+        for (auto& slot : victoryCards) slot = nullptr;
+        for (size_t i = 0; i < VICTORY_SIZE; ++i) {
+            if (other.victoryCards[i]) {
+                victoryCards[i] = other.victoryCards[i]->clone();
+            }
         }
     }
     return *this;
@@ -308,14 +314,13 @@ bool Deck::isValid() const {
         return false;
     }
 
-    if (victoryCards.size() > VICTORY_SIZE) return false;
-
     std::set<int> ids;
     for (const auto& c : cards) {
         ids.insert(c->getId());
     }
     std::set<int> vicIds;
     for (const auto& c : victoryCards) {
+        if (!c) continue;
         int id = c->getId();
         if (vicIds.count(id) || ids.count(id)) return false;
         vicIds.insert(id);
@@ -328,14 +333,13 @@ bool Deck::isValidForEditing() const {
         return false;
     }
 
-    if (victoryCards.size() > VICTORY_SIZE) return false;
-
     std::set<int> ids;
     for (const auto& c : cards) {
         ids.insert(c->getId());
     }
     std::set<int> vicIds;
     for (const auto& c : victoryCards) {
+        if (!c) continue;
         int id = c->getId();
         if (vicIds.count(id) || ids.count(id)) return false;
         vicIds.insert(id);
@@ -347,36 +351,44 @@ size_t Deck::cardsRemaining() const {
     return size();
 }
 
-bool Deck::addVictoryCard(std::unique_ptr<Card> card) {
-    if (victoryCards.size() >= VICTORY_SIZE) {
+bool Deck::setVictoryCard(size_t index, std::unique_ptr<Card> card) {
+    if (index >= VICTORY_SIZE) {
         return false;
     }
-    victoryCards.push_back(std::move(card));
+    victoryCards[index] = std::move(card);
     return true;
 }
 
+void Deck::swapVictoryCards(size_t index1, size_t index2) {
+    if (index1 >= VICTORY_SIZE || index2 >= VICTORY_SIZE) return;
+    std::swap(victoryCards[index1], victoryCards[index2]);
+}
+
 std::unique_ptr<Card> Deck::removeVictoryCardAt(size_t index) {
-    if (index >= victoryCards.size()) {
+    if (index >= VICTORY_SIZE) {
         return nullptr;
     }
-    auto it = victoryCards.begin() + index;
-    std::unique_ptr<Card> card = std::move(*it);
-    victoryCards.erase(it);
+    std::unique_ptr<Card> card = std::move(victoryCards[index]);
+    victoryCards[index] = nullptr;
     return card;
 }
 
 const Card* Deck::getVictoryCard(size_t index) const {
-    if (index >= victoryCards.size()) return nullptr;
+    if (index >= VICTORY_SIZE) return nullptr;
     return victoryCards[index].get();
 }
 
 Card* Deck::getVictoryCard(size_t index) {
-    if (index >= victoryCards.size()) return nullptr;
+    if (index >= VICTORY_SIZE) return nullptr;
     return victoryCards[index].get();
 }
 
 size_t Deck::victoryCount() const {
-    return victoryCards.size();
+    size_t count = 0;
+    for (const auto& c : victoryCards) {
+        if (c) ++count;
+    }
+    return count;
 }
 
 std::string Deck::serialize() const {
@@ -386,16 +398,19 @@ std::string Deck::serialize() const {
         oss << cards[i]->getId();
     }
     oss << "|";
-    for (size_t i = 0; i < victoryCards.size(); ++i) {
+    for (size_t i = 0; i < VICTORY_SIZE; ++i) {
         if (i > 0) oss << ",";
-        oss << victoryCards[i]->getId();
+        if (victoryCards[i])
+            oss << victoryCards[i]->getId();
+        else
+            oss << 0;
     }
     return oss.str();
 }
 
 bool Deck::deserialize(const std::string& data) {
     cards.clear();
-    victoryCards.clear();
+    for (auto& slot : victoryCards) slot = nullptr;
     std::string mainPart = data;
     std::string victoryPart;
     size_t sep = data.find('|');
@@ -409,22 +424,28 @@ bool Deck::deserialize(const std::string& data) {
     if (!victoryPart.empty()) {
         std::istringstream iss(victoryPart);
         std::string token;
-        while (std::getline(iss, token, ',')) {
+        size_t idx = 0;
+        while (idx < VICTORY_SIZE && std::getline(iss, token, ',')) {
             try {
                 int id = std::stoi(token);
-                auto card = CardFactory::createCard(id);
-                if (card) {
-                    victoryCards.push_back(std::move(card));
+                if (id != 0) {
+                    auto card = CardFactory::createCard(id);
+                    if (card) {
+                        victoryCards[idx] = std::move(card);
+                    } else {
+                        cards.clear();
+                        for (auto& slot : victoryCards) slot = nullptr;
+                        return false;
+                    }
                 } else {
-                    cards.clear();
-                    victoryCards.clear();
-                    return false;
+                    victoryCards[idx] = nullptr;
                 }
             } catch (...) {
                 cards.clear();
-                victoryCards.clear();
+                for (auto& slot : victoryCards) slot = nullptr;
                 return false;
             }
+            ++idx;
         }
     }
     return true;

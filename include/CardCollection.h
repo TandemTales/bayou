@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <map>
+#include <array>
 #include "Card.h"
 
 namespace BayouBonanza {
@@ -248,7 +249,7 @@ class Deck : public CardCollection {
 public:
     static const size_t DECK_SIZE = 20;
     static const int MAX_COPIES = 2;
-    static const size_t VICTORY_SIZE = 4;
+    static constexpr size_t VICTORY_SIZE = 4;
     
     /**
      * @brief Default constructor
@@ -305,7 +306,8 @@ public:
     size_t cardsRemaining() const;
 
     // Victory piece slot helpers
-    bool addVictoryCard(std::unique_ptr<Card> card);
+    bool setVictoryCard(size_t index, std::unique_ptr<Card> card);
+    void swapVictoryCards(size_t index1, size_t index2);
     std::unique_ptr<Card> removeVictoryCardAt(size_t index);
     const Card* getVictoryCard(size_t index) const;
     Card* getVictoryCard(size_t index);
@@ -315,7 +317,7 @@ public:
     bool deserialize(const std::string& data);
 
 private:
-    std::vector<std::unique_ptr<Card>> victoryCards;
+    std::array<std::unique_ptr<Card>, VICTORY_SIZE> victoryCards{};
 };
 
 } // namespace BayouBonanza 
