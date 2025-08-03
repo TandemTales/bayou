@@ -265,7 +265,11 @@ Deck::Deck(const Deck& other) : CardCollection(other) {
     victoryCards.clear();
     victoryCards.reserve(other.victoryCards.size());
     for (const auto& c : other.victoryCards) {
-        victoryCards.push_back(c->clone());
+        if (c == nullptr) {
+            victoryCards.push_back(nullptr);
+        } else {
+            victoryCards.push_back(c->clone());
+        }
     }
 }
 
@@ -275,7 +279,11 @@ Deck& Deck::operator=(const Deck& other) {
         victoryCards.clear();
         victoryCards.reserve(other.victoryCards.size());
         for (const auto& c : other.victoryCards) {
-            victoryCards.push_back(c->clone());
+            if (c == nullptr) {
+                victoryCards.push_back(nullptr);
+            } else {
+                victoryCards.push_back(c->clone());
+            }
         }
     }
     return *this;
@@ -316,6 +324,7 @@ bool Deck::isValid() const {
     }
     std::set<int> vicIds;
     for (const auto& c : victoryCards) {
+        if (c == nullptr) continue; // Skip empty slots
         int id = c->getId();
         if (vicIds.count(id) || ids.count(id)) return false;
         vicIds.insert(id);
@@ -336,6 +345,7 @@ bool Deck::isValidForEditing() const {
     }
     std::set<int> vicIds;
     for (const auto& c : victoryCards) {
+        if (c == nullptr) continue; // Skip empty slots
         int id = c->getId();
         if (vicIds.count(id) || ids.count(id)) return false;
         vicIds.insert(id);
@@ -348,10 +358,38 @@ size_t Deck::cardsRemaining() const {
 }
 
 bool Deck::addVictoryCard(std::unique_ptr<Card> card) {
+    // Find the first available slot
+    for (size_t i = 0; i < VICTORY_SIZE; ++i) {
+        if (i >= victoryCards.size() || victoryCards[i] == nullptr) {
+            return setVictoryCardAt(i, std::move(card));
+        }
+    }
+    return false; // No available slots
+}
+
+bool Deck::insertVictoryCardAt(size_t index, std::unique_ptr<Card> card) {
     if (victoryCards.size() >= VICTORY_SIZE) {
         return false;
     }
-    victoryCards.push_back(std::move(card));
+    if (index > victoryCards.size()) {
+        index = victoryCards.size();
+    }
+    victoryCards.insert(victoryCards.begin() + index, std::move(card));
+    return true;
+}
+
+bool Deck::setVictoryCardAt(size_t index, std::unique_ptr<Card> card) {
+    if (index >= VICTORY_SIZE) {
+        return false;
+    }
+    
+    // Ensure the vector is large enough to hold the card at the specified index
+    while (victoryCards.size() <= index) {
+        victoryCards.push_back(nullptr);
+    }
+    
+    // Set the card at the specified index
+    victoryCards[index] = std::move(card);
     return true;
 }
 
@@ -376,7 +414,13 @@ Card* Deck::getVictoryCard(size_t index) {
 }
 
 size_t Deck::victoryCount() const {
-    return victoryCards.size();
+    size_t count = 0;
+    for (const auto& card : victoryCards) {
+        if (card != nullptr) {
+            count++;
+        }
+    }
+    return count;
 }
 
 std::string Deck::serialize() const {
@@ -388,7 +432,11 @@ std::string Deck::serialize() const {
     oss << "|";
     for (size_t i = 0; i < victoryCards.size(); ++i) {
         if (i > 0) oss << ",";
-        oss << victoryCards[i]->getId();
+        if (victoryCards[i] != nullptr) {
+            oss << victoryCards[i]->getId();
+        } else {
+            oss << "0"; // Use 0 to represent empty slots
+        }
     }
     return oss.str();
 }
@@ -412,13 +460,18 @@ bool Deck::deserialize(const std::string& data) {
         while (std::getline(iss, token, ',')) {
             try {
                 int id = std::stoi(token);
-                auto card = CardFactory::createCard(id);
-                if (card) {
-                    victoryCards.push_back(std::move(card));
+                if (id == 0) {
+                    // Empty slot
+                    victoryCards.push_back(nullptr);
                 } else {
-                    cards.clear();
-                    victoryCards.clear();
-                    return false;
+                    auto card = CardFactory::createCard(id);
+                    if (card) {
+                        victoryCards.push_back(std::move(card));
+                    } else {
+                        cards.clear();
+                        victoryCards.clear();
+                        return false;
+                    }
                 }
             } catch (...) {
                 cards.clear();

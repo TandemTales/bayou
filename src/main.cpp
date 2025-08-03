@@ -774,14 +774,31 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
                                         sendDeckToServer();
                                     }
                                 } else if (vIdx >= 0 && isVictoryCard(c)) {
-                                    myDeck.addVictoryCard(c->clone());
-                                    if (!myDeck.isValidForEditing()) {
-                                        myDeck.removeVictoryCardAt(myDeck.victoryCount()-1);
-                                        statusMessage = "Invalid victory card";
-                                        statusColor = sf::Color::Red;
-                                        statusClock.restart();
+                                    if (myDeck.setVictoryCardAt(vIdx, c->clone())) {
+                                        if (!myDeck.isValidForEditing()) {
+                                            myDeck.removeVictoryCardAt(vIdx);
+                                            statusMessage = "Invalid victory card";
+                                            statusColor = sf::Color::Red;
+                                            statusClock.restart();
+                                        } else {
+                                            sendDeckToServer();
+                                        }
                                     } else {
-                                        sendDeckToServer();
+                                        // If setVictoryCardAt fails, try adding to next available slot
+                                        if (myDeck.addVictoryCard(c->clone())) {
+                                            if (!myDeck.isValidForEditing()) {
+                                                myDeck.removeVictoryCardAt(myDeck.victoryCount()-1);
+                                                statusMessage = "Invalid victory card";
+                                                statusColor = sf::Color::Red;
+                                                statusClock.restart();
+                                            } else {
+                                                sendDeckToServer();
+                                            }
+                                        } else {
+                                            statusMessage = "Victory slots full";
+                                            statusColor = sf::Color::Red;
+                                            statusClock.restart();
+                                        }
                                     }
                                 }
                             }
@@ -799,9 +816,11 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
                                         sendDeckToServer();
                                     }
                                 } else if (isVictoryCard(c)) {
-                                    myDeck.addVictoryCard(c->clone());
+                                    // For clicks, add to the first available slot
+                                    size_t targetSlot = myDeck.victoryCount();
+                                    myDeck.insertVictoryCardAt(targetSlot, c->clone());
                                     if (!myDeck.isValidForEditing()) {
-                                        myDeck.removeVictoryCardAt(myDeck.victoryCount()-1);
+                                        myDeck.removeVictoryCardAt(targetSlot);
                                         statusMessage = "Invalid victory card";
                                         statusColor = sf::Color::Red;
                                         statusClock.restart();
@@ -1072,8 +1091,8 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
             slot.setOutlineThickness(1.f);
             window.draw(slot);
 
-            if (i < static_cast<int>(myDeck.victoryCount())) {
-                const Card* c = myDeck.getVictoryCard(i);
+            const Card* c = myDeck.getVictoryCard(i);
+            if (c) {
                 if (c) {
                     auto drawWrappedText = [&](const std::string& text, float cardX, float cardY, sf::Color color) {
                         const float TEXT_MARGIN = 5.f;

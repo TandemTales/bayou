@@ -306,6 +306,8 @@ public:
 
     // Victory piece slot helpers
     bool addVictoryCard(std::unique_ptr<Card> card);
+    bool insertVictoryCardAt(size_t index, std::unique_ptr<Card> card);
+    bool setVictoryCardAt(size_t index, std::unique_ptr<Card> card);
     std::unique_ptr<Card> removeVictoryCardAt(size_t index);
     const Card* getVictoryCard(size_t index) const;
     Card* getVictoryCard(size_t index);
