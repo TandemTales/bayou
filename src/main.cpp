@@ -31,6 +31,7 @@
 #include "EffectCard.h"
 #include <map>
 // #include "King.h" // Removed - using data-driven approach with PieceFactory
+#include <algorithm> // For std::max
 
 
 // The actual sf::Packet operators are now defined with their respective classes.
@@ -89,11 +90,76 @@ sf::Packet gameStartPacketData;
 // Global variable to store current player's rating for menu display
 int myCurrentRating = 0;
 std::string myUsername = "";
+int opponentRating = 0;
+int ratingChange = 0;
+sf::Text resultTitleText;
+sf::Text ratingChangeText;
+sf::RectangleShape menuButton;
+sf::Text menuButtonText;
+bool returnToMenuRequested = false;
+std::string endScreenTitle = "";
 
 // Win condition notification callback
 void onWinCondition(PlayerSide winner, const std::string& description) {
     winMessage = description;
     showWinMessage = true;
+
+    bool isDraw = (winner == PlayerSide::NEUTRAL);
+    bool isWin = (winner == myPlayerSide);
+    endScreenTitle = isDraw ? "Draw" : (isWin ? "Victory!" : "Defeat!");
+
+    // Elo rating calculation mirrored from server
+    const int K_FACTOR = 32;
+    int myAdj = myCurrentRating + 1000;
+    int oppAdj = opponentRating + 1000;
+    double expected = 1.0 / (1.0 + std::pow(10.0, (oppAdj - myAdj) / 400.0));
+    double score = isDraw ? 0.5 : (isWin ? 1.0 : 0.0);
+    int newAdj = myAdj + static_cast<int>(K_FACTOR * (score - expected));
+    int newRating = std::max(0, newAdj - 1000);
+    ratingChange = newRating - myCurrentRating;
+    myCurrentRating = newRating;
+
+    // Prepare display texts
+    resultTitleText.setFont(globalFont);
+    resultTitleText.setString(endScreenTitle);
+    resultTitleText.setCharacterSize(48);
+    resultTitleText.setFillColor(isWin ? sf::Color::Green : sf::Color::Red);
+    sf::FloatRect titleBounds = resultTitleText.getLocalBounds();
+    resultTitleText.setOrigin(titleBounds.left + titleBounds.width / 2.f,
+                             titleBounds.top + titleBounds.height / 2.f);
+    resultTitleText.setPosition(GraphicsManager::BASE_WIDTH / 2.f,
+                               GraphicsManager::BASE_HEIGHT / 2.f - 100.f);
+
+    ratingChangeText.setFont(globalFont);
+    std::string ratingStr = "Rating: " + std::to_string(myCurrentRating);
+    ratingStr += " (" + (ratingChange >= 0 ? "+" : "") + std::to_string(ratingChange) + ")";
+    ratingChangeText.setString(ratingStr);
+    ratingChangeText.setCharacterSize(32);
+    ratingChangeText.setFillColor(sf::Color::White);
+    sf::FloatRect ratingBounds = ratingChangeText.getLocalBounds();
+    ratingChangeText.setOrigin(ratingBounds.left + ratingBounds.width / 2.f,
+                              ratingBounds.top + ratingBounds.height / 2.f);
+    ratingChangeText.setPosition(GraphicsManager::BASE_WIDTH / 2.f,
+                                 GraphicsManager::BASE_HEIGHT / 2.f);
+
+    menuButton.setSize(sf::Vector2f(300.f, 50.f));
+    menuButton.setFillColor(sf::Color(100, 100, 100));
+    menuButton.setOrigin(menuButton.getSize().x / 2.f, menuButton.getSize().y / 2.f);
+    menuButton.setPosition(GraphicsManager::BASE_WIDTH / 2.f,
+                          GraphicsManager::BASE_HEIGHT / 2.f + 100.f);
+
+    menuButtonText.setFont(globalFont);
+    menuButtonText.setString("Return to Menu");
+    menuButtonText.setCharacterSize(24);
+    menuButtonText.setFillColor(sf::Color::White);
+    sf::FloatRect btnBounds = menuButtonText.getLocalBounds();
+    menuButtonText.setOrigin(btnBounds.left + btnBounds.width / 2.f,
+                             btnBounds.top + btnBounds.height / 2.f);
+    menuButtonText.setPosition(menuButton.getPosition());
+
+    // Update rating display for in-game UI
+    localPlayerRatingText.setString("Rating: " + std::to_string(myCurrentRating));
+
     std::cout << "WIN CONDITION: " << description << std::endl;
 }
 
@@ -1652,16 +1718,18 @@ int main()
                     localPlayerRatingText.setString("Rating: " + std::to_string(p1_rating));
                     remotePlayerUsernameText.setString("Opponent: " + p2_username);
                     remotePlayerRatingText.setString("Rating: " + std::to_string(p2_rating));
-                    // Store current player's rating for menu display
+                    // Store current and opponent ratings for menu display
                     myCurrentRating = p1_rating;
+                    opponentRating = p2_rating;
                     myUsername = p1_username;
                 } else if (myPlayerSide == PlayerSide::PLAYER_TWO) {
                     localPlayerUsernameText.setString("You: " + p2_username);
                     localPlayerRatingText.setString("Rating: " + std::to_string(p2_rating));
                     remotePlayerUsernameText.setString("Opponent: " + p1_username);
                     remotePlayerRatingText.setString("Rating: " + std::to_string(p1_rating));
-                    // Store current player's rating for menu display
+                    // Store current and opponent ratings for menu display
                     myCurrentRating = p2_rating;
+                    opponentRating = p1_rating;
                     myUsername = p2_username;
                 }
                 uiMessage = "Game started!"; 
@@ -1697,12 +1765,23 @@ int main()
             } else if (event.type == sf::Event::Resized) {
                 // Update graphics manager when window is resized
                 graphicsManager.updateView();
+            } else if (showWinMessage) {
+                if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
+                    sf::Vector2f clickPos = graphicsManager.screenToGame({event.mouseButton.x, event.mouseButton.y});
+                    if (menuButton.getGlobalBounds().contains(clickPos)) {
+                        returnToMenuRequested = true;
+                        showWinMessage = false;
+                    }
+                } else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter) {
+                    returnToMenuRequested = true;
+                    showWinMessage = false;
+                }
             } else if (gameHasStarted && myPlayerSide == gameState.getActivePlayer()) {
                 // Only handle input if it's the player's turn
                 inputManager.handleEvent(event);
             } else if (gameHasStarted) {
                 // Debug: Log when input is blocked
-                
+
             }
         }
 
@@ -1761,16 +1840,18 @@ int main()
                                     localPlayerRatingText.setString("Rating: " + std::to_string(p1_rating));
                                     remotePlayerUsernameText.setString("Opponent: " + p2_username);
                                     remotePlayerRatingText.setString("Rating: " + std::to_string(p2_rating));
-                                    // Store current player's rating for menu display
+                                    // Store current and opponent ratings for menu display
                                     myCurrentRating = p1_rating;
+                                    opponentRating = p2_rating;
                                     myUsername = p1_username;
                                 } else if (myPlayerSide == PlayerSide::PLAYER_TWO) {
                                     localPlayerUsernameText.setString("You: " + p2_username);
                                     localPlayerRatingText.setString("Rating: " + std::to_string(p2_rating));
                                     remotePlayerUsernameText.setString("Opponent: " + p1_username);
                                     remotePlayerRatingText.setString("Rating: " + std::to_string(p1_rating));
-                                    // Store current player's rating for menu display
+                                    // Store current and opponent ratings for menu display
                                     myCurrentRating = p2_rating;
+                                    opponentRating = p1_rating;
                                     myUsername = p2_username;
                                 }
                                 uiMessage = "Game started!"; 
@@ -1846,7 +1927,10 @@ int main()
             // Potentially handle disconnection or error
         }
         // --- End Network Receive ---
-        
+        if (returnToMenuRequested) {
+            break;
+        }
+
         // Apply the game view for proper scaling
         graphicsManager.applyView();
         
@@ -2108,41 +2192,32 @@ int main()
         // --- End Card Hand Rendering ---
         
         // --- Win Message Display ---
-        if (showWinMessage && !winMessage.empty()) {
+        if (showWinMessage) {
             // Create a semi-transparent overlay
             sf::RectangleShape overlay(sf::Vector2f(GraphicsManager::BASE_WIDTH, GraphicsManager::BASE_HEIGHT));
             overlay.setFillColor(sf::Color(0, 0, 0, 150));
             window.draw(overlay);
-            
-            // Create win message text
-            sf::Text winText;
-            winText.setFont(globalFont);
-            winText.setString(winMessage);
-            winText.setCharacterSize(48);
-            winText.setFillColor(sf::Color::Yellow);
-            winText.setStyle(sf::Text::Bold);
-            
-            // Center the text
-            sf::FloatRect textBounds = winText.getLocalBounds();
-            winText.setOrigin(textBounds.left + textBounds.width / 2.0f,
-                             textBounds.top + textBounds.height / 2.0f);
-            winText.setPosition(GraphicsManager::BASE_WIDTH / 2.0f, GraphicsManager::BASE_HEIGHT / 2.0f);
-            
-            window.draw(winText);
-            
-            // Add instruction text
-            sf::Text instructionText;
-            instructionText.setFont(globalFont);
-            instructionText.setString("Press any key to continue...");
-            instructionText.setCharacterSize(24);
-            instructionText.setFillColor(sf::Color::White);
-            
-            sf::FloatRect instrBounds = instructionText.getLocalBounds();
-            instructionText.setOrigin(instrBounds.left + instrBounds.width / 2.0f,
-                                     instrBounds.top + instrBounds.height / 2.0f);
-            instructionText.setPosition(GraphicsManager::BASE_WIDTH / 2.0f, GraphicsManager::BASE_HEIGHT / 2.0f + 80.0f);
-            
-            window.draw(instructionText);
+
+            // Result title and rating change
+            window.draw(resultTitleText);
+
+            sf::Text descText;
+            descText.setFont(globalFont);
+            descText.setString(winMessage);
+            descText.setCharacterSize(24);
+            descText.setFillColor(sf::Color::White);
+            sf::FloatRect dBounds = descText.getLocalBounds();
+            descText.setOrigin(dBounds.left + dBounds.width / 2.f,
+                               dBounds.top + dBounds.height / 2.f);
+            descText.setPosition(GraphicsManager::BASE_WIDTH / 2.f,
+                                 GraphicsManager::BASE_HEIGHT / 2.f - 30.f);
+            window.draw(descText);
+
+            window.draw(ratingChangeText);
+
+            // Return to menu button
+            window.draw(menuButton);
+            window.draw(menuButtonText);
         }
         // --- End Win Message Display ---
         
@@ -2150,5 +2225,8 @@ int main()
         window.display();
     }
     
+    if (returnToMenuRequested && window.isOpen()) {
+        runMainMenu(window, graphicsManager, socket);
+    }
     return 0;
 }
