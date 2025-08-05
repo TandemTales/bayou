@@ -7,6 +7,7 @@
 #include <chrono>
 #include <sqlite3.h> // Added for SQLite
 #include <algorithm> // Added for std::max
+#include <cmath>     // Added for std::pow in Elo calculation
 
 #include "GameState.h"      // For GameState and its sf::Packet operators
 #include "Move.h"           // For Move and its sf::Packet operators
@@ -32,7 +33,7 @@ struct ClientConnection {
     sf::TcpSocket socket;
     PlayerSide playerSide; // Assign PlayerSide to each connection
     std::string username;  // Player's username
-    int rating = 1000;     // Player's rating, default to 1000
+    int rating = 0;        // Player's rating, default to 0
     bool connected = false;
     bool lookingForMatch = false; // Whether the player is actively looking for a match
     CardCollection collection; // Player's owned cards
@@ -377,24 +378,40 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                                     } else {
                                         int p1_old_rating = player1_conn->rating;
                                         int p2_old_rating = player2_conn->rating;
-                                        int p1_new_rating = p1_old_rating;
-                                        int p2_new_rating = p2_old_rating;
-                                        const int RATING_CHANGE = 10;
-
+                                        
+                                        // Elo rating calculation with +1000 adjustment
+                                        int p1_rating_adjusted = p1_old_rating + 1000;
+                                        int p2_rating_adjusted = p2_old_rating + 1000;
+                                        
+                                        // Calculate expected scores
+                                        double expected_p1 = 1.0 / (1.0 + std::pow(10.0, (p2_rating_adjusted - p1_rating_adjusted) / 400.0));
+                                        double expected_p2 = 1.0 / (1.0 + std::pow(10.0, (p1_rating_adjusted - p2_rating_adjusted) / 400.0));
+                                        
+                                        // K-factor for rating changes
+                                        const int K_FACTOR = 32;
+                                        
+                                        // Calculate new adjusted ratings based on game outcome
+                                        int p1_new_rating_adjusted, p2_new_rating_adjusted;
                                         if (winner == PlayerSide::PLAYER_ONE) {
-                                            p1_new_rating += RATING_CHANGE;
-                                            p2_new_rating -= RATING_CHANGE;
+                                            // Player 1 wins
+                                            p1_new_rating_adjusted = p1_rating_adjusted + static_cast<int>(K_FACTOR * (1 - expected_p1));
+                                            p2_new_rating_adjusted = p2_rating_adjusted + static_cast<int>(K_FACTOR * (0 - expected_p2));
                                             std::cout << "Player 1 (" << player1_conn->username << ") wins." << std::endl;
                                         } else if (winner == PlayerSide::PLAYER_TWO) {
-                                            p2_new_rating += RATING_CHANGE;
-                                            p1_new_rating -= RATING_CHANGE;
+                                            // Player 2 wins
+                                            p1_new_rating_adjusted = p1_rating_adjusted + static_cast<int>(K_FACTOR * (0 - expected_p1));
+                                            p2_new_rating_adjusted = p2_rating_adjusted + static_cast<int>(K_FACTOR * (1 - expected_p2));
                                             std::cout << "Player 2 (" << player2_conn->username << ") wins." << std::endl;
                                         } else {
+                                            // Draw
+                                            p1_new_rating_adjusted = p1_rating_adjusted + static_cast<int>(K_FACTOR * (0.5 - expected_p1));
+                                            p2_new_rating_adjusted = p2_rating_adjusted + static_cast<int>(K_FACTOR * (0.5 - expected_p2));
                                             std::cout << "Game is a draw." << std::endl;
                                         }
                                         
-                                        p1_new_rating = std::max(0, p1_new_rating);
-                                        p2_new_rating = std::max(0, p2_new_rating);
+                                        // Subtract 1000 adjustment and clamp to 0 minimum
+                                        int p1_new_rating = std::max(0, p1_new_rating_adjusted - 1000);
+                                        int p2_new_rating = std::max(0, p2_new_rating_adjusted - 1000);
 
                                         sqlite3* db;
                                         if (sqlite3_open("bayou_bonanza.db", &db) == SQLITE_OK) {
@@ -681,7 +698,7 @@ void initialize_database() {
     const char* sql_create_users =
         "CREATE TABLE IF NOT EXISTS users ("
         "username TEXT PRIMARY KEY NOT NULL,"
-        "rating INTEGER NOT NULL DEFAULT 1000"
+        "rating INTEGER NOT NULL DEFAULT 0"
         ");";
 
     const char* sql_create_collections =
@@ -788,9 +805,9 @@ int main() {
                                         sqlite3_stmt* stmt_insert;
                                         if (sqlite3_prepare_v2(db, sql_insert, -1, &stmt_insert, 0) == SQLITE_OK) {
                                             sqlite3_bind_text(stmt_insert, 1, received_username.c_str(), -1, SQLITE_STATIC);
-                                            sqlite3_bind_int(stmt_insert, 2, 1000); // Default rating
+                                            sqlite3_bind_int(stmt_insert, 2, 0); // Default rating
                                             if (sqlite3_step(stmt_insert) == SQLITE_DONE) {
-                                                new_client_conn->rating = 1000;
+                                                new_client_conn->rating = 0;
                                                 std::cout << "New user " << received_username << " inserted with default rating 1000." << std::endl;
                                             } else {
                                                 std::cerr << "SQL error inserting user: " << sqlite3_errmsg(db) << std::endl;

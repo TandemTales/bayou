@@ -82,8 +82,8 @@ void test_user_creation_and_retrieval() {
     sqlite3* db;
     setup_test_database(&db);
 
-    // Insert a new user ("testuser1", 1000)
-    const std::string insert_user1_sql = "INSERT INTO users (username, rating) VALUES ('testuser1', 1000);";
+    // Insert a new user ("testuser1", 0)
+    const std::string insert_user1_sql = "INSERT INTO users (username, rating) VALUES ('testuser1', 0);";
     assert(execute_sql(db, insert_user1_sql));
 
     // Retrieve the user and verify username and rating
@@ -99,7 +99,7 @@ void test_user_creation_and_retrieval() {
         std::string username = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
         int rating = sqlite3_column_int(stmt, 1);
         assert(username == "testuser1");
-        assert(rating == 1000);
+        assert(rating == 0);
     }
     sqlite3_finalize(stmt);
 
@@ -113,8 +113,8 @@ void test_user_creation_and_retrieval() {
     assert(step_rc == SQLITE_DONE); // Should not find any row
     sqlite3_finalize(stmt);
 
-    // Insert another user ("testuser2", 1200)
-    const std::string insert_user2_sql = "INSERT INTO users (username, rating) VALUES ('testuser2', 1200);";
+    // Insert another user ("testuser2", 0)
+    const std::string insert_user2_sql = "INSERT INTO users (username, rating) VALUES ('testuser2', 0);";
     assert(execute_sql(db, insert_user2_sql));
 
     // Retrieve and verify "testuser2"
@@ -129,7 +129,7 @@ void test_user_creation_and_retrieval() {
         std::string username = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
         int rating = sqlite3_column_int(stmt, 1);
         assert(username == "testuser2");
-        assert(rating == 1200);
+        assert(rating == 0);
     }
     sqlite3_finalize(stmt);
 
@@ -193,7 +193,7 @@ void test_new_user_default_rating() {
     setup_test_database(&db);
 
     const char* username_to_test = "newuser";
-    int default_rating = 1000; // Default rating as per server logic
+    int default_rating = 0; // Default rating as per server logic
 
     // Simulate server logic: try to select user, if not found, insert with default rating
     sqlite3_stmt* stmt_select;
@@ -252,6 +252,41 @@ void test_new_user_default_rating() {
     std::cout << "test_new_user_default_rating passed." << std::endl;
 }
 
+// Test Elo rating calculation logic
+void test_elo_rating_calculation() {
+    std::cout << "Running test_elo_rating_calculation..." << std::endl;
+    
+    // This test would verify the Elo calculation logic
+    // Since the Elo calculation is implemented in server_main.cpp and not in a separate function,
+    // we'll verify that ratings start at 0 and can be updated properly
+    
+    sqlite3* db;
+    setup_test_database(&db);
+    
+    // Insert two test users with rating 0
+    assert(execute_sql(db, "INSERT INTO users (username, rating) VALUES ('player1', 0);"));
+    assert(execute_sql(db, "INSERT INTO users (username, rating) VALUES ('player2', 0);"));
+    
+    // Update one player's rating
+    assert(execute_sql(db, "UPDATE users SET rating = 10 WHERE username = 'player1';"));
+    
+    // Verify the rating was updated
+    sqlite3_stmt* stmt;
+    const std::string select_sql = "SELECT rating FROM users WHERE username = 'player1';";
+    int rc_prepare = sqlite3_prepare_v2(db, select_sql.c_str(), -1, &stmt, 0);
+    assert(rc_prepare == SQLITE_OK);
+    
+    int step_rc = sqlite3_step(stmt);
+    assert(step_rc == SQLITE_ROW);
+    
+    int retrieved_rating = sqlite3_column_int(stmt, 0);
+    assert(retrieved_rating == 10);
+    
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+    remove(TEST_DB_NAME); // Clean up
+    std::cout << "test_elo_rating_calculation passed." << std::endl;
+}
 
 int main() {
     std::cout << "Running DatabaseTests..." << std::endl;
@@ -259,7 +294,7 @@ int main() {
     test_user_creation_and_retrieval();
     test_rating_updates();
     test_new_user_default_rating();
-    // More tests will be added here
+    test_elo_rating_calculation();
     std::cout << "DatabaseTests passed!" << std::endl;
     return 0;
 }

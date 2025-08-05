@@ -86,6 +86,10 @@ std::string gameStartP1Username, gameStartP2Username;
 int gameStartP1Rating = 0, gameStartP2Rating = 0;
 sf::Packet gameStartPacketData;
 
+// Global variable to store current player's rating for menu display
+int myCurrentRating = 0;
+std::string myUsername = "";
+
 // Win condition notification callback
 void onWinCondition(PlayerSide winner, const std::string& description) {
     winMessage = description;
@@ -1370,6 +1374,17 @@ MainMenuOption runMainMenu(sf::RenderWindow& window, GraphicsManager& graphicsMa
         title.setPosition(GraphicsManager::BASE_WIDTH / 2.f, GraphicsManager::BASE_HEIGHT / 2.f - 120.f);
         window.draw(title);
 
+        // Display player info (username and rating)
+        sf::Text playerInfo;
+        playerInfo.setFont(globalFont);
+        playerInfo.setString("Player: " + myUsername + " | Rating: " + std::to_string(myCurrentRating));
+        playerInfo.setCharacterSize(20);
+        playerInfo.setFillColor(sf::Color::Cyan);
+        sf::FloatRect playerBounds = playerInfo.getLocalBounds();
+        playerInfo.setOrigin(playerBounds.left + playerBounds.width / 2.f, playerBounds.top + playerBounds.height / 2.f);
+        playerInfo.setPosition(GraphicsManager::BASE_WIDTH / 2.f, GraphicsManager::BASE_HEIGHT / 2.f - 80.f);
+        window.draw(playerInfo);
+
         for (int i = 0; i < optionCount; ++i) {
             sf::Text option;
             option.setFont(globalFont);
@@ -1434,6 +1449,9 @@ int main()
     if (username.empty()) {
         return 0; // Window closed before entering username
     }
+    
+    // Store username for menu display
+    myUsername = username;
 
     // Network Socket
     sf::TcpSocket socket;
@@ -1634,11 +1652,17 @@ int main()
                     localPlayerRatingText.setString("Rating: " + std::to_string(p1_rating));
                     remotePlayerUsernameText.setString("Opponent: " + p2_username);
                     remotePlayerRatingText.setString("Rating: " + std::to_string(p2_rating));
+                    // Store current player's rating for menu display
+                    myCurrentRating = p1_rating;
+                    myUsername = p1_username;
                 } else if (myPlayerSide == PlayerSide::PLAYER_TWO) {
                     localPlayerUsernameText.setString("You: " + p2_username);
                     localPlayerRatingText.setString("Rating: " + std::to_string(p2_rating));
                     remotePlayerUsernameText.setString("Opponent: " + p1_username);
                     remotePlayerRatingText.setString("Rating: " + std::to_string(p1_rating));
+                    // Store current player's rating for menu display
+                    myCurrentRating = p2_rating;
+                    myUsername = p2_username;
                 }
                 uiMessage = "Game started!"; 
                 std::cout << uiMessage << " P1: " << p1_username << " (" << p1_rating << "), P2: " << p2_username << " (" << p2_rating << ")" << std::endl;
@@ -1737,11 +1761,17 @@ int main()
                                     localPlayerRatingText.setString("Rating: " + std::to_string(p1_rating));
                                     remotePlayerUsernameText.setString("Opponent: " + p2_username);
                                     remotePlayerRatingText.setString("Rating: " + std::to_string(p2_rating));
+                                    // Store current player's rating for menu display
+                                    myCurrentRating = p1_rating;
+                                    myUsername = p1_username;
                                 } else if (myPlayerSide == PlayerSide::PLAYER_TWO) {
                                     localPlayerUsernameText.setString("You: " + p2_username);
                                     localPlayerRatingText.setString("Rating: " + std::to_string(p2_rating));
                                     remotePlayerUsernameText.setString("Opponent: " + p1_username);
                                     remotePlayerRatingText.setString("Rating: " + std::to_string(p1_rating));
+                                    // Store current player's rating for menu display
+                                    myCurrentRating = p2_rating;
+                                    myUsername = p2_username;
                                 }
                                 uiMessage = "Game started!"; 
                                 std::cout << uiMessage << " P1: " << p1_username << " (" << p1_rating << "), P2: " << p2_username << " (" << p2_rating << ")" << std::endl;

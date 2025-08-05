@@ -15,6 +15,7 @@ FetchContent_MakeAvailable(Catch2)
 # --- Test Executable Definition ---
 add_executable(BayouBonanzaTests
   PieceTests.cpp
+  DatabaseTests.cpp
   # KingTests.cpp # Removed
   # QueenTests.cpp # Removed
       # SweetykinsTests.cpp # Removed
@@ -35,6 +36,7 @@ target_link_libraries(BayouBonanzaTests PRIVATE
   GameLogic  # Link against the GameLogic library instead of individual source files
   sfml-graphics sfml-window sfml-system sfml-network  # Added sfml-network
   Catch2::Catch2WithMain # Link against Catch2's main
+  sqlite3_lib # Link against SQLite3 library
 )
 
 # --- Client-specific Test Executable ---
