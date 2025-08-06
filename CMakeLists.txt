@@ -117,6 +117,8 @@ set(CLIENT_SOURCES
     src/main.cpp
     src/InputManager.cpp
     src/GraphicsManager.cpp
+    src/HandRenderer.cpp
+    src/Menu.cpp
 )
 set(SERVER_SOURCES src/server_main.cpp)
 

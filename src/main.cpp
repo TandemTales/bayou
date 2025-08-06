@@ -32,18 +32,13 @@
 #include <map>
 // #include "King.h" // Removed - using data-driven approach with PieceFactory
 #include <algorithm> // For std::max
+#include "HandRenderer.h"
+#include "Menu.h"
 
 
 // The actual sf::Packet operators are now defined with their respective classes.
 
 using namespace BayouBonanza;
-
-enum class MainMenuOption {
-    DECK_EDITOR,
-    PLAY_HUMAN,
-    PLAY_AI,
-    NONE
-};
 
 // Client-specific global variables
 PlayerSide myPlayerSide = PlayerSide::NEUTRAL; // Default, will be assigned by server
@@ -410,190 +405,6 @@ void renderAttackValue(sf::RenderWindow& window, const Piece* piece, float squar
     attackText.setPosition(squareX + squareSize - offset, squareY + squareSize - offset);
 
     window.draw(attackText);
-}
-
-// Function to render player's hand of cards
-void renderPlayerHand(sf::RenderWindow& window, const GameState& gameState, PlayerSide player, 
-                     const GraphicsManager& graphicsManager, int selectedCardIndex = -1) {
-    const Hand& hand = gameState.getHand(player);
-    if (hand.size() == 0) return;
-    
-    auto boardParams = graphicsManager.getBoardRenderParams();
-    int playerSteam = gameState.getSteam(player);
-    
-    // Card dimensions and positioning
-    float cardWidth = 120.0f;
-    float cardHeight = 120.0f; // Shortened card height
-    float cardSpacing = 10.0f;
-    float totalHandWidth = hand.size() * cardWidth + (hand.size() - 1) * cardSpacing;
-    
-    // Position cards below the board, centered
-    float handStartX = (GraphicsManager::BASE_WIDTH - totalHandWidth) / 2.0f;
-    float handY = boardParams.boardStartY + boardParams.boardSize + 10.0f; // Reduced spacing to fit cards
-    
-    for (size_t i = 0; i < hand.size(); ++i) {
-        const Card* card = hand.getCard(i);
-        if (!card) continue;
-        
-        float cardX = handStartX + i * (cardWidth + cardSpacing);
-        
-        // Card background
-        sf::RectangleShape cardRect(sf::Vector2f(cardWidth, cardHeight));
-        cardRect.setPosition(cardX, handY);
-        
-        // Color based on playability and selection
-        bool canAfford = playerSteam >= card->getSteamCost();
-        bool isSelected = static_cast<int>(i) == selectedCardIndex;
-        
-        if (isSelected) {
-            cardRect.setFillColor(sf::Color(100, 150, 255, 200)); // Bright blue for selected
-            cardRect.setOutlineColor(sf::Color::Yellow);
-            cardRect.setOutlineThickness(3.0f);
-        } else if (canAfford) {
-            cardRect.setFillColor(sf::Color(60, 80, 60, 180)); // Green-ish for playable
-            cardRect.setOutlineColor(sf::Color::White);
-            cardRect.setOutlineThickness(1.0f);
-        } else {
-            cardRect.setFillColor(sf::Color(80, 60, 60, 180)); // Red-ish for unaffordable
-            cardRect.setOutlineColor(sf::Color(128, 128, 128)); // Gray
-            cardRect.setOutlineThickness(1.0f);
-        }
-        
-        window.draw(cardRect);
-        
-        // Card name
-        sf::Text nameText;
-        nameText.setFont(globalFont);
-        nameText.setCharacterSize(14);
-        nameText.setFillColor(sf::Color::White);
-        nameText.setString(card->getName());
-        
-        // Center the name text horizontally
-        sf::FloatRect nameBounds = nameText.getLocalBounds();
-        nameText.setPosition(cardX + (cardWidth - nameBounds.width) / 2.0f, handY + 10.0f);
-        window.draw(nameText);
-        
-        // Steam cost
-        sf::Text costText;
-        costText.setFont(globalFont);
-        costText.setCharacterSize(16);
-        costText.setFillColor(canAfford ? sf::Color::Cyan : sf::Color::Red);
-        costText.setString("Steam: " + std::to_string(card->getSteamCost()));
-        
-        sf::FloatRect costBounds = costText.getLocalBounds();
-        costText.setPosition(cardX + (cardWidth - costBounds.width) / 2.0f, handY + cardHeight - 25.0f);
-        window.draw(costText);
-        
-        // Card type indicator
-        sf::Text typeText;
-        typeText.setFont(globalFont);
-        typeText.setCharacterSize(12);
-        typeText.setFillColor(sf::Color::Yellow);
-        
-        std::string typeStr = (card->getCardType() == CardType::PIECE_CARD) ? "Piece" : "Effect";
-        typeText.setString(typeStr);
-        
-        sf::FloatRect typeBounds = typeText.getLocalBounds();
-        typeText.setPosition(cardX + (cardWidth - typeBounds.width) / 2.0f, handY + 35.0f);
-        window.draw(typeText);
-        
-
-    }
-}
-
-// Simple username login screen
-std::string runLoginScreen(sf::RenderWindow& window, GraphicsManager& graphicsManager) {
-    std::string username;
-
-    sf::Text promptText;
-    promptText.setFont(globalFont);
-    promptText.setCharacterSize(32);
-    promptText.setFillColor(sf::Color::White);
-    promptText.setString("Enter Username");
-
-    sf::Text inputText;
-    inputText.setFont(globalFont);
-    inputText.setCharacterSize(28);
-    inputText.setFillColor(sf::Color::Cyan);
-
-    sf::RectangleShape inputBox(sf::Vector2f(400.f, 50.f));
-    inputBox.setFillColor(sf::Color(30, 30, 30));
-    inputBox.setOutlineColor(sf::Color::White);
-    inputBox.setOutlineThickness(2.f);
-
-    bool done = false;
-    while (window.isOpen() && !done) {
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed) {
-                window.close();
-                return "";
-            } else if (event.type == sf::Event::Resized) {
-                graphicsManager.updateView();
-            } else if (event.type == sf::Event::TextEntered) {
-                if (event.text.unicode == 8) { // Backspace
-                    if (!username.empty()) username.pop_back();
-                } else if (event.text.unicode == 13 || event.text.unicode == 10) { // Enter
-                    if (!username.empty()) done = true;
-                } else if (event.text.unicode < 128 && std::isprint(event.text.unicode)) {
-                    username += static_cast<char>(event.text.unicode);
-                }
-            }
-        }
-
-        graphicsManager.applyView();
-        window.clear(sf::Color(10, 50, 20));
-
-        float centerX = GraphicsManager::BASE_WIDTH / 2.f;
-        float centerY = GraphicsManager::BASE_HEIGHT / 2.f;
-
-        sf::FloatRect promptBounds = promptText.getLocalBounds();
-        promptText.setPosition(centerX - promptBounds.width / 2.f, centerY - 80.f);
-
-        inputBox.setPosition(centerX - inputBox.getSize().x / 2.f, centerY - inputBox.getSize().y / 2.f);
-
-        inputText.setString(username);
-        inputText.setPosition(inputBox.getPosition().x + 10.f, inputBox.getPosition().y + 10.f);
-
-        window.draw(promptText);
-        window.draw(inputBox);
-        window.draw(inputText);
-        window.display();
-    }
-
-    return username;
-}
-
-void showPlaceholderScreen(sf::RenderWindow& window, GraphicsManager& graphicsManager, const std::string& message) {
-    while (window.isOpen()) {
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed) {
-                window.close();
-                return;
-            } else if (event.type == sf::Event::KeyPressed || event.type == sf::Event::MouseButtonPressed) {
-                return;
-            } else if (event.type == sf::Event::Resized) {
-                graphicsManager.updateView();
-            }
-        }
-
-        graphicsManager.applyView();
-        window.clear(sf::Color(10, 50, 20));
-
-        sf::Text text;
-        text.setFont(globalFont);
-        text.setString(message + "\n(Press any key)");
-        text.setCharacterSize(32);
-        text.setFillColor(sf::Color::White);
-
-        sf::FloatRect bounds = text.getLocalBounds();
-        text.setOrigin(bounds.left + bounds.width / 2.f, bounds.top + bounds.height / 2.f);
-        text.setPosition(GraphicsManager::BASE_WIDTH / 2.f, GraphicsManager::BASE_HEIGHT / 2.f);
-
-        window.draw(text);
-        window.display();
-    }
 }
 
 void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, sf::TcpSocket& socket) {
@@ -1328,157 +1139,6 @@ void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, s
     }
 }
 
-MainMenuOption runMainMenu(sf::RenderWindow& window, GraphicsManager& graphicsManager, sf::TcpSocket& socket) {
-    int selected = 0;
-    const char* optionTexts[] = {"Deck Editor", "Play Against Human", "Play Against AI"};
-    const int optionCount = 3;
-
-    while (window.isOpen()) {
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed) {
-                window.close();
-                return MainMenuOption::NONE;
-            } else if (event.type == sf::Event::KeyPressed) {
-                if (event.key.code == sf::Keyboard::Up) {
-                    selected = (selected + optionCount - 1) % optionCount;
-                } else if (event.key.code == sf::Keyboard::Down) {
-                    selected = (selected + 1) % optionCount;
-                } else if (event.key.code == sf::Keyboard::Enter || event.key.code == sf::Keyboard::Return) {
-                    switch (selected) {
-                        case 0: return MainMenuOption::DECK_EDITOR;
-                        case 1: 
-                            {
-                                // Send matchmaking request to server
-                                sf::Packet matchmakingPacket;
-                                matchmakingPacket << MessageType::RequestMatchmaking;
-                                if (socket.send(matchmakingPacket) == sf::Socket::Done) {
-                                    std::cout << "Matchmaking request sent to server" << std::endl;
-                                } else {
-                                    std::cerr << "Failed to send matchmaking request" << std::endl;
-                                }
-                                // Don't return immediately - wait for server response
-                            }
-                            break;
-                        case 2: return MainMenuOption::PLAY_AI;
-                    }
-                }
-            } else if (event.type == sf::Event::Resized) {
-                graphicsManager.updateView();
-            }
-        }
-
-        // Process network messages while in main menu
-        sf::Packet receivedPacket;
-        sf::Socket::Status status = socket.receive(receivedPacket);
-        if (status == sf::Socket::Done) {
-            std::cout << "Received packet from server in main menu" << std::endl;
-            MessageType messageType;
-            if (receivedPacket >> messageType) {
-                std::cout << "Message type: " << static_cast<int>(messageType) << std::endl;
-                switch (messageType) {
-                    case MessageType::PlayerAssignment:
-                        {
-                            uint8_t side_uint8;
-                            if (receivedPacket >> side_uint8) {
-                                myPlayerSide = static_cast<PlayerSide>(side_uint8);
-                                std::cout << "Assigned player side: Player " << (myPlayerSide == PlayerSide::PLAYER_ONE ? "One" : "Two") << std::endl;
-                            }
-                        }
-                        break;
-                    case MessageType::CardCollectionData:
-                        {
-                            std::string data;
-                            if (receivedPacket >> data) {
-                                myCollection.deserialize(data);
-                                std::cout << "Collection received with " << myCollection.size() << " cards" << std::endl;
-                            }
-                        }
-                        break;
-                    case MessageType::DeckData:
-                        {
-                            std::string data;
-                            if (receivedPacket >> data) {
-                                myDeck.deserialize(data);
-                                std::cout << "Deck received with " << myDeck.size() << " cards" << std::endl;
-                            }
-                        }
-                        break;
-                    case MessageType::WaitingForOpponent:
-                        std::cout << "Waiting for opponent..." << std::endl;
-                        break;
-                    case MessageType::GameStart:
-                        {
-                            std::cout << "Game start received in main menu - storing packet data and transitioning to game!" << std::endl;
-                            // Create a new packet with the GameStart message type and data
-                            gameStartPacketData.clear();
-                            gameStartPacketData << MessageType::GameStart;
-                            
-                            // Extract and re-add the data to the new packet
-                            std::string p1_username, p2_username;
-                            int p1_rating, p2_rating;
-                            GameState tempGameState;
-                            
-                            if (receivedPacket >> p1_username >> p1_rating >> p2_username >> p2_rating >> tempGameState) {
-                                gameStartPacketData << p1_username << p1_rating << p2_username << p2_rating << tempGameState;
-                                gameStartReceived = true;
-                                std::cout << "GameStart packet data stored for processing in main game loop" << std::endl;
-                                return MainMenuOption::PLAY_HUMAN;
-                            } else {
-                                std::cerr << "Error: Failed to deserialize GameStart data in main menu" << std::endl;
-                            }
-                        }
-                        break;
-                    default:
-                        std::cout << "Received unhandled message type in main menu: " << static_cast<int>(messageType) << std::endl;
-                        break;
-                }
-            }
-        }
-
-        graphicsManager.applyView();
-        window.clear(sf::Color(10, 50, 20));
-
-        sf::Text title;
-        title.setFont(globalFont);
-        title.setString("Main Menu");
-        title.setCharacterSize(40);
-        title.setFillColor(sf::Color::White);
-        sf::FloatRect titleBounds = title.getLocalBounds();
-        title.setOrigin(titleBounds.left + titleBounds.width / 2.f, titleBounds.top + titleBounds.height / 2.f);
-        title.setPosition(GraphicsManager::BASE_WIDTH / 2.f, GraphicsManager::BASE_HEIGHT / 2.f - 120.f);
-        window.draw(title);
-
-        // Display player info (username and rating)
-        sf::Text playerInfo;
-        playerInfo.setFont(globalFont);
-        playerInfo.setString("Player: " + myUsername + " | Rating: " + std::to_string(myCurrentRating));
-        playerInfo.setCharacterSize(20);
-        playerInfo.setFillColor(sf::Color::Cyan);
-        sf::FloatRect playerBounds = playerInfo.getLocalBounds();
-        playerInfo.setOrigin(playerBounds.left + playerBounds.width / 2.f, playerBounds.top + playerBounds.height / 2.f);
-        playerInfo.setPosition(GraphicsManager::BASE_WIDTH / 2.f, GraphicsManager::BASE_HEIGHT / 2.f - 80.f);
-        window.draw(playerInfo);
-
-        for (int i = 0; i < optionCount; ++i) {
-            sf::Text option;
-            option.setFont(globalFont);
-            option.setString(optionTexts[i]);
-            option.setCharacterSize(28);
-            option.setFillColor(i == selected ? sf::Color::Yellow : sf::Color::White);
-
-            sf::FloatRect b = option.getLocalBounds();
-            option.setOrigin(b.left + b.width / 2.f, b.top + b.height / 2.f);
-            option.setPosition(GraphicsManager::BASE_WIDTH / 2.f, GraphicsManager::BASE_HEIGHT / 2.f - 20.f + i * 50.f);
-            window.draw(option);
-        }
-
-        window.display();
-    }
-
-    return MainMenuOption::NONE;
-}
-
 int main()
 {
     // Create the main window with a default size - GraphicsManager will handle scaling
@@ -1520,7 +1180,7 @@ int main()
     Square::setGlobalPieceFactory(globalPieceFactory.get());
 
     // Display login screen for username input
-    std::string username = runLoginScreen(window, graphicsManager);
+    std::string username = runLoginScreen(window, graphicsManager, globalFont);
     if (username.empty()) {
         return 0; // Window closed before entering username
     }
@@ -1649,11 +1309,11 @@ int main()
     MainMenuOption menuChoice = MainMenuOption::NONE;
     if (!gameStartReceived) {
         do {
-            menuChoice = runMainMenu(window, graphicsManager, socket);
+            menuChoice = runMainMenu(window, graphicsManager, socket, myCollection, myDeck, myPlayerSide, myUsername, myCurrentRating, gameStartPacketData, gameStartReceived, globalFont);
             if (menuChoice == MainMenuOption::DECK_EDITOR) {
                 runDeckEditor(window, graphicsManager, socket);
             } else if (menuChoice == MainMenuOption::PLAY_AI) {
-                showPlaceholderScreen(window, graphicsManager, "Play vs AI Coming Soon");
+                showPlaceholderScreen(window, graphicsManager, "Play vs AI Coming Soon", globalFont);
             }
         } while (window.isOpen() && menuChoice != MainMenuOption::PLAY_HUMAN);
         if (!window.isOpen()) {
@@ -2174,7 +1834,7 @@ int main()
         // --- Card Hand Rendering ---
         if (gameHasStarted) {
             int selectedCard = inputManager.isCardSelected() ? inputManager.getSelectedCardIndex() : -1;
-            renderPlayerHand(window, gameState, myPlayerSide, graphicsManager, selectedCard);
+            renderPlayerHand(window, gameState, myPlayerSide, graphicsManager, globalFont, selectedCard);
 
             // Draw dragged card on top of everything
             if (inputManager.isCardSelected() && inputManager.isWaitingForCardTarget()) {
@@ -2253,7 +1913,7 @@ int main()
     }
     
     if (returnToMenuRequested && window.isOpen()) {
-        runMainMenu(window, graphicsManager, socket);
+        runMainMenu(window, graphicsManager, socket, myCollection, myDeck, myPlayerSide, myUsername, myCurrentRating, gameStartPacketData, gameStartReceived, globalFont);
     }
     return 0;
 }
