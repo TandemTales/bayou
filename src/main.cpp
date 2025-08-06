@@ -90,6 +90,7 @@ sf::Packet gameStartPacketData;
 // Global variable to store current player's rating for menu display
 int myCurrentRating = 0;
 std::string myUsername = "";
+std::string opponentUsername = "";
 int opponentRating = 0;
 int ratingChange = 0;
 sf::Text resultTitleText;
@@ -100,13 +101,21 @@ bool returnToMenuRequested = false;
 std::string endScreenTitle = "";
 
 // Win condition notification callback
-void onWinCondition(PlayerSide winner, const std::string& description) {
-    winMessage = description;
+void onWinCondition(PlayerSide winner, const std::string& /*description*/) {
     showWinMessage = true;
 
     bool isDraw = (winner == PlayerSide::NEUTRAL);
     bool isWin = (winner == myPlayerSide);
     endScreenTitle = isDraw ? "Draw" : (isWin ? "Victory!" : "Defeat!");
+
+    // Build a user-friendly description using usernames (no Player 1/2 labels, no piece mentions)
+    if (isDraw) {
+        winMessage = "The game ended in a draw.";
+    } else if (isWin) {
+        winMessage = "You defeated " + opponentUsername + ".";
+    } else {
+        winMessage = opponentUsername + " defeated you.";
+    }
 
     // Elo rating calculation mirrored from server
     const int K_FACTOR = 32;
@@ -132,7 +141,7 @@ void onWinCondition(PlayerSide winner, const std::string& description) {
 
     ratingChangeText.setFont(globalFont);
     std::string ratingStr = "Rating: " + std::to_string(myCurrentRating);
-    ratingStr += " (" + (ratingChange >= 0 ? "+" : "") + std::to_string(ratingChange) + ")";
+    ratingStr += std::string(" (") + (ratingChange >= 0 ? "+" : "") + std::to_string(ratingChange) + ")";
     ratingChangeText.setString(ratingStr);
     ratingChangeText.setCharacterSize(32);
     ratingChangeText.setFillColor(sf::Color::White);
@@ -160,7 +169,7 @@ void onWinCondition(PlayerSide winner, const std::string& description) {
     // Update rating display for in-game UI
     localPlayerRatingText.setString("Rating: " + std::to_string(myCurrentRating));
 
-    std::cout << "WIN CONDITION: " << description << std::endl;
+    std::cout << "WIN CONDITION: " << winMessage << std::endl;
 }
 
 // Function to recreate pieces after deserialization without resetting game state
@@ -1722,6 +1731,7 @@ int main()
                     myCurrentRating = p1_rating;
                     opponentRating = p2_rating;
                     myUsername = p1_username;
+                    opponentUsername = p2_username;
                 } else if (myPlayerSide == PlayerSide::PLAYER_TWO) {
                     localPlayerUsernameText.setString("You: " + p2_username);
                     localPlayerRatingText.setString("Rating: " + std::to_string(p2_rating));
@@ -1731,6 +1741,7 @@ int main()
                     myCurrentRating = p2_rating;
                     opponentRating = p1_rating;
                     myUsername = p2_username;
+                    opponentUsername = p1_username;
                 }
                 uiMessage = "Game started!"; 
                 std::cout << uiMessage << " P1: " << p1_username << " (" << p1_rating << "), P2: " << p2_username << " (" << p2_rating << ")" << std::endl;
@@ -1844,6 +1855,7 @@ int main()
                                     myCurrentRating = p1_rating;
                                     opponentRating = p2_rating;
                                     myUsername = p1_username;
+                                    opponentUsername = p2_username;
                                 } else if (myPlayerSide == PlayerSide::PLAYER_TWO) {
                                     localPlayerUsernameText.setString("You: " + p2_username);
                                     localPlayerRatingText.setString("Rating: " + std::to_string(p2_rating));
@@ -1853,6 +1865,7 @@ int main()
                                     myCurrentRating = p2_rating;
                                     opponentRating = p1_rating;
                                     myUsername = p2_username;
+                                    opponentUsername = p1_username;
                                 }
                                 uiMessage = "Game started!"; 
                                 std::cout << uiMessage << " P1: " << p1_username << " (" << p1_rating << "), P2: " << p2_username << " (" << p2_rating << ")" << std::endl;
@@ -1872,6 +1885,13 @@ int main()
                                 remotePlayerUsernameText.setPosition(GraphicsManager::BASE_WIDTH - remoteTextWidthEstimate - 10.f, uiMessageText.getPosition().y + 55.f);
                                 remotePlayerRatingText.setPosition(GraphicsManager::BASE_WIDTH - remoteTextWidthEstimate - 10.f, remotePlayerUsernameText.getPosition().y + 20.f);
 
+                                // If the game already started in a game-over state (unlikely but safe), trigger end screen
+                                if (gameState.getGamePhase() == GamePhase::GAME_OVER && !showWinMessage) {
+                                    PlayerSide winner = gameOverDetector.getWinner(gameState);
+                                    std::string desc = gameOverDetector.getWinConditionDescription(gameState);
+                                    onWinCondition(winner, desc);
+                                }
+
                             } else {
                                 std::cerr << "Error deserializing GameStart data (with user info)." << std::endl;
                             }
@@ -1888,6 +1908,13 @@ int main()
                                 // Update local player steam display
                                 int localPlayerSteam = gameState.getSteam(myPlayerSide);
                                 localPlayerSteamText.setString("Steam: " + std::to_string(localPlayerSteam));
+                                
+                                // If server reports game over, trigger the end screen once
+                                if (gameState.getGamePhase() == GamePhase::GAME_OVER && !showWinMessage) {
+                                    PlayerSide winner = gameOverDetector.getWinner(gameState);
+                                    std::string desc = gameOverDetector.getWinConditionDescription(gameState);
+                                    onWinCondition(winner, desc);
+                                }
                             } else { std::cerr << "Error deserializing GameStateUpdate." << std::endl; }
                         }
                         break;
