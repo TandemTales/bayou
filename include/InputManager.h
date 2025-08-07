@@ -229,8 +229,13 @@ private:
      * @param targetPosition Target position for the card
      */
     void sendCardPlayToServer(int cardIndex, const Position& targetPosition);
-    
+
+    /**
+     * @brief Send a resign action to the server
+     */
+    void sendResignToServer();
+
     // sendPhaseAdvanceToServer method removed - no longer needed since actions auto-end turns
 };
 
-} // namespace BayouBonanza 
+} // namespace BayouBonanza
