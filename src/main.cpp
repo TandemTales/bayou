@@ -63,6 +63,10 @@ sf::Text localPlayerSteamText;
 // UI Element for Phase Information
 sf::Text phaseText;
 
+// UI Elements for skipping a turn
+sf::RectangleShape skipTurnButton;
+sf::Text skipTurnButtonText;
+
 // Global variables for game state
 GameState gameState;
 GameInitializer gameInitializer;
@@ -1353,6 +1357,22 @@ int main()
     phaseText.setFillColor(sf::Color::Yellow);
     phaseText.setPosition(10.f, 35.f); // Position below the main UI message
 
+    // Initialize skip turn button
+    skipTurnButton.setSize(sf::Vector2f(150.f, 40.f));
+    skipTurnButton.setFillColor(sf::Color(100, 100, 100));
+    skipTurnButton.setOrigin(skipTurnButton.getSize().x / 2.f, skipTurnButton.getSize().y / 2.f);
+    skipTurnButton.setPosition(GraphicsManager::BASE_WIDTH - 100.f,
+                               GraphicsManager::BASE_HEIGHT - 60.f);
+
+    skipTurnButtonText.setFont(globalFont);
+    skipTurnButtonText.setString("Skip Turn");
+    skipTurnButtonText.setCharacterSize(20);
+    skipTurnButtonText.setFillColor(sf::Color::White);
+    sf::FloatRect skipBounds = skipTurnButtonText.getLocalBounds();
+    skipTurnButtonText.setOrigin(skipBounds.left + skipBounds.width / 2.f,
+                                skipBounds.top + skipBounds.height / 2.f);
+    skipTurnButtonText.setPosition(skipTurnButton.getPosition());
+
     // Initialize game state
     GameState gameState;
     
@@ -1448,6 +1468,17 @@ int main()
                     showWinMessage = false;
                 }
             } else if (gameHasStarted && myPlayerSide == gameState.getActivePlayer()) {
+                if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
+                    sf::Vector2f clickPos = graphicsManager.screenToGame({event.mouseButton.x, event.mouseButton.y});
+                    if (skipTurnButton.getGlobalBounds().contains(clickPos)) {
+                        sf::Packet endTurnPacket;
+                        endTurnPacket << MessageType::EndTurn;
+                        if (socket.send(endTurnPacket) != sf::Socket::Done) {
+                            std::cerr << "Failed to send EndTurn packet to server." << std::endl;
+                        }
+                        continue;
+                    }
+                }
                 // Only handle input if it's the player's turn
                 inputManager.handleEvent(event);
             } else if (gameHasStarted) {
@@ -1662,6 +1693,11 @@ int main()
             window.draw(remotePlayerUsernameText);
             window.draw(remotePlayerRatingText);
             window.draw(localPlayerSteamText);
+
+            if (myPlayerSide == gameState.getActivePlayer()) {
+                window.draw(skipTurnButton);
+                window.draw(skipTurnButtonText);
+            }
         }
 
         // --- Game Board Rendering ---
