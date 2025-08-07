@@ -666,6 +666,42 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                 } else {
                     std::cout << "Game not properly initialized for phase advance" << std::endl;
                 }
+            } else if (messageType == MessageType::Resign) {
+                auto session = client->session.lock();
+                if (!session) {
+                    std::cout << "Resign rejected: not in game" << std::endl;
+                    continue;
+                }
+
+                PlayerSide winner = (client->playerSide == PlayerSide::PLAYER_ONE)
+                    ? PlayerSide::PLAYER_TWO
+                    : PlayerSide::PLAYER_ONE;
+
+                if (winner == PlayerSide::PLAYER_ONE) {
+                    session->gameState.setGameResult(GameResult::PLAYER_ONE_WIN);
+                } else {
+                    session->gameState.setGameResult(GameResult::PLAYER_TWO_WIN);
+                }
+
+                std::cout << "Player resigned. Winner is Player "
+                          << (winner == PlayerSide::PLAYER_ONE ? "One" : "Two")
+                          << std::endl;
+
+                broadcastGameState(session);
+
+                auto session_to_cleanup = session;
+                std::thread([session_to_cleanup]() {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                    {
+                        std::lock_guard<std::mutex> lock(gamesMutex);
+                        gameSessions.erase(std::remove_if(gameSessions.begin(), gameSessions.end(),
+                            [&](const std::shared_ptr<GameSession>& s){ return s.get() == session_to_cleanup.get(); }),
+                            gameSessions.end());
+                    }
+                    if (session_to_cleanup->player1) session_to_cleanup->player1->session.reset();
+                    if (session_to_cleanup->player2) session_to_cleanup->player2->session.reset();
+                }).detach();
+
             } else if (messageType == MessageType::RequestMatchmaking) {
                 std::cout << "Matchmaking request received from " << client->username << std::endl;
                 client->lookingForMatch = true;

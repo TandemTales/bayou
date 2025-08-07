@@ -23,7 +23,8 @@ enum class MessageType : sf::Uint8 {
     DeckData,               // Server to Client: Sends the player's deck
     SaveDeck,               // Client to Server: Save deck changes
     DeckSaved,              // Server to Client: Confirmation that deck was saved successfully
-    RequestMatchmaking      // Client to Server: Request to be matched with another player
+    RequestMatchmaking,     // Client to Server: Request to be matched with another player
+    Resign                  // Client to Server: Player resigns the game
 };
 
 /**

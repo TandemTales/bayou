@@ -333,12 +333,23 @@ void InputManager::sendCardPlayToServer(int cardIndex, const Position& targetPos
     CardPlayData cardPlayData(cardIndex, targetPosition.x, targetPosition.y);
     sf::Packet cardPlayPacket;
     cardPlayPacket << MessageType::CardPlayToServer << cardPlayData;
-    
+
     if (socket.send(cardPlayPacket) == sf::Socket::Done) {
-        std::cout << "Card play sent to server: card " << cardIndex 
+        std::cout << "Card play sent to server: card " << cardIndex
                   << " at (" << targetPosition.x << ", " << targetPosition.y << ")" << std::endl;
     } else {
         std::cerr << "Failed to send card play to server." << std::endl;
+    }
+}
+
+void InputManager::sendResignToServer() {
+    sf::Packet packet;
+    packet << MessageType::Resign;
+
+    if (socket.send(packet) == sf::Socket::Done) {
+        std::cout << "Resign message sent to server." << std::endl;
+    } else {
+        std::cerr << "Failed to send resign message to server." << std::endl;
     }
 }
 
@@ -351,9 +362,9 @@ void InputManager::resetCardSelection() {
 }
 
 void InputManager::handleKeyPressed(const sf::Event& event) {
-    // Space key no longer needed - actions auto-end turns
-    // Keep method for future key handling if needed
-    (void)event; // Suppress unused parameter warning
+    if (event.key.code == sf::Keyboard::R) {
+        sendResignToServer();
+    }
 }
 
 // sendPhaseAdvanceToServer method removed - no longer needed since actions auto-end turns
