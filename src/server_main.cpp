@@ -344,7 +344,6 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                     }
 
 
-
                     // Process the move using TurnManager
                     if (session->turnManager) {
                         bool moveProcessed = false;
@@ -353,16 +352,33 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                         session->turnManager->processMoveAction(completeMove, [&](const ActionResult& result) {
                             moveProcessed = true;
                             resultMessage = result.message;
-                            
+
                             if (result.success) {
                                 std::cout << "Move processed successfully: " << result.message << std::endl;
-                                
+
                                 // Broadcast updated game state to all clients
                                 broadcastGameState(session);
 
                                 // Check for game over and update ratings
                                 if (gameRules.isGameOver(session->gameState)) {
                                     std::cout << "Game Over detected." << std::endl;
+
+                                    // Schedule session cleanup to prevent reconnection to finished games
+                                    {
+                                        auto session_to_cleanup = session;
+                                        std::thread([session_to_cleanup]() {
+                                            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                                            {
+                                                std::lock_guard<std::mutex> lock(gamesMutex);
+                                                gameSessions.erase(std::remove_if(gameSessions.begin(), gameSessions.end(),
+                                                    [&](const std::shared_ptr<GameSession>& s){ return s.get() == session_to_cleanup.get(); }),
+                                                    gameSessions.end());
+                                            }
+                                            if (session_to_cleanup->player1) session_to_cleanup->player1->session.reset();
+                                            if (session_to_cleanup->player2) session_to_cleanup->player2->session.reset();
+                                        }).detach();
+                                    }
+
                                     PlayerSide winner = PlayerSide::NEUTRAL; // Default to draw
                                     if (gameRules.hasPlayerWon(session->gameState, PlayerSide::PLAYER_ONE)) {
                                         winner = PlayerSide::PLAYER_ONE;
@@ -372,24 +388,24 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
 
                                     auto player1_conn = session->player1;
                                     auto player2_conn = session->player2;
-                                    
+
                                     if (!player1_conn || !player2_conn) {
                                         std::cerr << "Error: Could not find player connections for rating update." << std::endl;
                                     } else {
                                         int p1_old_rating = player1_conn->rating;
                                         int p2_old_rating = player2_conn->rating;
-                                        
+
                                         // Elo rating calculation with +1000 adjustment
                                         int p1_rating_adjusted = p1_old_rating + 1000;
                                         int p2_rating_adjusted = p2_old_rating + 1000;
-                                        
+
                                         // Calculate expected scores
                                         double expected_p1 = 1.0 / (1.0 + std::pow(10.0, (p2_rating_adjusted - p1_rating_adjusted) / 400.0));
                                         double expected_p2 = 1.0 / (1.0 + std::pow(10.0, (p1_rating_adjusted - p2_rating_adjusted) / 400.0));
-                                        
+
                                         // K-factor for rating changes
                                         const int K_FACTOR = 32;
-                                        
+
                                         // Calculate new adjusted ratings based on game outcome
                                         int p1_new_rating_adjusted, p2_new_rating_adjusted;
                                         if (winner == PlayerSide::PLAYER_ONE) {
@@ -408,7 +424,7 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                                             p2_new_rating_adjusted = p2_rating_adjusted + static_cast<int>(K_FACTOR * (0.5 - expected_p2));
                                             std::cout << "Game is a draw." << std::endl;
                                         }
-                                        
+
                                         // Subtract 1000 adjustment and clamp to 0 minimum
                                         int p1_new_rating = std::max(0, p1_new_rating_adjusted - 1000);
                                         int p2_new_rating = std::max(0, p2_new_rating_adjusted - 1000);
@@ -425,11 +441,11 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                                                      std::cerr << "Error updating rating for " << player1_conn->username << ": " << sqlite3_errmsg(db) << std::endl;
                                                 }
                                                 sqlite3_finalize(stmt_update);
-                                                player1_conn->rating = p1_new_rating; 
+                                                player1_conn->rating = p1_new_rating;
                                             } else {
                                                 std::cerr << "Failed to prepare update statement for " << player1_conn->username << ": " << sqlite3_errmsg(db) << std::endl;
                                             }
-                                            
+
                                             if (sqlite3_prepare_v2(db, sql_update, -1, &stmt_update, 0) == SQLITE_OK) {
                                                 sqlite3_bind_int(stmt_update, 1, p2_new_rating);
                                                 sqlite3_bind_text(stmt_update, 2, player2_conn->username.c_str(), -1, SQLITE_STATIC);
@@ -442,10 +458,8 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                                                  std::cerr << "Failed to prepare update statement for " << player2_conn->username << ": " << sqlite3_errmsg(db) << std::endl;
                                             }
                                             sqlite3_close(db);
-                                            std::cout << player1_conn->username << " new rating: " << p1_new_rating << std::endl;
-                                            std::cout << player2_conn->username << " new rating: " << p2_new_rating << std::endl;
                                         } else {
-                                            std::cerr << "Error opening database for rating update: " << sqlite3_errmsg(db) << std::endl;
+                                            std::cerr << "Failed to open database for rating update" << std::endl;
                                         }
                                     }
                                 }
@@ -454,15 +468,9 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                                 sendMoveRejection(client, result.message);
                             }
                         });
-                        
-                        // If no callback was called (shouldn't happen), handle as error
-                        if (!moveProcessed) {
-                            sendMoveRejection(client, "Move processing failed");
-                        }
                     } else {
                         sendMoveRejection(client, "Game not properly initialized");
                     }
-                    
                 } else {
                     std::cerr << "Error deserializing move data from " 
                               << client->socket.getRemoteAddress() << std::endl;
@@ -505,7 +513,21 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                                     // Check for game over (same logic as move handling)
                                     if (gameRules.isGameOver(session->gameState)) {
                                         std::cout << "Game Over detected after card play." << std::endl;
-                                        // Game over handling would go here (same as move handling)
+                                        // Cleanup finished session so clients won't auto-resume
+                                        {
+                                            auto session_to_cleanup = session;
+                                            std::thread([session_to_cleanup]() {
+                                                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                                                {
+                                                    std::lock_guard<std::mutex> lock(gamesMutex);
+                                                    gameSessions.erase(std::remove_if(gameSessions.begin(), gameSessions.end(),
+                                                        [&](const std::shared_ptr<GameSession>& s){ return s.get() == session_to_cleanup.get(); }),
+                                                        gameSessions.end());
+                                                }
+                                                if (session_to_cleanup->player1) session_to_cleanup->player1->session.reset();
+                                                if (session_to_cleanup->player2) session_to_cleanup->player2->session.reset();
+                                            }).detach();
+                                        }
                                     }
                                 } else {
                                     std::cout << "Card play failed: " << result.message << std::endl;
@@ -616,6 +638,22 @@ void handle_client(std::shared_ptr<ClientConnection> client) {
                             std::cout << "Phase advanced successfully: " << result.message << std::endl;
                             // Broadcast updated game state to all clients
                             broadcastGameState(session);
+                            // If the phase advance resulted in game over, cleanup session
+                            if (gameRules.isGameOver(session->gameState)) {
+                                std::cout << "Game Over detected after phase advance." << std::endl;
+                                auto session_to_cleanup = session;
+                                std::thread([session_to_cleanup]() {
+                                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                                    {
+                                        std::lock_guard<std::mutex> lock(gamesMutex);
+                                        gameSessions.erase(std::remove_if(gameSessions.begin(), gameSessions.end(),
+                                            [&](const std::shared_ptr<GameSession>& s){ return s.get() == session_to_cleanup.get(); }),
+                                            gameSessions.end());
+                                    }
+                                    if (session_to_cleanup->player1) session_to_cleanup->player1->session.reset();
+                                    if (session_to_cleanup->player2) session_to_cleanup->player2->session.reset();
+                                }).detach();
+                            }
                         } else {
                             std::cout << "Phase advance failed: " << result.message << std::endl;
                         }
@@ -887,7 +925,7 @@ int main() {
 
                                 // Check for existing game session for this user
                                 auto existingSession = findGameSessionByUsername(new_client_conn->username);
-                                if (existingSession) {
+                                if (existingSession && !gameRules.isGameOver(existingSession->gameState)) {
                                     std::cout << "Reconnecting user " << new_client_conn->username << " to ongoing game" << std::endl;
                                     if (existingSession->player1 && existingSession->player1->username == new_client_conn->username) {
                                         existingSession->player1 = new_client_conn;
