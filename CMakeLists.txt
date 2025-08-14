@@ -115,6 +115,10 @@ endif()
 # Source files for executables
 set(CLIENT_SOURCES
     src/main.cpp
+    src/Game.cpp
+    src/UIManager.cpp
+    src/NetworkManager.cpp
+    src/DeckEditor.cpp
     src/InputManager.cpp
     src/GraphicsManager.cpp
     src/HandRenderer.cpp
