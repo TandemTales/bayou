@@ -118,6 +118,10 @@ set(CLIENT_SOURCES
     src/InputManager.cpp
     src/GraphicsManager.cpp
     src/HandRenderer.cpp
+    src/DeckEditorScreen.cpp
+    src/GameRendering.cpp
+    src/GameDebug.cpp
+    src/GameUi.cpp
     src/Menu.cpp
 )
 set(SERVER_SOURCES src/server_main.cpp)

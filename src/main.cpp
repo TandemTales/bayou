@@ -1,1143 +1,42 @@
 #include <SFML/Graphics.hpp>
-#include <SFML/Graphics/Text.hpp>
-#include <SFML/Graphics/Font.hpp>
-#include <SFML/Network.hpp> // Added for networking
+#include <SFML/Network.hpp>
 #include <iostream>
-#include <string>
+#include <map>
 #include <memory>
-#include <sstream> // Added for text wrapping
-#include <cctype> // Required for std::tolower
-#include <cmath> // Added for std::sqrt
+#include <string>
 
-#include "GameBoard.h"
-#include "GameState.h"
-#include "Square.h"       // For Square::setGlobalPieceFactory
-#include "Move.h"      // For Move and its sf::Packet operators
-#include "NetworkProtocol.h" // For MessageType enum and operators
-#include "PlayerSide.h"  // For PlayerSide enum
-#include "InputManager.h" // New input manager
-#include "GraphicsManager.h" // New graphics manager
-#include "GameInitializer.h"
-#include "PieceFactory.h"
 #include "CardCollection.h"
 #include "CardFactory.h"
-#include "PieceDefinitionManager.h"
-#include "TurnManager.h"
-#include "InfluenceSystem.h" // Added for InfluenceSystem
+#include "DeckEditorScreen.h"
+#include "GameBoard.h"
+#include "GameDebug.h"
 #include "GameOverDetector.h"
-#include "CardPlayValidator.h"
-#include "PieceData.h" // For Position
-#include "PieceCard.h"
-#include "EffectCard.h"
-#include <map>
-// #include "King.h" // Removed - using data-driven approach with PieceFactory
-#include <algorithm> // For std::max
+#include "GameRendering.h"
+#include "GameState.h"
+#include "GameUi.h"
+#include "GraphicsManager.h"
 #include "HandRenderer.h"
+#include "InfluenceSystem.h"
+#include "InputManager.h"
 #include "Menu.h"
-
-
+#include "NetworkProtocol.h"
+#include "PieceData.h"
+#include "PieceDefinitionManager.h"
+#include "PieceFactory.h"
+#include "Square.h"
 // The actual sf::Packet operators are now defined with their respective classes.
 
 using namespace BayouBonanza;
 
-// Client-specific global variables
-PlayerSide myPlayerSide = PlayerSide::NEUTRAL; // Default, will be assigned by server
-bool gameHasStarted = false;
-std::string uiMessage = "Connecting..."; // For displaying messages like "Waiting for opponent"
-sf::Text uiMessageText;
-sf::Font globalFont; // Loaded once
 
-// Global PieceFactory for deserialization
-PieceDefinitionManager globalPieceDefManager;
-std::unique_ptr<PieceFactory> globalPieceFactory;
 
-// UI Elements for Usernames/Ratings
-sf::Text localPlayerUsernameText;
-sf::Text localPlayerRatingText;
-sf::Text remotePlayerUsernameText;
-sf::Text remotePlayerRatingText;
 
-// UI Element for Local Player Steam
-sf::Text localPlayerSteamText;
 
-// UI Element for Phase Information
-sf::Text phaseText;
 
-// Global variables for game state
-GameState gameState;
-GameInitializer gameInitializer;
-GameOverDetector gameOverDetector;
-std::string winMessage = "";
-bool showWinMessage = false;
 
-std::map<std::string, sf::Texture> pieceTextures;
 
-// Player collection and deck
-CardCollection myCollection;
-Deck myDeck;
 
-// Global variables to store GameStart data received in main menu
-bool gameStartReceived = false;
-std::string gameStartP1Username, gameStartP2Username;
-int gameStartP1Rating = 0, gameStartP2Rating = 0;
-sf::Packet gameStartPacketData;
 
-// Global variable to store current player's rating for menu display
-int myCurrentRating = 0;
-std::string myUsername = "";
-std::string opponentUsername = "";
-int opponentRating = 0;
-int ratingChange = 0;
-sf::Text resultTitleText;
-sf::Text ratingChangeText;
-sf::RectangleShape menuButton;
-sf::Text menuButtonText;
-bool returnToMenuRequested = false;
-std::string endScreenTitle = "";
-
-// Win condition notification callback
-void onWinCondition(PlayerSide winner, const std::string& /*description*/) {
-    showWinMessage = true;
-
-    bool isDraw = (winner == PlayerSide::NEUTRAL);
-    bool isWin = (winner == myPlayerSide);
-    endScreenTitle = isDraw ? "Draw" : (isWin ? "Victory!" : "Defeat!");
-
-    // Build a user-friendly description using usernames (no Player 1/2 labels, no piece mentions)
-    if (isDraw) {
-        winMessage = "The game ended in a draw.";
-    } else if (isWin) {
-        winMessage = "You defeated " + opponentUsername + ".";
-    } else {
-        winMessage = opponentUsername + " defeated you.";
-    }
-
-    // Elo rating calculation mirrored from server
-    const int K_FACTOR = 32;
-    int myAdj = myCurrentRating + 1000;
-    int oppAdj = opponentRating + 1000;
-    double expected = 1.0 / (1.0 + std::pow(10.0, (oppAdj - myAdj) / 400.0));
-    double score = isDraw ? 0.5 : (isWin ? 1.0 : 0.0);
-    int newAdj = myAdj + static_cast<int>(K_FACTOR * (score - expected));
-    int newRating = std::max(0, newAdj - 1000);
-    ratingChange = newRating - myCurrentRating;
-    myCurrentRating = newRating;
-
-    // Prepare display texts
-    resultTitleText.setFont(globalFont);
-    resultTitleText.setString(endScreenTitle);
-    resultTitleText.setCharacterSize(48);
-    resultTitleText.setFillColor(isWin ? sf::Color::Green : sf::Color::Red);
-    sf::FloatRect titleBounds = resultTitleText.getLocalBounds();
-    resultTitleText.setOrigin(titleBounds.left + titleBounds.width / 2.f,
-                             titleBounds.top + titleBounds.height / 2.f);
-    resultTitleText.setPosition(GraphicsManager::BASE_WIDTH / 2.f,
-                               GraphicsManager::BASE_HEIGHT / 2.f - 100.f);
-
-    ratingChangeText.setFont(globalFont);
-    std::string ratingStr = "Rating: " + std::to_string(myCurrentRating);
-    ratingStr += std::string(" (") + (ratingChange >= 0 ? "+" : "") + std::to_string(ratingChange) + ")";
-    ratingChangeText.setString(ratingStr);
-    ratingChangeText.setCharacterSize(32);
-    ratingChangeText.setFillColor(sf::Color::White);
-    sf::FloatRect ratingBounds = ratingChangeText.getLocalBounds();
-    ratingChangeText.setOrigin(ratingBounds.left + ratingBounds.width / 2.f,
-                              ratingBounds.top + ratingBounds.height / 2.f);
-    ratingChangeText.setPosition(GraphicsManager::BASE_WIDTH / 2.f,
-                                 GraphicsManager::BASE_HEIGHT / 2.f);
-
-    menuButton.setSize(sf::Vector2f(300.f, 50.f));
-    menuButton.setFillColor(sf::Color(100, 100, 100));
-    menuButton.setOrigin(menuButton.getSize().x / 2.f, menuButton.getSize().y / 2.f);
-    menuButton.setPosition(GraphicsManager::BASE_WIDTH / 2.f,
-                          GraphicsManager::BASE_HEIGHT / 2.f + 100.f);
-
-    menuButtonText.setFont(globalFont);
-    menuButtonText.setString("Return to Menu");
-    menuButtonText.setCharacterSize(24);
-    menuButtonText.setFillColor(sf::Color::White);
-    sf::FloatRect btnBounds = menuButtonText.getLocalBounds();
-    menuButtonText.setOrigin(btnBounds.left + btnBounds.width / 2.f,
-                             btnBounds.top + btnBounds.height / 2.f);
-    menuButtonText.setPosition(menuButton.getPosition());
-
-    // Update rating display for in-game UI
-    localPlayerRatingText.setString("Rating: " + std::to_string(myCurrentRating));
-
-    std::cout << "WIN CONDITION: " << winMessage << std::endl;
-}
-
-// Function to recreate pieces after deserialization without resetting game state
-void recreatePiecesAfterDeserialization(GameState& gameState) {
-    // The issue is that Square deserialization loses pieces due to PieceFactory access
-    // Instead of resetting the entire game state, we'll recreate pieces using a standard layout
-    // This is a temporary workaround until we fix the Square deserialization properly
-    
-    GameBoard& board = gameState.getBoard();
-    
-    // Clear the board first
-    board.resetBoard();
-    
-    // Recreate the standard starting position using PieceFactory
-    if (globalPieceFactory) {
-        // Player 1 pieces (bottom of board)
-        // Back row
-        board.getSquare(0, 7).setPiece(globalPieceFactory->createPiece("Sweetykins", PlayerSide::PLAYER_ONE));
-        board.getSquare(1, 7).setPiece(globalPieceFactory->createPiece("Automatick", PlayerSide::PLAYER_ONE));
-        board.getSquare(2, 7).setPiece(globalPieceFactory->createPiece("Sidewinder", PlayerSide::PLAYER_ONE));
-        board.getSquare(3, 7).setPiece(globalPieceFactory->createPiece("ScarlettGlumpkin", PlayerSide::PLAYER_ONE));
-        board.getSquare(4, 7).setPiece(globalPieceFactory->createPiece("TinkeringTom", PlayerSide::PLAYER_ONE));
-        board.getSquare(5, 7).setPiece(globalPieceFactory->createPiece("Rustbucket", PlayerSide::PLAYER_ONE));
-        board.getSquare(6, 7).setPiece(globalPieceFactory->createPiece("Automatick", PlayerSide::PLAYER_ONE));
-        board.getSquare(7, 7).setPiece(globalPieceFactory->createPiece("Sweetykins", PlayerSide::PLAYER_ONE));
-        
-        // Pawn row
-        for (int x = 0; x < 8; x++) {
-            board.getSquare(x, 6).setPiece(globalPieceFactory->createPiece("Sentroid", PlayerSide::PLAYER_ONE));
-        }
-        
-        // Player 2 pieces (top of board)
-        // Back row
-        board.getSquare(0, 0).setPiece(globalPieceFactory->createPiece("Sweetykins", PlayerSide::PLAYER_TWO));
-        board.getSquare(1, 0).setPiece(globalPieceFactory->createPiece("Automatick", PlayerSide::PLAYER_TWO));
-        board.getSquare(2, 0).setPiece(globalPieceFactory->createPiece("Rustbucket", PlayerSide::PLAYER_TWO));
-        board.getSquare(3, 0).setPiece(globalPieceFactory->createPiece("ScarlettGlumpkin", PlayerSide::PLAYER_TWO));
-        board.getSquare(4, 0).setPiece(globalPieceFactory->createPiece("TinkeringTom", PlayerSide::PLAYER_TWO));
-        board.getSquare(5, 0).setPiece(globalPieceFactory->createPiece("Sidewinder", PlayerSide::PLAYER_TWO));
-        board.getSquare(6, 0).setPiece(globalPieceFactory->createPiece("Automatick", PlayerSide::PLAYER_TWO));
-        board.getSquare(7, 0).setPiece(globalPieceFactory->createPiece("Sweetykins", PlayerSide::PLAYER_TWO));
-        
-        // Pawn row
-        for (int x = 0; x < 8; x++) {
-            board.getSquare(x, 1).setPiece(globalPieceFactory->createPiece("Sentroid", PlayerSide::PLAYER_TWO));
-        }
-        
-        // Set piece positions
-        for (int y = 0; y < GameBoard::BOARD_SIZE; y++) {
-            for (int x = 0; x < GameBoard::BOARD_SIZE; x++) {
-                const Square& square = board.getSquare(x, y);
-                if (!square.isEmpty()) {
-                    Piece* piece = square.getPiece();
-                    piece->setPosition(Position(x, y));
-                }
-            }
-        }
-    }
-}
-
-// Function to print board state to console for debugging
-void printBoardState(const GameState& gameState, PlayerSide localPlayer = PlayerSide::NEUTRAL) {
-    const GameBoard& board = gameState.getBoard();
-    std::cout << "Current board state:" << std::endl;
-    for (int y = 0; y < GameBoard::BOARD_SIZE; ++y) {
-        for (int x = 0; x < GameBoard::BOARD_SIZE; ++x) {
-            const Square& square = board.getSquare(x, y);
-            if (square.isEmpty()) {
-                std::cout << ". ";
-            } else {
-                Piece* piece = square.getPiece();
-                std::cout << piece->getSymbol() << " ";
-            }
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
-    
-    // Print local player's hand if specified
-    if (localPlayer != PlayerSide::NEUTRAL) {
-        const Hand& hand = gameState.getHand(localPlayer);
-
-        std::cout << "My Hand (" << hand.size() << " cards, " 
-                  << gameState.getSteam(localPlayer) << " steam):" << std::endl;
-        for (size_t i = 0; i < hand.size(); ++i) {
-            const Card* card = hand.getCard(i);
-            if (card) {
-                std::cout << "  [" << i << "] " << card->getName() 
-                          << " (Cost: " << card->getSteamCost() << ")" << std::endl;
-            }
-        }
-        std::cout << "=====================" << std::endl;
-    }
-}
-
-// Function to render discrete health bar as a grid
-void renderHealthBar(sf::RenderWindow& window, const Piece* piece, float squareX, float squareY, float squareSize) {
-    if (!piece) return;
-    
-    int currentHealth = piece->getHealth();
-    int maxHealth = piece->getMaxHealth(); // Get original max health from stats
-    
-    if (maxHealth <= 0) return; // Avoid division by zero
-    
-    // Calculate health bar dimensions
-    float healthBarWidth = squareSize * 0.3f; // 30% of square width
-    float healthBarHeight = squareSize * 0.15f; // 15% of square height
-    
-    // Position in bottom left corner of the piece square
-    float healthBarX = squareX + squareSize * 0.05f; // Small margin from left edge
-    float healthBarY = squareY + squareSize - healthBarHeight - squareSize * 0.05f; // Small margin from bottom
-    
-    // Calculate optimal grid dimensions to avoid gaps
-    int gridCols, gridRows;
-    
-    if (maxHealth == 1) {
-        gridCols = 1;
-        gridRows = 1;
-    } else if (maxHealth <= 4) {
-        // For 2-4 health, use a single row
-        gridCols = maxHealth;
-        gridRows = 1;
-    } else if (maxHealth <= 6) {
-        // For 5-6 health, use 2 rows with balanced distribution
-        if (maxHealth == 5) {
-            gridCols = 3; // 3 cells top, 2 cells bottom
-            gridRows = 2;
-        } else { // maxHealth == 6
-            gridCols = 3; // 3 cells top, 3 cells bottom
-            gridRows = 2;
-        }
-    } else if (maxHealth <= 9) {
-        // For 7-9 health, use 3 rows
-        gridCols = 3;
-        gridRows = 3;
-    } else {
-        // For 10+ health, use a more rectangular layout
-        // Calculate the most square-like arrangement
-        gridRows = static_cast<int>(std::sqrt(maxHealth));
-        gridCols = (maxHealth + gridRows - 1) / gridRows; // Ceiling division
-        
-        // Adjust to prefer wider layouts for better visual balance
-        if (gridRows > 3) {
-            gridRows = 3;
-            gridCols = (maxHealth + gridRows - 1) / gridRows;
-        }
-    }
-    
-    // For layouts that would have gaps, redistribute cells to fill rows completely
-    if (maxHealth > gridCols && maxHealth % gridCols != 0) {
-        // Calculate how many cells would be in the last row
-        int cellsInLastRow = maxHealth % gridCols;
-        
-        // If the last row would be less than half full, redistribute
-        if (cellsInLastRow > 0 && cellsInLastRow < (gridCols / 2)) {
-            // Try a different column count that divides more evenly
-            for (int testCols = gridCols - 1; testCols >= 2; testCols--) {
-                int testRows = (maxHealth + testCols - 1) / testCols;
-                if (testRows <= 3) { // Don't exceed 3 rows for visual clarity
-                    gridCols = testCols;
-                    gridRows = testRows;
-                    break;
-                }
-            }
-        }
-    }
-    
-    // Calculate individual cell size
-    float cellWidth = healthBarWidth / gridCols;
-    float cellHeight = healthBarHeight / gridRows;
-    
-    // Draw background for health bar area
-    sf::RectangleShape background(sf::Vector2f(healthBarWidth, healthBarHeight));
-    background.setPosition(healthBarX, healthBarY);
-    background.setFillColor(sf::Color(0, 0, 0, 100)); // Semi-transparent black background
-    background.setOutlineThickness(1.0f);
-    background.setOutlineColor(sf::Color(255, 255, 255, 150)); // Light outline
-    window.draw(background);
-    
-    // Draw individual health cells with smart positioning
-    for (int i = 0; i < maxHealth; ++i) {
-        int row = i / gridCols;
-        int col = i % gridCols;
-        
-        // For the last row, center the cells if there are fewer than gridCols
-        int cellsInThisRow = std::min(gridCols, maxHealth - row * gridCols);
-        float rowStartOffset = 0.0f;
-        
-        if (cellsInThisRow < gridCols && row == gridRows - 1) {
-            // Center the cells in the last row
-            rowStartOffset = (gridCols - cellsInThisRow) * cellWidth / 2.0f;
-        }
-        
-        float cellX = healthBarX + rowStartOffset + col * cellWidth;
-        float cellY = healthBarY + row * cellHeight;
-        
-        sf::RectangleShape cell(sf::Vector2f(cellWidth - 1.0f, cellHeight - 1.0f)); // Small gap between cells
-        cell.setPosition(cellX, cellY);
-        
-        // Color based on current health
-        if (i < currentHealth) {
-            // Healthy cell - use green with intensity based on health percentage
-            float healthRatio = static_cast<float>(currentHealth) / maxHealth;
-            if (healthRatio > 0.75f) {
-                cell.setFillColor(sf::Color(0, 255, 0, 200)); // Bright green for high health
-            } else if (healthRatio > 0.5f) {
-                cell.setFillColor(sf::Color(255, 255, 0, 200)); // Yellow for medium health
-            } else if (healthRatio > 0.25f) {
-                cell.setFillColor(sf::Color(255, 165, 0, 200)); // Orange for low health
-            } else {
-                cell.setFillColor(sf::Color(255, 0, 0, 200)); // Red for critical health
-            }
-        } else {
-            // Damaged/missing health cell
-            cell.setFillColor(sf::Color(100, 100, 100, 150)); // Gray for missing health
-        }
-        
-        cell.setOutlineThickness(0.5f);
-        cell.setOutlineColor(sf::Color(255, 255, 255, 100)); // Light outline for each cell
-        window.draw(cell);
-    }
-}
-
-// Function to render the attack value in the bottom right corner of a piece square
-void renderAttackValue(sf::RenderWindow& window, const Piece* piece, float squareX, float squareY, float squareSize) {
-    if (!piece) return;
-
-    sf::Text attackText;
-    attackText.setFont(globalFont);
-    attackText.setString(std::to_string(piece->getAttack()));
-    attackText.setCharacterSize(static_cast<unsigned int>(squareSize * 0.2f));
-    attackText.setFillColor(sf::Color::White);
-
-    sf::FloatRect bounds = attackText.getLocalBounds();
-    attackText.setOrigin(bounds.left + bounds.width, bounds.top + bounds.height);
-
-    float offset = squareSize * 0.05f; // Small margin from the square edges
-    attackText.setPosition(squareX + squareSize - offset, squareY + squareSize - offset);
-
-    window.draw(attackText);
-}
-
-void runDeckEditor(sf::RenderWindow& window, GraphicsManager& graphicsManager, sf::TcpSocket& socket) {
-    // --- Layout constants ---
-    const float CARD_W = 100.f;
-    const float CARD_H = 140.f;
-    const float CARD_SPACING = 10.f;
-    const int   COLLECTION_COLS = 10;
-    const float ROW_HEIGHT = CARD_H + CARD_SPACING;
-
-    // New layout: Collection is now a single horizontally scrollable row
-    float collectionY = 35.f; // More spacing at the top
-    float collectionStartX = 30.f; // More margin from left edge
-    // Calculate width to show exactly 11 cards (no partial cards)
-    const int VISIBLE_COLLECTION_CARDS = 11;
-    float collectionAreaWidth = VISIBLE_COLLECTION_CARDS * CARD_W + (VISIBLE_COLLECTION_CARDS - 1) * CARD_SPACING;
-    
-    // Deck area moved up since collection takes less vertical space
-    float deckY = collectionY + CARD_H + 50.f; // More spacing between collection and deck
-    float deckStartX = (GraphicsManager::BASE_WIDTH - (CARD_W * 10 + CARD_SPACING * 9)) / 2.f;
-    
-    // Victory area moved up with more space available
-    float victoryY = deckY + ROW_HEIGHT * 2 + 35.f; // More spacing between deck and victory
-    float victoryWidth = CARD_W * Deck::VICTORY_SIZE + CARD_SPACING * (Deck::VICTORY_SIZE - 1);
-    float victoryStartX = deckStartX + ((CARD_W * 10 + CARD_SPACING * 9) - victoryWidth) / 2.f;
-
-    float collectionScroll = 0.f; // Now horizontal scroll
-
-    // Helper function to wrap text within card bounds
-    auto drawWrappedText = [&](const std::string& text, float cardX, float cardY, sf::Color color) {
-        const float TEXT_MARGIN = 5.f;
-        const float MAX_TEXT_WIDTH = CARD_W - (TEXT_MARGIN * 2);
-        const float MAX_TEXT_HEIGHT = CARD_H - (TEXT_MARGIN * 2);
-        const int FONT_SIZE = 10; // Smaller font size
-        const float LINE_SPACING = FONT_SIZE + 2;
-        
-        sf::Text testText;
-        testText.setFont(globalFont);
-        testText.setCharacterSize(FONT_SIZE);
-        
-        std::vector<std::string> lines;
-        std::string currentLine = "";
-        std::istringstream words(text);
-        std::string word;
-        
-        // Word wrapping logic
-        while (words >> word) {
-            std::string testLine = currentLine.empty() ? word : currentLine + " " + word;
-            testText.setString(testLine);
-            
-            if (testText.getLocalBounds().width <= MAX_TEXT_WIDTH) {
-                currentLine = testLine;
-            } else {
-                if (!currentLine.empty()) {
-                    lines.push_back(currentLine);
-                    currentLine = word;
-                } else {
-                    // Single word is too long, truncate it
-                    lines.push_back(word.substr(0, std::min(word.length(), size_t(8))) + "...");
-                    currentLine = "";
-                }
-            }
-        }
-        if (!currentLine.empty()) {
-            lines.push_back(currentLine);
-        }
-        
-        // Draw the wrapped lines
-        float totalTextHeight = lines.size() * LINE_SPACING;
-        float startY = cardY + (CARD_H - totalTextHeight) / 2.f;
-        
-        for (size_t lineIdx = 0; lineIdx < lines.size() && (lineIdx * LINE_SPACING) < MAX_TEXT_HEIGHT; ++lineIdx) {
-            sf::Text lineText;
-            lineText.setFont(globalFont);
-            lineText.setCharacterSize(FONT_SIZE);
-            lineText.setFillColor(color);
-            lineText.setString(lines[lineIdx]);
-            
-            sf::FloatRect bounds = lineText.getLocalBounds();
-            lineText.setPosition(cardX + (CARD_W - bounds.width) / 2.f, startY + lineIdx * LINE_SPACING);
-            window.draw(lineText);
-        }
-    };
-
-    // Drag state for collection cards
-    bool dragging = false;
-    bool actualDrag = false;
-    size_t dragIndex = 0;
-    sf::Vector2f dragOffset(0.f, 0.f);
-    sf::Vector2f dragStartPos(0.f, 0.f);
-
-    // Deck slot click state
-    bool deckClick = false;
-    int deckClickIndex = -1;
-    sf::Vector2f deckClickPos(0.f,0.f);
-    bool victoryClick = false;
-    int victoryClickIndex = -1;
-    sf::Vector2f victoryClickPos(0.f,0.f);
-
-    // Status message system
-    std::string statusMessage = "";
-    sf::Color statusColor = sf::Color::Green;
-    sf::Clock statusClock;
-    const float STATUS_DISPLAY_TIME = 2.0f; // Show status for 2 seconds
-
-    auto sendDeckToServer = [&]() {
-        sf::Packet pkt;
-        pkt << MessageType::SaveDeck << myDeck.serialize();
-        if (socket.send(pkt) == sf::Socket::Done) {
-            statusMessage = "Saving deck...";
-            statusColor = sf::Color::Yellow;
-            statusClock.restart();
-            std::cout << "Deck changes auto-saved to server" << std::endl;
-        } else {
-            statusMessage = "Failed to save deck!";
-            statusColor = sf::Color::Red;
-            statusClock.restart();
-            std::cerr << "Failed to auto-save deck changes" << std::endl;
-        }
-    };
-
-    auto isVictoryCard = [&](const Card* card) -> bool {
-        auto pc = dynamic_cast<const PieceCard*>(card);
-        if (!pc) return false;
-        const PieceStats* stats = globalPieceDefManager.getPieceStats(pc->getPieceType());
-        return stats && stats->isVictoryPiece;
-    };
-
-    auto collectionIndexAt = [&](const sf::Vector2f& pos) -> int {
-        // Check if click is within collection area bounds
-        if (pos.y < collectionY || pos.y > collectionY + CARD_H) return -1;
-        if (pos.x < collectionStartX || pos.x > collectionStartX + collectionAreaWidth) return -1;
-        
-        // Calculate which card was clicked based on horizontal position and scroll
-        int idx = static_cast<int>((pos.x - collectionStartX + collectionScroll) / (CARD_W + CARD_SPACING));
-        return (idx >= 0 && static_cast<size_t>(idx) < myCollection.size()) ? idx : -1;
-    };
-
-    auto deckSlotIndexAt = [&](const sf::Vector2f& pos) -> int {
-        float totalWidth = CARD_W * 10 + CARD_SPACING * 9;
-        if (pos.x < deckStartX || pos.x > deckStartX + totalWidth) return -1;
-        if (pos.y < deckY || pos.y > deckY + ROW_HEIGHT * 2 - CARD_SPACING) return -1;
-        int col = static_cast<int>((pos.x - deckStartX) / (CARD_W + CARD_SPACING));
-        int row = static_cast<int>((pos.y - deckY) / ROW_HEIGHT);
-        int idx = row * 10 + col;
-        return (idx >= 0 && idx < static_cast<int>(Deck::DECK_SIZE)) ? idx : -1;
-    };
-
-    auto victorySlotIndexAt = [&](const sf::Vector2f& pos) -> int {
-        if (pos.x < victoryStartX || pos.x > victoryStartX + victoryWidth) return -1;
-        if (pos.y < victoryY || pos.y > victoryY + CARD_H) return -1;
-        int col = static_cast<int>((pos.x - victoryStartX) / (CARD_W + CARD_SPACING));
-        return (col >= 0 && col < static_cast<int>(Deck::VICTORY_SIZE)) ? col : -1;
-    };
-
-    while (window.isOpen()) {
-        // Process network messages first
-        sf::Packet receivedPacket;
-        sf::Socket::Status status = socket.receive(receivedPacket);
-        if (status == sf::Socket::Done) {
-            MessageType messageType;
-            if (receivedPacket >> messageType) {
-                switch (messageType) {
-                    case MessageType::DeckSaved:
-                        std::cout << "Deck save confirmed by server" << std::endl;
-                        statusMessage = "Deck saved successfully!";
-                        statusColor = sf::Color::Green;
-                        statusClock.restart();
-                        break;
-                    case MessageType::Error:
-                        {
-                            std::string errorMsg;
-                            if (receivedPacket >> errorMsg) {
-                                std::cerr << "Server error: " << errorMsg << std::endl;
-                                statusMessage = "Error: " + errorMsg;
-                                statusColor = sf::Color::Red;
-                                statusClock.restart();
-                            }
-                        }
-                        break;
-                    default:
-                        std::cout << "Received unhandled message in deck editor: " << static_cast<int>(messageType) << std::endl;
-                        break;
-                }
-            }
-        }
-
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed) {
-                window.close();
-                return;
-            } else if (event.type == sf::Event::Resized) {
-                graphicsManager.updateView();
-            } else if (event.type == sf::Event::MouseWheelScrolled) {
-                if (event.mouseWheelScroll.wheel == sf::Mouse::VerticalWheel) {
-                    // Horizontal scrolling for collection - scroll by card width + spacing
-                    collectionScroll += event.mouseWheelScroll.delta * (CARD_W + CARD_SPACING);
-                }
-            } else if (event.type == sf::Event::MouseButtonPressed) {
-                if (event.mouseButton.button == sf::Mouse::Left) {
-                    sf::Vector2i sm(event.mouseButton.x, event.mouseButton.y);
-                    sf::Vector2f gm = graphicsManager.screenToGame(sm);
-                    int cIdx = collectionIndexAt(gm);
-                    if (cIdx >= 0) {
-                        dragging = true;
-                        actualDrag = false;
-                        dragIndex = static_cast<size_t>(cIdx);
-                        dragStartPos = gm;
-                        float colX = collectionStartX + cIdx * (CARD_W + CARD_SPACING) - collectionScroll;
-                        float colY = collectionY;
-                        dragOffset = sf::Vector2f(gm.x - colX, gm.y - colY);
-                    } else {
-                        int dIdx = deckSlotIndexAt(gm);
-                        if (dIdx >= 0) {
-                            deckClick = true;
-                            deckClickIndex = dIdx;
-                            deckClickPos = gm;
-                        } else {
-                            int vIdx = victorySlotIndexAt(gm);
-                            if (vIdx >= 0) {
-                                victoryClick = true;
-                                victoryClickIndex = vIdx;
-                                victoryClickPos = gm;
-                            }
-                        }
-                    }
-                }
-            } else if (event.type == sf::Event::MouseMoved) {
-                if (dragging) {
-                    sf::Vector2i sm = sf::Mouse::getPosition(window);
-                    sf::Vector2f gm = graphicsManager.screenToGame(sm);
-                    if (!actualDrag) {
-                        if (std::hypot(gm.x - dragStartPos.x, gm.y - dragStartPos.y) > 5.f)
-                            actualDrag = true;
-                    }
-                    dragStartPos = gm; // keep last position for drawing
-                }
-            } else if (event.type == sf::Event::MouseButtonReleased) {
-                if (event.mouseButton.button == sf::Mouse::Left) {
-                    sf::Vector2i sm(event.mouseButton.x, event.mouseButton.y);
-                    sf::Vector2f gm = graphicsManager.screenToGame(sm);
-                    if (dragging) {
-                        if (actualDrag) {
-                            int dIdx = deckSlotIndexAt(gm);
-                            int vIdx = victorySlotIndexAt(gm);
-                            const Card* c = myCollection.getCard(dragIndex);
-                            if (c) {
-                                if (dIdx >= 0 && !isVictoryCard(c) && myDeck.size() < Deck::DECK_SIZE) {
-                                    myDeck.addCard(c->clone());
-                                    if (!myDeck.isValidForEditing()) {
-                                        myDeck.removeCardAt(myDeck.size()-1);
-                                        statusMessage = "Max copies reached";
-                                        statusColor = sf::Color::Red;
-                                        statusClock.restart();
-                                    } else {
-                                        sendDeckToServer();
-                                    }
-                                } else if (vIdx >= 0 && isVictoryCard(c)) {
-                                    if (myDeck.setVictoryCardAt(vIdx, c->clone())) {
-                                        if (!myDeck.isValidForEditing()) {
-                                            myDeck.removeVictoryCardAt(vIdx);
-                                            statusMessage = "Invalid victory card";
-                                            statusColor = sf::Color::Red;
-                                            statusClock.restart();
-                                        } else {
-                                            sendDeckToServer();
-                                        }
-                                    } else {
-                                        // If setVictoryCardAt fails, try adding to next available slot
-                                        if (myDeck.addVictoryCard(c->clone())) {
-                                            if (!myDeck.isValidForEditing()) {
-                                                myDeck.removeVictoryCardAt(myDeck.victoryCount()-1);
-                                                statusMessage = "Invalid victory card";
-                                                statusColor = sf::Color::Red;
-                                                statusClock.restart();
-                                            } else {
-                                                sendDeckToServer();
-                                            }
-                                        } else {
-                                            statusMessage = "Victory slots full";
-                                            statusColor = sf::Color::Red;
-                                            statusClock.restart();
-                                        }
-                                    }
-                                }
-                            }
-                        } else { // treat as click
-                            const Card* c = myCollection.getCard(dragIndex);
-                            if (c) {
-                                if (!isVictoryCard(c) && myDeck.size() < Deck::DECK_SIZE) {
-                                    myDeck.addCard(c->clone());
-                                    if (!myDeck.isValidForEditing()) {
-                                        myDeck.removeCardAt(myDeck.size()-1);
-                                        statusMessage = "Max copies reached";
-                                        statusColor = sf::Color::Red;
-                                        statusClock.restart();
-                                    } else {
-                                        sendDeckToServer();
-                                    }
-                                } else if (isVictoryCard(c)) {
-                                    // For clicks, add to the first available slot
-                                    size_t targetSlot = myDeck.victoryCount();
-                                    myDeck.insertVictoryCardAt(targetSlot, c->clone());
-                                    if (!myDeck.isValidForEditing()) {
-                                        myDeck.removeVictoryCardAt(targetSlot);
-                                        statusMessage = "Invalid victory card";
-                                        statusColor = sf::Color::Red;
-                                        statusClock.restart();
-                                    } else {
-                                        sendDeckToServer();
-                                    }
-                                }
-                            }
-                        }
-                        dragging = false;
-                        actualDrag = false;
-                    } else if (deckClick) {
-                        if (std::hypot(gm.x - deckClickPos.x, gm.y - deckClickPos.y) < 5.f) {
-                            if (deckClickIndex >= 0 && deckClickIndex < static_cast<int>(myDeck.size())) {
-                                myDeck.removeCardAt(deckClickIndex);
-                                sendDeckToServer();
-                            }
-                        }
-                        deckClick = false;
-                        deckClickIndex = -1;
-                    } else if (victoryClick) {
-                        if (std::hypot(gm.x - victoryClickPos.x, gm.y - victoryClickPos.y) < 5.f) {
-                            if (victoryClickIndex >= 0 && victoryClickIndex < static_cast<int>(myDeck.victoryCount())) {
-                                myDeck.removeVictoryCardAt(victoryClickIndex);
-                                sendDeckToServer();
-                            }
-                        }
-                        victoryClick = false;
-                        victoryClickIndex = -1;
-                    }
-                }
-            } else if (event.type == sf::Event::KeyPressed) {
-                if (event.key.code == sf::Keyboard::Escape) {
-                    return;
-                }
-            }
-        }
-
-        // Calculate horizontal scroll limits for collection
-        float totalCollectionWidth = myCollection.size() * (CARD_W + CARD_SPACING) - CARD_SPACING;
-        float maxScroll = std::max(0.f, totalCollectionWidth - collectionAreaWidth);
-        if (collectionScroll < 0.f) collectionScroll = 0.f;
-        if (collectionScroll > maxScroll) collectionScroll = maxScroll;
-
-        graphicsManager.applyView();
-        window.clear(sf::Color(10, 50, 20));
-
-        // --- Render collection background and scroll area ---
-        // Adjust background width for equal padding on both sides
-        sf::RectangleShape collectionBg(sf::Vector2f(collectionAreaWidth + 10.f, CARD_H + 10.f));
-        collectionBg.setPosition(collectionStartX - 5.f, collectionY - 5.f);
-        collectionBg.setFillColor(sf::Color(20, 40, 20, 100));
-        collectionBg.setOutlineColor(sf::Color::White);
-        collectionBg.setOutlineThickness(1.f);
-        window.draw(collectionBg);
-
-        // Collection label
-        sf::Text collectionLabel;
-        collectionLabel.setFont(globalFont);
-        collectionLabel.setCharacterSize(16);
-        collectionLabel.setFillColor(sf::Color::White);
-        collectionLabel.setString("Collection (Scroll with mouse wheel)");
-        collectionLabel.setPosition(collectionStartX, collectionY - 25.f);
-        window.draw(collectionLabel);
-
-        // Horizontal scroll indicator
-        if (totalCollectionWidth > collectionAreaWidth) {
-            float scrollBarWidth = collectionAreaWidth * 0.8f;
-            float scrollBarHeight = 4.f;
-            float scrollBarX = collectionStartX + (collectionAreaWidth - scrollBarWidth) / 2.f;
-            float scrollBarY = collectionY + CARD_H + 8.f;
-            
-            // Scroll bar background
-            sf::RectangleShape scrollBg(sf::Vector2f(scrollBarWidth, scrollBarHeight));
-            scrollBg.setPosition(scrollBarX, scrollBarY);
-            scrollBg.setFillColor(sf::Color(100, 100, 100, 150));
-            window.draw(scrollBg);
-            
-            // Scroll bar thumb
-            float thumbWidth = (collectionAreaWidth / totalCollectionWidth) * scrollBarWidth;
-            float thumbX = scrollBarX + (collectionScroll / totalCollectionWidth) * scrollBarWidth;
-            sf::RectangleShape scrollThumb(sf::Vector2f(thumbWidth, scrollBarHeight));
-            scrollThumb.setPosition(thumbX, scrollBarY);
-            scrollThumb.setFillColor(sf::Color::White);
-            window.draw(scrollThumb);
-        }
-
-        // --- Render collection (horizontal single row) ---
-        for (size_t i = 0; i < myCollection.size(); ++i) {
-            float x = collectionStartX + i * (CARD_W + CARD_SPACING) - collectionScroll;
-            float y = collectionY;
-            
-            // Only render cards that are visible in the collection area
-            if (x + CARD_W < collectionStartX || x > collectionStartX + collectionAreaWidth) continue;
-
-            sf::RectangleShape rect(sf::Vector2f(CARD_W, CARD_H));
-            rect.setPosition(x, y);
-            rect.setFillColor(sf::Color(60,80,60,200));
-            rect.setOutlineColor(sf::Color::White);
-            rect.setOutlineThickness(1.f);
-            window.draw(rect);
-
-            const Card* c = myCollection.getCard(i);
-            if (c) {
-                // Helper function to wrap text within card bounds
-                auto drawWrappedText = [&](const std::string& text, float cardX, float cardY, sf::Color color) {
-                    const float TEXT_MARGIN = 5.f;
-                    const float MAX_TEXT_WIDTH = CARD_W - (TEXT_MARGIN * 2);
-                    const float MAX_TEXT_HEIGHT = CARD_H - (TEXT_MARGIN * 2);
-                    const int FONT_SIZE = 10; // Smaller font size
-                    const float LINE_SPACING = FONT_SIZE + 2;
-                    
-                    sf::Text testText;
-                    testText.setFont(globalFont);
-                    testText.setCharacterSize(FONT_SIZE);
-                    
-                    std::vector<std::string> lines;
-                    std::string currentLine = "";
-                    std::istringstream words(text);
-                    std::string word;
-                    
-                    // Word wrapping logic
-                    while (words >> word) {
-                        std::string testLine = currentLine.empty() ? word : currentLine + " " + word;
-                        testText.setString(testLine);
-                        
-                        if (testText.getLocalBounds().width <= MAX_TEXT_WIDTH) {
-                            currentLine = testLine;
-                        } else {
-                            if (!currentLine.empty()) {
-                                lines.push_back(currentLine);
-                                currentLine = word;
-                            } else {
-                                // Single word is too long, truncate it
-                                lines.push_back(word.substr(0, std::min(word.length(), size_t(8))) + "...");
-                                currentLine = "";
-                            }
-                        }
-                    }
-                    if (!currentLine.empty()) {
-                        lines.push_back(currentLine);
-                    }
-                    
-                    // Draw the wrapped lines
-                    float totalTextHeight = lines.size() * LINE_SPACING;
-                    float startY = cardY + (CARD_H - totalTextHeight) / 2.f;
-                    
-                    for (size_t lineIdx = 0; lineIdx < lines.size() && (lineIdx * LINE_SPACING) < MAX_TEXT_HEIGHT; ++lineIdx) {
-                        sf::Text lineText;
-                        lineText.setFont(globalFont);
-                        lineText.setCharacterSize(FONT_SIZE);
-                        lineText.setFillColor(color);
-                        lineText.setString(lines[lineIdx]);
-                        
-                        sf::FloatRect bounds = lineText.getLocalBounds();
-                        lineText.setPosition(cardX + (CARD_W - bounds.width) / 2.f, startY + lineIdx * LINE_SPACING);
-                        window.draw(lineText);
-                    }
-                };
-                
-                drawWrappedText(c->getName(), x, y, sf::Color::White);
-            }
-        }
-
-        // --- Render deck slots ---
-        // Deck label
-        sf::Text deckLabel;
-        deckLabel.setFont(globalFont);
-        deckLabel.setCharacterSize(16);
-        deckLabel.setFillColor(sf::Color::White);
-        deckLabel.setString("Deck (20 cards)");
-        deckLabel.setPosition(deckStartX, deckY - 25.f);
-        window.draw(deckLabel);
-
-        for (int i = 0; i < static_cast<int>(Deck::DECK_SIZE); ++i) {
-            int row = i / 10;
-            int col = i % 10;
-            float x = deckStartX + col * (CARD_W + CARD_SPACING);
-            float y = deckY + row * ROW_HEIGHT;
-            sf::RectangleShape slot(sf::Vector2f(CARD_W, CARD_H));
-            slot.setPosition(x, y);
-            slot.setFillColor(sf::Color(30,30,30,180));
-            slot.setOutlineColor(sf::Color::White);
-            slot.setOutlineThickness(1.f);
-            window.draw(slot);
-
-            if (i < static_cast<int>(myDeck.size())) {
-                const Card* c = myDeck.getCard(i);
-                if (c) {
-                    // Helper function to wrap text within card bounds
-                    auto drawWrappedText = [&](const std::string& text, float cardX, float cardY, sf::Color color) {
-                        const float TEXT_MARGIN = 5.f;
-                        const float MAX_TEXT_WIDTH = CARD_W - (TEXT_MARGIN * 2);
-                        const float MAX_TEXT_HEIGHT = CARD_H - (TEXT_MARGIN * 2);
-                        const int FONT_SIZE = 10; // Smaller font size
-                        const float LINE_SPACING = FONT_SIZE + 2;
-                        
-                        sf::Text testText;
-                        testText.setFont(globalFont);
-                        testText.setCharacterSize(FONT_SIZE);
-                        
-                        std::vector<std::string> lines;
-                        std::string currentLine = "";
-                        std::istringstream words(text);
-                        std::string word;
-                        
-                        // Word wrapping logic
-                        while (words >> word) {
-                            std::string testLine = currentLine.empty() ? word : currentLine + " " + word;
-                            testText.setString(testLine);
-                            
-                            if (testText.getLocalBounds().width <= MAX_TEXT_WIDTH) {
-                                currentLine = testLine;
-                            } else {
-                                if (!currentLine.empty()) {
-                                    lines.push_back(currentLine);
-                                    currentLine = word;
-                                } else {
-                                    // Single word is too long, truncate it
-                                    lines.push_back(word.substr(0, std::min(word.length(), size_t(8))) + "...");
-                                    currentLine = "";
-                                }
-                            }
-                        }
-                        if (!currentLine.empty()) {
-                            lines.push_back(currentLine);
-                        }
-                        
-                        // Draw the wrapped lines
-                        float totalTextHeight = lines.size() * LINE_SPACING;
-                        float startY = cardY + (CARD_H - totalTextHeight) / 2.f;
-                        
-                        for (size_t lineIdx = 0; lineIdx < lines.size() && (lineIdx * LINE_SPACING) < MAX_TEXT_HEIGHT; ++lineIdx) {
-                            sf::Text lineText;
-                            lineText.setFont(globalFont);
-                            lineText.setCharacterSize(FONT_SIZE);
-                            lineText.setFillColor(color);
-                            lineText.setString(lines[lineIdx]);
-                            
-                            sf::FloatRect bounds = lineText.getLocalBounds();
-                            lineText.setPosition(cardX + (CARD_W - bounds.width) / 2.f, startY + lineIdx * LINE_SPACING);
-                            window.draw(lineText);
-                        }
-                    };
-                    
-                    drawWrappedText(c->getName(), x, y, sf::Color::Yellow);
-                }
-            }
-        }
-
-        // --- Render victory slots ---
-        // Victory label
-        sf::Text victoryLabel;
-        victoryLabel.setFont(globalFont);
-        victoryLabel.setCharacterSize(16);
-        victoryLabel.setFillColor(sf::Color::White);
-        victoryLabel.setString("Victory Pieces (4 cards)");
-        victoryLabel.setPosition(victoryStartX, victoryY - 25.f);
-        window.draw(victoryLabel);
-
-        for (int i = 0; i < static_cast<int>(Deck::VICTORY_SIZE); ++i) {
-            float x = victoryStartX + i * (CARD_W + CARD_SPACING);
-            float y = victoryY;
-            sf::RectangleShape slot(sf::Vector2f(CARD_W, CARD_H));
-            slot.setPosition(x, y);
-            slot.setFillColor(sf::Color(60,30,30,180));
-            slot.setOutlineColor(sf::Color::White);
-            slot.setOutlineThickness(1.f);
-            window.draw(slot);
-
-            const Card* c = myDeck.getVictoryCard(i);
-            if (c) {
-                if (c) {
-                    auto drawWrappedText = [&](const std::string& text, float cardX, float cardY, sf::Color color) {
-                        const float TEXT_MARGIN = 5.f;
-                        const float MAX_TEXT_WIDTH = CARD_W - (TEXT_MARGIN * 2);
-                        const float MAX_TEXT_HEIGHT = CARD_H - (TEXT_MARGIN * 2);
-                        const int FONT_SIZE = 10;
-                        const float LINE_SPACING = FONT_SIZE + 2;
-                        sf::Text testText;
-                        testText.setFont(globalFont);
-                        testText.setCharacterSize(FONT_SIZE);
-                        std::vector<std::string> lines;
-                        std::string currentLine = "";
-                        std::istringstream words(text);
-                        std::string word;
-                        while (words >> word) {
-                            std::string testLine = currentLine.empty() ? word : currentLine + " " + word;
-                            testText.setString(testLine);
-                            if (testText.getLocalBounds().width <= MAX_TEXT_WIDTH) {
-                                currentLine = testLine;
-                            } else {
-                                if (!currentLine.empty()) {
-                                    lines.push_back(currentLine);
-                                    currentLine = word;
-                                } else {
-                                    lines.push_back(word.substr(0, std::min(word.length(), size_t(8))) + "...");
-                                    currentLine = "";
-                                }
-                            }
-                        }
-                        if (!currentLine.empty()) {
-                            lines.push_back(currentLine);
-                        }
-                        float totalTextHeight = lines.size() * LINE_SPACING;
-                        float startY = cardY + (CARD_H - totalTextHeight) / 2.f;
-                        for (size_t lineIdx = 0; lineIdx < lines.size() && (lineIdx * LINE_SPACING) < MAX_TEXT_HEIGHT; ++lineIdx) {
-                            sf::Text lineText;
-                            lineText.setFont(globalFont);
-                            lineText.setCharacterSize(FONT_SIZE);
-                            lineText.setFillColor(color);
-                            lineText.setString(lines[lineIdx]);
-                            sf::FloatRect bounds = lineText.getLocalBounds();
-                            lineText.setPosition(cardX + (CARD_W - bounds.width) / 2.f, startY + lineIdx * LINE_SPACING);
-                            window.draw(lineText);
-                        }
-                    };
-
-                    drawWrappedText(c->getName(), x, y, sf::Color::Cyan);
-                }
-            }
-        }
-
-        // Draw dragged card if any
-        if (dragging && actualDrag) {
-            const Card* c = myCollection.getCard(dragIndex);
-            if (c) {
-                sf::Vector2i sm = sf::Mouse::getPosition(window);
-                sf::Vector2f gm = graphicsManager.screenToGame(sm);
-                float x = gm.x - dragOffset.x;
-                float y = gm.y - dragOffset.y;
-                sf::RectangleShape rect(sf::Vector2f(CARD_W, CARD_H));
-                rect.setPosition(x, y);
-                rect.setFillColor(sf::Color(60,80,60,200));
-                rect.setOutlineColor(sf::Color::Yellow);
-                rect.setOutlineThickness(2.f);
-                window.draw(rect);
-
-                // Helper function to wrap text within card bounds
-                auto drawWrappedText = [&](const std::string& text, float cardX, float cardY, sf::Color color) {
-                    const float TEXT_MARGIN = 5.f;
-                    const float MAX_TEXT_WIDTH = CARD_W - (TEXT_MARGIN * 2);
-                    const float MAX_TEXT_HEIGHT = CARD_H - (TEXT_MARGIN * 2);
-                    const int FONT_SIZE = 10; // Smaller font size
-                    const float LINE_SPACING = FONT_SIZE + 2;
-                    
-                    sf::Text testText;
-                    testText.setFont(globalFont);
-                    testText.setCharacterSize(FONT_SIZE);
-                    
-                    std::vector<std::string> lines;
-                    std::string currentLine = "";
-                    std::istringstream words(text);
-                    std::string word;
-                    
-                    // Word wrapping logic
-                    while (words >> word) {
-                        std::string testLine = currentLine.empty() ? word : currentLine + " " + word;
-                        testText.setString(testLine);
-                        
-                        if (testText.getLocalBounds().width <= MAX_TEXT_WIDTH) {
-                            currentLine = testLine;
-                        } else {
-                            if (!currentLine.empty()) {
-                                lines.push_back(currentLine);
-                                currentLine = word;
-                            } else {
-                                // Single word is too long, truncate it
-                                lines.push_back(word.substr(0, std::min(word.length(), size_t(8))) + "...");
-                                currentLine = "";
-                            }
-                        }
-                    }
-                    if (!currentLine.empty()) {
-                        lines.push_back(currentLine);
-                    }
-                    
-                    // Draw the wrapped lines
-                    float totalTextHeight = lines.size() * LINE_SPACING;
-                    float startY = cardY + (CARD_H - totalTextHeight) / 2.f;
-                    
-                    for (size_t lineIdx = 0; lineIdx < lines.size() && (lineIdx * LINE_SPACING) < MAX_TEXT_HEIGHT; ++lineIdx) {
-                        sf::Text lineText;
-                        lineText.setFont(globalFont);
-                        lineText.setCharacterSize(FONT_SIZE);
-                        lineText.setFillColor(color);
-                        lineText.setString(lines[lineIdx]);
-                        
-                        sf::FloatRect bounds = lineText.getLocalBounds();
-                        lineText.setPosition(cardX + (CARD_W - bounds.width) / 2.f, startY + lineIdx * LINE_SPACING);
-                        window.draw(lineText);
-                    }
-                };
-                
-                drawWrappedText(c->getName(), x, y, sf::Color::White);
-            }
-        }
-
-        // Draw status message if active
-        if (!statusMessage.empty() && statusClock.getElapsedTime().asSeconds() < STATUS_DISPLAY_TIME) {
-            sf::Text statusText;
-            statusText.setFont(globalFont);
-            statusText.setString(statusMessage);
-            statusText.setCharacterSize(24);
-            statusText.setFillColor(statusColor);
-            
-            // Position at top center of screen
-            sf::FloatRect textBounds = statusText.getLocalBounds();
-            statusText.setOrigin(textBounds.left + textBounds.width / 2.f, textBounds.top + textBounds.height / 2.f);
-            statusText.setPosition(GraphicsManager::BASE_WIDTH / 2.f, 20.f);
-            
-            // Draw semi-transparent background
-            sf::RectangleShape statusBg(sf::Vector2f(textBounds.width + 20.f, textBounds.height + 10.f));
-            statusBg.setFillColor(sf::Color(0, 0, 0, 150));
-            statusBg.setOrigin((textBounds.width + 20.f) / 2.f, (textBounds.height + 10.f) / 2.f);
-            statusBg.setPosition(GraphicsManager::BASE_WIDTH / 2.f, 20.f);
-            
-            window.draw(statusBg);
-            window.draw(statusText);
-        } else if (statusClock.getElapsedTime().asSeconds() >= STATUS_DISPLAY_TIME) {
-            // Clear status message after display time
-            statusMessage = "";
-        }
-
-        window.display();
-    }
-}
 
 int main()
 {
@@ -1147,10 +46,30 @@ int main()
 
     // Initialize graphics manager for resolution scaling
     GraphicsManager graphicsManager(window);
+    sf::Font globalFont;
+    PieceDefinitionManager globalPieceDefManager;
+    std::unique_ptr<PieceFactory> globalPieceFactory;
+    std::map<std::string, sf::Texture> pieceTextures;
+    CardCollection myCollection;
+    Deck myDeck;
+    PlayerSide myPlayerSide = PlayerSide::NEUTRAL;
+    bool gameHasStarted = false;
+    std::string uiMessage = "Connecting...";
+    bool gameStartReceived = false;
+    sf::Packet gameStartPacketData;
+    GameState gameState;
+    GameOverDetector gameOverDetector;
+    int myCurrentRating = 0;
+    std::string myUsername;
+    std::string opponentUsername;
+    int opponentRating = 0;
+    bool returnToMenuRequested = false;
+    GameUiState gameUi;
+
 
     // Load font early for login screen and UI
     if (!globalFont.loadFromFile("assets/fonts/Roboto-Regular.ttf")) {
-        std::cerr << "Error loading font from assets/fonts/Roboto-Regular.ttf\n";
+        std::cerr << "Error loading font from assets/fonts/Roboto-Regular.ttf" << std::endl;
         return -1;
     }
 
@@ -1163,6 +82,8 @@ int main()
 
     // Initialize CardFactory for card operations
     CardFactory::initialize();
+    gameUi = createGameUiState(globalFont);
+    updateUiMessage(gameUi, uiMessage);
 
     // Load piece textures
     for (const auto& typeName : globalPieceDefManager.getAllPieceTypeNames()) {
@@ -1214,6 +135,7 @@ int main()
         }
     }
 
+    updateUiMessage(gameUi, uiMessage);
     // Check immediately for ongoing game messages before entering menu
     socket.setBlocking(false); // Keep non-blocking to avoid freezing
     sf::Clock resumeClock;
@@ -1311,7 +233,7 @@ int main()
         do {
             menuChoice = runMainMenu(window, graphicsManager, socket, myCollection, myDeck, myPlayerSide, myUsername, myCurrentRating, gameStartPacketData, gameStartReceived, globalFont);
             if (menuChoice == MainMenuOption::DECK_EDITOR) {
-                runDeckEditor(window, graphicsManager, socket);
+                runDeckEditor(window, graphicsManager, socket, myCollection, myDeck, globalFont, globalPieceDefManager);
             } else if (menuChoice == MainMenuOption::PLAY_AI) {
                 showPlaceholderScreen(window, graphicsManager, "Play vs AI Coming Soon", globalFont);
             }
@@ -1321,43 +243,13 @@ int main()
         }
     }
 
-    // Initialize UI text elements
-    uiMessageText.setFont(globalFont);
-    uiMessageText.setCharacterSize(24);
-    uiMessageText.setFillColor(sf::Color::White);
-    uiMessageText.setPosition(10.f, 10.f);
-    uiMessageText.setString(uiMessage);
 
-    localPlayerUsernameText.setFont(globalFont);
-    localPlayerUsernameText.setCharacterSize(18);
-    localPlayerUsernameText.setFillColor(sf::Color::Cyan);
-
-    localPlayerRatingText.setFont(globalFont);
-    localPlayerRatingText.setCharacterSize(16);
-    localPlayerRatingText.setFillColor(sf::Color::White);
-
-    remotePlayerUsernameText.setFont(globalFont);
-    remotePlayerUsernameText.setCharacterSize(18);
-    remotePlayerUsernameText.setFillColor(sf::Color::Yellow);
-
-    remotePlayerRatingText.setFont(globalFont);
-    remotePlayerRatingText.setCharacterSize(16);
-    remotePlayerRatingText.setFillColor(sf::Color::White);
-
-    localPlayerSteamText.setFont(globalFont);
-    localPlayerSteamText.setCharacterSize(16);
-    localPlayerSteamText.setFillColor(sf::Color::White);
-
-    phaseText.setFont(globalFont);
-    phaseText.setCharacterSize(20);
-    phaseText.setFillColor(sf::Color::Yellow);
-    phaseText.setPosition(10.f, 35.f); // Position below the main UI message
-
-    // Initialize game state
-    GameState gameState;
     
     // Register win condition callback
-    GameOverDetector::registerWinConditionCallback(onWinCondition);
+    GameOverDetector::registerWinConditionCallback(
+        [&](PlayerSide winner, const std::string& /*description*/) {
+            prepareWinScreen(gameUi, winner, myPlayerSide, opponentUsername, myCurrentRating, opponentRating, globalFont);
+        });
 
     // Initialize input manager with graphics manager
     InputManager inputManager(window, socket, gameState, gameHasStarted, myPlayerSide, graphicsManager);
@@ -1382,45 +274,22 @@ int main()
                 printBoardState(gameState, myPlayerSide); // Keep this for debugging
 
                 // Determine local and remote player data
-                if (myPlayerSide == PlayerSide::PLAYER_ONE) {
-                    localPlayerUsernameText.setString("You: " + p1_username);
-                    localPlayerRatingText.setString("Rating: " + std::to_string(p1_rating));
-                    remotePlayerUsernameText.setString("Opponent: " + p2_username);
-                    remotePlayerRatingText.setString("Rating: " + std::to_string(p2_rating));
-                    // Store current and opponent ratings for menu display
-                    myCurrentRating = p1_rating;
-                    opponentRating = p2_rating;
-                    myUsername = p1_username;
-                    opponentUsername = p2_username;
-                } else if (myPlayerSide == PlayerSide::PLAYER_TWO) {
-                    localPlayerUsernameText.setString("You: " + p2_username);
-                    localPlayerRatingText.setString("Rating: " + std::to_string(p2_rating));
-                    remotePlayerUsernameText.setString("Opponent: " + p1_username);
-                    remotePlayerRatingText.setString("Rating: " + std::to_string(p1_rating));
-                    // Store current and opponent ratings for menu display
-                    myCurrentRating = p2_rating;
-                    opponentRating = p1_rating;
-                    myUsername = p2_username;
-                    opponentUsername = p1_username;
-                }
-                uiMessage = "Game started!"; 
-                std::cout << uiMessage << " P1: " << p1_username << " (" << p1_rating << "), P2: " << p2_username << " (" << p2_rating << ")" << std::endl;
+                std::string localName = (myPlayerSide == PlayerSide::PLAYER_ONE) ? p1_username : p2_username;
+                int localRatingValue = (myPlayerSide == PlayerSide::PLAYER_ONE) ? p1_rating : p2_rating;
+                std::string remoteName = (myPlayerSide == PlayerSide::PLAYER_ONE) ? p2_username : p1_username;
+                int remoteRatingValue = (myPlayerSide == PlayerSide::PLAYER_ONE) ? p2_rating : p1_rating;
 
-                // Set positions for username/rating texts (using base resolution coordinates)
-                // Account for phase text by adding extra spacing
-                localPlayerUsernameText.setPosition(10.f, uiMessageText.getPosition().y + 55.f);
-                localPlayerRatingText.setPosition(10.f, localPlayerUsernameText.getPosition().y + 20.f);
-                localPlayerSteamText.setPosition(10.f, localPlayerRatingText.getPosition().y + 20.f);
-                
-                // Update local player steam display
-                int localPlayerSteam = gameState.getSteam(myPlayerSide);
-                localPlayerSteamText.setString("Steam: " + std::to_string(localPlayerSteam));
-                
-                // Position remote player text on the right side
-                float remoteTextWidthEstimate = 200.f; 
-                remotePlayerUsernameText.setPosition(GraphicsManager::BASE_WIDTH - remoteTextWidthEstimate - 10.f, uiMessageText.getPosition().y + 55.f);
-                remotePlayerRatingText.setPosition(GraphicsManager::BASE_WIDTH - remoteTextWidthEstimate - 10.f, remotePlayerUsernameText.getPosition().y + 20.f);
-                
+                myCurrentRating = localRatingValue;
+                opponentRating = remoteRatingValue;
+                myUsername = localName;
+                opponentUsername = remoteName;
+
+                updatePlayerInfo(gameUi, myPlayerSide, localName, localRatingValue, remoteName, remoteRatingValue);
+                updateLocalSteam(gameUi, gameState.getSteam(myPlayerSide));
+
+                uiMessage = "Game started!";
+                updateUiMessage(gameUi, uiMessage);
+
                 std::cout << "Successfully processed stored GameStart data" << std::endl;
             } else {
                 std::cerr << "Error deserializing stored GameStart packet data" << std::endl;
@@ -1436,16 +305,16 @@ int main()
             } else if (event.type == sf::Event::Resized) {
                 // Update graphics manager when window is resized
                 graphicsManager.updateView();
-            } else if (showWinMessage) {
+            } else if (gameUi.showWinMessage) {
                 if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
                     sf::Vector2f clickPos = graphicsManager.screenToGame({event.mouseButton.x, event.mouseButton.y});
-                    if (menuButton.getGlobalBounds().contains(clickPos)) {
+                    if (gameUi.menuButton.getGlobalBounds().contains(clickPos)) {
                         returnToMenuRequested = true;
-                        showWinMessage = false;
+                        gameUi.showWinMessage = false;
                     }
                 } else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter) {
                     returnToMenuRequested = true;
-                    showWinMessage = false;
+                    gameUi.showWinMessage = false;
                 }
             } else if (gameHasStarted && myPlayerSide == gameState.getActivePlayer()) {
                 // Only handle input if it's the player's turn
@@ -1472,6 +341,7 @@ int main()
                             uiMessage = "Assigned player side: Player ";
                             uiMessage += (myPlayerSide == PlayerSide::PLAYER_ONE ? "One" : "Two");
                             std::cout << uiMessage << std::endl;
+                            updateUiMessage(gameUi, uiMessage);
                         } else { std::cerr << "Error deserializing PlayerAssignment data." << std::endl; }
                         break;
                     case MessageType::CardCollectionData:
@@ -1494,6 +364,7 @@ int main()
                         break;
                     case MessageType::WaitingForOpponent:
                         uiMessage = "Waiting for opponent...";
+                        updateUiMessage(gameUi, uiMessage);
                         std::cout << uiMessage << std::endl;
                         break;
                     case MessageType::GameStart:
@@ -1506,50 +377,27 @@ int main()
                                 printBoardState(gameState, myPlayerSide); // Keep this for debugging
 
                                 // Determine local and remote player data
-                                if (myPlayerSide == PlayerSide::PLAYER_ONE) {
-                                    localPlayerUsernameText.setString("You: " + p1_username);
-                                    localPlayerRatingText.setString("Rating: " + std::to_string(p1_rating));
-                                    remotePlayerUsernameText.setString("Opponent: " + p2_username);
-                                    remotePlayerRatingText.setString("Rating: " + std::to_string(p2_rating));
-                                    // Store current and opponent ratings for menu display
-                                    myCurrentRating = p1_rating;
-                                    opponentRating = p2_rating;
-                                    myUsername = p1_username;
-                                    opponentUsername = p2_username;
-                                } else if (myPlayerSide == PlayerSide::PLAYER_TWO) {
-                                    localPlayerUsernameText.setString("You: " + p2_username);
-                                    localPlayerRatingText.setString("Rating: " + std::to_string(p2_rating));
-                                    remotePlayerUsernameText.setString("Opponent: " + p1_username);
-                                    remotePlayerRatingText.setString("Rating: " + std::to_string(p1_rating));
-                                    // Store current and opponent ratings for menu display
-                                    myCurrentRating = p2_rating;
-                                    opponentRating = p1_rating;
-                                    myUsername = p2_username;
-                                    opponentUsername = p1_username;
-                                }
-                                uiMessage = "Game started!"; 
-                                std::cout << uiMessage << " P1: " << p1_username << " (" << p1_rating << "), P2: " << p2_username << " (" << p2_rating << ")" << std::endl;
+                                std::string localName = (myPlayerSide == PlayerSide::PLAYER_ONE) ? p1_username : p2_username;
+                                int localRatingValue = (myPlayerSide == PlayerSide::PLAYER_ONE) ? p1_rating : p2_rating;
+                                std::string remoteName = (myPlayerSide == PlayerSide::PLAYER_ONE) ? p2_username : p1_username;
+                                int remoteRatingValue = (myPlayerSide == PlayerSide::PLAYER_ONE) ? p2_rating : p1_rating;
 
-                                // Set positions for username/rating texts (using base resolution coordinates)
-                                // Account for phase text by adding extra spacing
-                                localPlayerUsernameText.setPosition(10.f, uiMessageText.getPosition().y + 55.f);
-                                localPlayerRatingText.setPosition(10.f, localPlayerUsernameText.getPosition().y + 20.f);
-                                localPlayerSteamText.setPosition(10.f, localPlayerRatingText.getPosition().y + 20.f);
-                                
-                                // Update local player steam display
-                                int localPlayerSteam = gameState.getSteam(myPlayerSide);
-                                localPlayerSteamText.setString("Steam: " + std::to_string(localPlayerSteam));
-                                
-                                // Position remote player text on the right side
-                                float remoteTextWidthEstimate = 200.f; 
-                                remotePlayerUsernameText.setPosition(GraphicsManager::BASE_WIDTH - remoteTextWidthEstimate - 10.f, uiMessageText.getPosition().y + 55.f);
-                                remotePlayerRatingText.setPosition(GraphicsManager::BASE_WIDTH - remoteTextWidthEstimate - 10.f, remotePlayerUsernameText.getPosition().y + 20.f);
+                                myCurrentRating = localRatingValue;
+                                opponentRating = remoteRatingValue;
+                                myUsername = localName;
+                                opponentUsername = remoteName;
+
+                                updatePlayerInfo(gameUi, myPlayerSide, localName, localRatingValue, remoteName, remoteRatingValue);
+                                updateLocalSteam(gameUi, gameState.getSteam(myPlayerSide));
+
+                                uiMessage = "Game started!";
+                                updateUiMessage(gameUi, uiMessage);
 
                                 // If the game already started in a game-over state (unlikely but safe), trigger end screen
-                                if (gameState.getGamePhase() == GamePhase::GAME_OVER && !showWinMessage) {
+                                if (gameState.getGamePhase() == GamePhase::GAME_OVER && !gameUi.showWinMessage) {
                                     PlayerSide winner = gameOverDetector.getWinner(gameState);
                                     std::string desc = gameOverDetector.getWinConditionDescription(gameState);
-                                    onWinCondition(winner, desc);
+                                    prepareWinScreen(gameUi, winner, myPlayerSide, opponentUsername, myCurrentRating, opponentRating, globalFont);
                                 }
 
                             } else {
@@ -1566,20 +414,20 @@ int main()
                                 printBoardState(gameState, myPlayerSide);
                                 
                                 // Update local player steam display
-                                int localPlayerSteam = gameState.getSteam(myPlayerSide);
-                                localPlayerSteamText.setString("Steam: " + std::to_string(localPlayerSteam));
+                                updateLocalSteam(gameUi, gameState.getSteam(myPlayerSide));
                                 
                                 // If server reports game over, trigger the end screen once
-                                if (gameState.getGamePhase() == GamePhase::GAME_OVER && !showWinMessage) {
+                                if (gameState.getGamePhase() == GamePhase::GAME_OVER && !gameUi.showWinMessage) {
                                     PlayerSide winner = gameOverDetector.getWinner(gameState);
                                     std::string desc = gameOverDetector.getWinConditionDescription(gameState);
-                                    onWinCondition(winner, desc);
+                                    prepareWinScreen(gameUi, winner, myPlayerSide, opponentUsername, myCurrentRating, opponentRating, globalFont);
                                 }
                             } else { std::cerr << "Error deserializing GameStateUpdate." << std::endl; }
                         }
                         break;
                     case MessageType::MoveRejected: // Optional
                         uiMessage = "Move rejected by server.";
+                        updateUiMessage(gameUi, uiMessage);
                         std::cout << uiMessage << std::endl;
                         
                         // Reset input manager state
@@ -1587,6 +435,7 @@ int main()
                         break;
                     case MessageType::CardPlayRejected: // Optional
                         uiMessage = "Card play rejected by server.";
+                        updateUiMessage(gameUi, uiMessage);
                         std::cout << uiMessage << std::endl;
                         
                         // Reset card selection state in input manager
@@ -1607,6 +456,7 @@ int main()
             // No data received, non-blocking socket, this is normal
         } else if (status == sf::Socket::Disconnected) {
             uiMessage = "Connection to server lost.";
+            updateUiMessage(gameUi, uiMessage);
             std::cerr << uiMessage << std::endl;
             window.close(); // Or handle reconnection
         } else if (status == sf::Socket::Error) {
@@ -1645,23 +495,23 @@ int main()
             
             // Update phase message separately (no instructions needed since actions auto-end turns)
             std::string phaseMessage = phaseStr + " Phase";
-            phaseText.setString(phaseMessage);
+            updatePhaseText(gameUi, phaseMessage);
         }
-        uiMessageText.setString(uiMessage);
-        window.draw(uiMessageText);
+        updateUiMessage(gameUi, uiMessage);
+        window.draw(gameUi.uiMessageText);
         
         // Draw phase text if game has started
         if (gameHasStarted) {
-            window.draw(phaseText);
+            window.draw(gameUi.phaseText);
         }
 
         // Draw username/rating info if game has started
         if (gameHasStarted) {
-            window.draw(localPlayerUsernameText);
-            window.draw(localPlayerRatingText);
-            window.draw(remotePlayerUsernameText);
-            window.draw(remotePlayerRatingText);
-            window.draw(localPlayerSteamText);
+            window.draw(gameUi.localPlayerUsernameText);
+            window.draw(gameUi.localPlayerRatingText);
+            window.draw(gameUi.remotePlayerUsernameText);
+            window.draw(gameUi.remotePlayerRatingText);
+            window.draw(gameUi.localPlayerSteamText);
         }
 
         // --- Game Board Rendering ---
@@ -1789,7 +639,7 @@ int main()
                     renderAttackValue(window, piece,
                                      piecePos.x,
                                      piecePos.y,
-                                     boardParams.squareSize);
+                                     boardParams.squareSize, globalFont);
                 }
             }
         }
@@ -1827,7 +677,7 @@ int main()
             renderHealthBar(window, draggedPiece, draggedPieceX, draggedPieceY, boardParams.squareSize);
 
             // Render attack value for the dragged piece
-            renderAttackValue(window, draggedPiece, draggedPieceX, draggedPieceY, boardParams.squareSize);
+            renderAttackValue(window, draggedPiece, draggedPieceX, draggedPieceY, boardParams.squareSize, globalFont);
         }
         // --- End Piece Rendering ---
         
@@ -1879,33 +729,7 @@ int main()
         // --- End Card Hand Rendering ---
         
         // --- Win Message Display ---
-        if (showWinMessage) {
-            // Create a semi-transparent overlay
-            sf::RectangleShape overlay(sf::Vector2f(GraphicsManager::BASE_WIDTH, GraphicsManager::BASE_HEIGHT));
-            overlay.setFillColor(sf::Color(0, 0, 0, 150));
-            window.draw(overlay);
-
-            // Result title and rating change
-            window.draw(resultTitleText);
-
-            sf::Text descText;
-            descText.setFont(globalFont);
-            descText.setString(winMessage);
-            descText.setCharacterSize(24);
-            descText.setFillColor(sf::Color::White);
-            sf::FloatRect dBounds = descText.getLocalBounds();
-            descText.setOrigin(dBounds.left + dBounds.width / 2.f,
-                               dBounds.top + dBounds.height / 2.f);
-            descText.setPosition(GraphicsManager::BASE_WIDTH / 2.f,
-                                 GraphicsManager::BASE_HEIGHT / 2.f - 30.f);
-            window.draw(descText);
-
-            window.draw(ratingChangeText);
-
-            // Return to menu button
-            window.draw(menuButton);
-            window.draw(menuButtonText);
-        }
+        drawWinScreen(window, gameUi, globalFont);
         // --- End Win Message Display ---
         
         // Update the window
@@ -1917,3 +741,4 @@ int main()
     }
     return 0;
 }
+
